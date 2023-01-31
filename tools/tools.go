@@ -4,5 +4,6 @@ package tools
 
 import (
 	// Documentation generation
+	_ "github.com/Khan/genqlient"
 	_ "github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs"
 )

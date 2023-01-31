@@ -1,6 +1,7 @@
 *.dll
 *.exe
 .DS_Store
+terraform-provider-swo
 example.tf
 terraform.tfplan
 terraform.tfstate

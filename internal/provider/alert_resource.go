@@ -24,16 +24,29 @@ type AlertResource struct {
 	client *swoClient.Client
 }
 
-func (model *AlertResourceModel) ToAlertDefinition() swoClient.AlertDefinition {
-	return swoClient.AlertDefinition{
-		ID:                  model.ID.String(),
+func (model *AlertResourceModel) ToCreateAlertDefinition() swoClient.CreateAlertDefinitionAlertMutationsCreateAlertDefinition {
+	return swoClient.CreateAlertDefinitionAlertMutationsCreateAlertDefinition{
+		Id:                  model.ID.String(),
 		Name:                model.Name.String(),
 		Description:         model.Description.String(),
 		Enabled:             model.Enabled.ValueBool(),
 		Severity:            swoClient.AlertSeverity(model.Severity.String()),
-		Actions:             []*swoClient.AlertAction{},
+		Actions:             []swoClient.CreateAlertDefinitionAlertMutationsCreateAlertDefinitionActionsAlertAction{},
 		TriggerResetActions: model.TriggerResetActions.ValueBool(),
-		FlatCondition:       []*swoClient.FlatAlertConditionExpression{},
+		FlatCondition:       []swoClient.CreateAlertDefinitionAlertMutationsCreateAlertDefinitionFlatConditionFlatAlertConditionExpression{},
+	}
+}
+
+func (model *AlertResourceModel) ToUpdateAlertDefinition() swoClient.UpdateAlertDefinitionAlertMutationsUpdateAlertDefinition {
+	return swoClient.UpdateAlertDefinitionAlertMutationsUpdateAlertDefinition{
+		Id:                  model.ID.String(),
+		Name:                model.Name.String(),
+		Description:         model.Description.String(),
+		Enabled:             model.Enabled.ValueBool(),
+		Severity:            swoClient.AlertSeverity(model.Severity.String()),
+		Actions:             []swoClient.UpdateAlertDefinitionAlertMutationsUpdateAlertDefinitionActionsAlertAction{},
+		TriggerResetActions: model.TriggerResetActions.ValueBool(),
+		//FlatCondition:       []swoClient.UpdateAlertDefinitionAlertMutationsUpdateAlertDefinitionFlatConditionFlatAlertConditionExpression{},
 	}
 }
 
@@ -76,8 +89,8 @@ func (r *AlertResource) Create(ctx context.Context, req resource.CreateRequest, 
 	}
 
 	// Create the alert from the provided Terraform model...
-	alertDef := tfModel.ToAlertDefinition()
-	newAlertDef, err := r.client.AlertsService().Create(&alertDef)
+	alertDef := tfModel.ToCreateAlertDefinition()
+	newAlertDef, err := r.client.AlertsService().Create(alertDef)
 
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Error creating alert definition '%s'. Error: %s",
@@ -86,9 +99,9 @@ func (r *AlertResource) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
-	tflog.Trace(ctx, fmt.Sprintf("Alert definition '%s' created successfully. ID: %s", newAlertDef.Name, newAlertDef.ID))
+	tflog.Trace(ctx, fmt.Sprintf("Alert definition '%s' created successfully. ID: %s", newAlertDef.Name, newAlertDef.Id))
 
-	tfModel.ID = types.StringValue(newAlertDef.ID)
+	tfModel.ID = types.StringValue(newAlertDef.Id)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &tfModel)...)
 }
@@ -105,18 +118,47 @@ func (r *AlertResource) Read(ctx context.Context, req resource.ReadRequest, resp
 		return
 	}
 
-	alertDefId := tfModel.ID.String()
+	tflog.Trace(ctx, fmt.Sprintf("Getting alert with ID: %s", tfModel.ID))
 
-	tflog.Trace(ctx, fmt.Sprintf("Getting alert with ID: %s", alertDefId))
-
-	alertDef, err := r.client.AlertsService().Get(alertDefId)
+	alertDef, err := r.client.AlertsService().Read(tfModel.ID.String())
 
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Error getting alert %s. Error: %s", alertDefId, err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Error getting alert %s. Error: %s",
+			alertDef.Id,
+			err))
 		return
 	}
 
 	tflog.Trace(ctx, fmt.Sprintf("Alert received: %s", alertDef.Name))
+
+	tfModel.Name = types.StringValue("Mock Alert Name")
+	tfModel.Description = types.StringValue("Mock alert description.")
+	tfModel.Severity = types.StringValue("CRITICAL")
+	tfModel.Type = types.StringValue("ENTITY_METRIC")
+	tfModel.TargetEntityTypes = []string{"Website"}
+	tfModel.Enabled = types.BoolValue(true)
+	tfModel.Conditions = []AlertConditionModel{
+		{
+			MetricName:      types.StringValue("synthetics.https.response.time"),
+			Threshold:       types.StringValue(">=3000ms"),
+			Duration:        types.StringValue("5m"),
+			AggregationType: types.StringValue("AVG"),
+			EntityIds: []string{
+				"e-1521946194448543744",
+				"e-1521947552186691584",
+			},
+			IncludeTags: &[]AlertTagsModel{
+				{
+					Name:   types.StringValue("probe.city"),
+					Values: []string{"Tokyo", "Sao Paulo"},
+				},
+			},
+		},
+	}
+	tfModel.Notifications = []int{
+		123,
+		456,
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &tfModel)...)
 }
@@ -133,19 +175,48 @@ func (r *AlertResource) Update(ctx context.Context, req resource.UpdateRequest, 
 		return
 	}
 
-	alertDef := tfModel.ToAlertDefinition()
+	alertDef := tfModel.ToUpdateAlertDefinition()
 
-	tflog.Trace(ctx, fmt.Sprintf("Updating alert definition with ID: %s", alertDef.ID))
+	tflog.Trace(ctx, fmt.Sprintf("Updating alert definition with ID: %s", alertDef.Id))
 
 	// Update the alert definition...
-	err := r.client.AlertsService().Update(&alertDef)
+	err := r.client.AlertsService().Update(alertDef)
 
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Error updating alert definition %s. Error: %s", alertDef.ID, err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Error updating alert definition %s. Error: %s", alertDef.Id, err))
 		return
 	}
 
 	tflog.Trace(ctx, fmt.Sprintf("Alert definition '%s' updated successfully.", alertDef.Name))
+
+	tfModel.Name = types.StringValue("Mock Alert Name")
+	tfModel.Description = types.StringValue("Mock alert description.")
+	tfModel.Severity = types.StringValue("CRITICAL")
+	tfModel.Type = types.StringValue("METRIC")
+	tfModel.TargetEntityTypes = []string{"Website"}
+	tfModel.Enabled = types.BoolValue(true)
+	tfModel.Conditions = []AlertConditionModel{
+		{
+			MetricName:      types.StringValue("synthetics.https.response.time"),
+			Threshold:       types.StringValue(">=3000ms"),
+			Duration:        types.StringValue("5m"),
+			AggregationType: types.StringValue("AVG"),
+			EntityIds: []string{
+				"e-1521946194448543744",
+				"e-1521947552186691584",
+			},
+			IncludeTags: &[]AlertTagsModel{
+				{
+					Name:   types.StringValue("probe.city"),
+					Values: []string{"Tokyo", "Sao Paulo"},
+				},
+			},
+		},
+	}
+	tfModel.Notifications = []int{
+		123,
+		456,
+	}
 
 	// Save and log the model into Terraform state.
 	resp.Diagnostics.Append(resp.State.Set(ctx, &tfModel)...)

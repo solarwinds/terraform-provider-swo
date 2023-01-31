@@ -81,7 +81,14 @@ func (p *SwoProvider) Configure(ctx context.Context, req provider.ConfigureReque
 	}
 
 	// Client configuration for data sources and resources.
-	client := swoClient.NewClient(config.ApiToken.ValueString())
+	client := swoClient.NewClient(config.ApiToken.ValueString(),
+		swoClient.DebugOption(true))
+
+	if client == nil {
+		resp.Diagnostics.AddError("Client Error", "Unable to create an instance of the SWO client.")
+		return
+	}
+
 	resp.DataSourceData = client
 	resp.ResourceData = client
 }

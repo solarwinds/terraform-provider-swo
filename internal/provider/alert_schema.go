@@ -18,10 +18,10 @@ type AlertResourceModel struct {
 	Description         types.String          `tfsdk:"description"`
 	Severity            types.String          `tfsdk:"severity"`
 	Type                types.String          `tfsdk:"type"`
-	EntityType          types.String          `tfsdk:"entity_type"`
+	TargetEntityTypes   []string              `tfsdk:"target_entity_types"`
 	Enabled             types.Bool            `tfsdk:"enabled"`
 	Conditions          []AlertConditionModel `tfsdk:"conditions"`
-	Notifications       types.List            `tfsdk:"notifications"`
+	Notifications       []int                 `tfsdk:"notifications"`
 	TriggerResetActions types.Bool            `tfsdk:"trigger_reset_actions"`
 }
 
@@ -30,14 +30,14 @@ type AlertConditionModel struct {
 	Threshold       types.String      `tfsdk:"threshold"`
 	Duration        types.String      `tfsdk:"duration"`
 	AggregationType types.String      `tfsdk:"aggregation_type"`
-	EntityIds       types.List        `tfsdk:"entity_ids"`
+	EntityIds       []string          `tfsdk:"entity_ids"`
 	IncludeTags     *[]AlertTagsModel `tfsdk:"include_tags"`
 	ExcludeTags     *[]AlertTagsModel `tfsdk:"exclude_tags"`
 }
 
 type AlertTagsModel struct {
 	Name   types.String `tfsdk:"name"`
-	Values types.List   `tfsdk:"values"`
+	Values []string     `tfsdk:"values"`
 }
 
 func (r *AlertResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
@@ -47,7 +47,7 @@ func (r *AlertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 		Description: fmt.Sprintf("A terraform resource for managing %s alerts.", envvar.AppName),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Description: "The ID of the alert. This is computed from the backend.",
+				Description: "The ID of the alert. This is a computed value provided by the backend.",
 				Computed:    true,
 			},
 			"name": schema.StringAttribute{
@@ -59,16 +59,17 @@ func (r *AlertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 				Optional:    true,
 			},
 			"type": schema.StringAttribute{
-				Description: "The type of alert (METRICS|LOGS).",
+				Description: "The type of alert (ENTITY_METRICS|LOGS).",
 				Required:    true,
 			},
 			"severity": schema.StringAttribute{
 				Description: "The severity of the alert (INFO|WARNING|CRITICAL).",
 				Required:    true,
 			},
-			"entity_type": schema.StringAttribute{
-				Description: "???",
+			"target_entity_types": schema.ListAttribute{
+				Description: "The entity types for scoping this alert (e.g. Website, Host, Database...).",
 				Required:    true,
+				ElementType: types.StringType,
 			},
 			"enabled": schema.BoolAttribute{
 				Description: "Is the alert enabled. Default is true.",
@@ -84,37 +85,37 @@ func (r *AlertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"metric_name": schema.StringAttribute{
-							Description: "???",
+							Description: "The name of the metric that is being monitored.",
 							Required:    true,
 						},
 						"threshold": schema.StringAttribute{
-							Description: "???",
+							Description: "The threshold value that triggers the alert when breached.",
 							Required:    true,
 						},
 						"duration": schema.StringAttribute{
-							Description: "???",
+							Description: "The duration of the time that the ",
 							Required:    true,
 						},
 						"aggregation_type": schema.StringAttribute{
-							Description: "???",
+							Description: "The aggregation type (such as average, maximum or minimum) to apply to this metric.",
 							Required:    true,
 						},
 						"entity_ids": schema.ListAttribute{
-							Description: "???",
+							Description: "(Optional) A list of entity IDs that will be the scoped targets of the monitoring.",
 							Optional:    true,
 							ElementType: types.StringType,
 						},
 						"include_tags": schema.SetNestedAttribute{
-							Description: "???",
+							Description: "(Optional) Add metric tags to include as part of the scope.",
 							Optional:    true,
 							NestedObject: schema.NestedAttributeObject{
 								Attributes: map[string]schema.Attribute{
 									"name": schema.StringAttribute{
-										Description: "???",
+										Description: "The tag name.",
 										Optional:    true,
 									},
 									"values": schema.ListAttribute{
-										Description: "???",
+										Description: "One or more tag values.",
 										Optional:    true,
 										ElementType: types.StringType,
 									},
@@ -122,16 +123,16 @@ func (r *AlertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 							},
 						},
 						"exclude_tags": schema.SetNestedAttribute{
-							Description: "???",
+							Description: "(Optional) Add metric tags to exclude as part of the scope.",
 							Optional:    true,
 							NestedObject: schema.NestedAttributeObject{
 								Attributes: map[string]schema.Attribute{
 									"name": schema.StringAttribute{
-										Description: "???",
+										Description: "The tag name.",
 										Optional:    true,
 									},
 									"values": schema.ListAttribute{
-										Description: "???",
+										Description: "One or more tag values.",
 										Optional:    true,
 										ElementType: types.StringType,
 									},
@@ -142,8 +143,8 @@ func (r *AlertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 				},
 			},
 			"notifications": schema.ListAttribute{
-				Description: "???",
-				Optional:    true,
+				Description: "A list of notification configuration IDs to publish to when this alert is triggered.",
+				Required:    true,
 				ElementType: types.NumberType,
 			},
 		},
