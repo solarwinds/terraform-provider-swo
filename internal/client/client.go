@@ -1,30 +1,22 @@
 package client
 
 import (
-	"bytes"
-	"encoding/json"
+	"context"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"strconv"
 	"time"
 
+	"github.com/Khan/genqlient/graphql"
 	log "github.com/sirupsen/logrus"
 )
 
 const (
-	defaultBaseURL   = "https://public-api.dc-01.dev-ssp.solarwinds.com/public/schema"
-	defaultMediaType = "application/json"
-	clientIdentifier = "swo-api-go"
-)
-
-var (
-	client = &http.Client{
-		Timeout: 30 * time.Second,
-	}
+	defaultBaseURL        = "https://api.dc-01.cloud.solarwinds.com/graphql"
+	defaultMediaType      = "application/json"
+	defaultRequestTimeout = 30 * time.Second
+	clientIdentifier      = "swo-api-go"
 )
 
 // ServiceAccessor defines an interface for talking to via domain-specific service constructs
@@ -34,184 +26,158 @@ type ServiceAccessor interface {
 
 // Client implements ServiceAccessor
 type Client struct {
-	baseURL                 *url.URL
-	httpClient              httpClient
-	apiToken                string
-	alertsService           AlertsCommunicator
-	callerUserAgentFragment string
-	debugMode               bool
+	// SWO api key used for making remote requests to the SWO platform.
+	apiToken string
+
+	// Option settings
+	baseURL        *url.URL
+	debugMode      bool
+	requestTimeout time.Duration
+	userAgent      string
+	transport      http.RoundTripper
+
+	// GraphQL client
+	gql graphql.Client
+
+	// Service accessors
+	alertsService AlertsCommunicator
 }
 
-// httpClient defines the http.Client method used by Client.
-type httpClient interface {
-	Do(*http.Request) (*http.Response, error)
+// apiTokentAuthTransport is an http.RoundTripper that authenticates all requests
+// using Bearer token authentication with a SWO api key.
+type apiTokenAuthTransport struct {
+	client *Client // SWO client object.
 }
 
-// ClientOption provides functional option-setting behavior
+// ClientOption provides functional option-setting behavior.
 type ClientOption func(*Client) error
 
-// New returns a new SWO API client. Optional arguments UserAgentClientOption and BaseURLClientOption can be provided.
-func NewClient(apiToken string, opts ...func(*Client) error) *Client {
+// Returns a new SWO API client. Functional option-settings.
+// * BaseUrlOption
+// * DebugOption
+// * TransportOption
+// * UserAgentOption
+func NewClient(apiToken string, opts ...ClientOption) *Client {
 	baseURL, err := url.Parse(defaultBaseURL)
 
 	if err != nil {
-		log.Println(err)
+		log.Error(err)
 		return nil
 	}
 
-	c := &Client{
-		apiToken:   apiToken,
-		baseURL:    baseURL,
-		httpClient: client,
+	swoClient := &Client{
+		baseURL: baseURL,
 	}
 
-	c.alertsService = NewAlertsService(c)
-
+	// Set any user options that were provided.
 	for _, opt := range opts {
-		opt(c)
-	}
-
-	return c
-}
-
-// NewRequest standardizes the request being sent
-func (c *Client) NewRequest(method, path string, body interface{}) (*http.Request, error) {
-	rel, err := url.Parse(path)
-	if err != nil {
-		return nil, err
-	}
-
-	requestURL := c.baseURL.ResolveReference(rel)
-
-	var buffer io.ReadWriter
-
-	if body != nil {
-		buffer = &bytes.Buffer{}
-		encodeErr := json.NewEncoder(buffer).Encode(body)
-		if encodeErr != nil {
-			log.Println(encodeErr)
+		err = opt(swoClient)
+		if err != nil {
+			log.Error(fmt.Sprintf("Client option error. Fallback to default value: %s", err))
 		}
 	}
 
-	req, err := http.NewRequest(method, requestURL.String(), buffer)
-
-	if err != nil {
-		return nil, err
+	// Use the default http transport if one wasn't provided.
+	if swoClient.transport == nil {
+		swoClient.transport = http.DefaultTransport
 	}
 
-	req.SetBasicAuth("token", c.apiToken)
-	req.Header.Set("Accept", defaultMediaType)
-	req.Header.Set("Content-Type", defaultMediaType)
-	req.Header.Set("User-Agent", c.completeUserAgentString())
+	swoClient.gql = graphql.NewClient(swoClient.baseURL.String(), &http.Client{
+		Timeout: swoClient.requestTimeout,
+		Transport: &apiTokenAuthTransport{
+			client: swoClient,
+		},
+	})
 
-	return req, nil
+	swoClient.alertsService = NewAlertsService(swoClient)
+
+	return swoClient
 }
 
-// UserAgentClientOption is a config function allowing setting of the User-Agent header in requests
-func UserAgentClientOption(userAgentString string) ClientOption {
+// RoundTrip implements the http.RoundTrip interface.
+func (t *apiTokenAuthTransport) RoundTrip(request *http.Request) (*http.Response, error) {
+	request = request.Clone(context.Background())
+
+	request.Header.Set("Authorization", "Bearer "+t.client.apiToken)
+	request.Header.Set("User-Agent", t.client.completeUserAgentString())
+	// request.Header.Set("Accept", defaultMediaType)
+	// request.Header.Set("Content-Type", defaultMediaType)
+
+	if t.client.debugMode {
+		dumpRequest(request)
+	}
+
+	response, err := t.client.transport.RoundTrip(request)
+
+	if t.client.debugMode {
+		dumpResponse(response)
+	}
+
+	return response, err
+}
+
+// UserAgentOption is a config function allowing setting of the User-Agent header in requests.
+func UserAgentOption(userAgent string) ClientOption {
 	return func(c *Client) error {
-		c.callerUserAgentFragment = userAgentString
+		c.userAgent = userAgent
 		return nil
 	}
 }
 
-// BaseURLClientOption is a config function allowing setting of the base URL the API is on
-func BaseURLClientOption(urlString string) ClientOption {
+// Configuation function that allows setting of the http request timeout.
+func RequestTimeoutOption(duration time.Duration) ClientOption {
 	return func(c *Client) error {
-		var altURL *url.URL
-		var err error
-		if altURL, err = url.Parse(urlString); err != nil {
+		c.requestTimeout = duration
+		return nil
+	}
+}
+
+// TransportOption is a config function allowing setting of the http.Transport.
+func TransportOption(transport http.RoundTripper) ClientOption {
+	return func(c *Client) error {
+		c.transport = transport
+		return nil
+	}
+}
+
+// BaseUrlOption is a config function allowing setting of the base URL the API is targeted towards.
+func BaseUrlOption(urlString string) ClientOption {
+	return func(c *Client) error {
+		urlObj, err := url.Parse(urlString)
+
+		if err != nil {
 			return err
 		}
-		c.baseURL = altURL
+
+		c.baseURL = urlObj
+
 		return nil
 	}
 }
 
-// SetDebugMode sets the debugMode struct member to true
-func SetDebugMode() ClientOption {
+// Sets the debug mode to on or off. Debug 'on' produces verbose logging to stdout.
+func DebugOption(on bool) ClientOption {
 	return func(c *Client) error {
-		c.debugMode = true
+		c.debugMode = on
 		return nil
 	}
 }
 
-// SetHTTPClient allows the user to provide a custom http.Client configuration
-func SetHTTPClient(client *http.Client) ClientOption {
-	return func(c *Client) error {
-		c.httpClient = client
-		return nil
-	}
-}
-
-// AlertsService represents the subset of the API that deals with Alerts
+// A subset of the API that deals with Alerts.
 func (c *Client) AlertsService() AlertsCommunicator {
 	return c.alertsService
 }
 
-// Do performs the HTTP request on the wire, taking an optional second parameter for containing a response.
-func (c *Client) Do(req *http.Request, respData interface{}) (*http.Response, error) {
-	if c.debugMode {
-		dumpRequest(req)
-	}
-
-	resp, err := c.httpClient.Do(req)
-
-	if err != nil {
-		return resp, err
-	}
-
-	if c.debugMode {
-		dumpResponse(resp)
-	}
-
-	if err = checkError(resp); err != nil {
-		return resp, err
-	}
-
-	defer resp.Body.Close()
-	if respData != nil {
-		err = json.NewDecoder(resp.Body).Decode(respData)
-	}
-
-	return resp, err
-}
-
-// completeUserAgentString returns the string that will be placed in the User-Agent header.
-// It ensures that any caller-set string has the client name and version appended to it.
+// Returns the string that will be placed in the User-Agent header. It ensures
+// that any caller-set string has the client name and version appended to it.
 func (c *Client) completeUserAgentString() string {
-	if c.callerUserAgentFragment == "" {
-		return clientVersionString()
+	if c.userAgent == "" {
+		return clientIdentifier
 	}
-	return fmt.Sprintf("%s:%s", c.callerUserAgentFragment, clientVersionString())
+	return fmt.Sprintf("%s:%s", c.userAgent, clientIdentifier)
 }
 
-// clientVersionString returns the canonical name-and-version string
-func clientVersionString() string {
-	return clientIdentifier
-}
-
-// checkError creates an ErrorResponse from the http.Response.Body, if there is one
-func checkError(resp *http.Response) error {
-	errResponse := &ErrorResponse{}
-	if resp.StatusCode >= 400 {
-		errResponse.Status = resp.Status
-		errResponse.Response = resp
-		if resp.ContentLength != 0 {
-			body, _ := ioutil.ReadAll(resp.Body)
-			err := json.Unmarshal(body, errResponse)
-			if err != nil {
-				errResponse.Errors = strconv.Quote(string(body))
-			}
-			log.Debugf("error: %+v\n", errResponse)
-			return errResponse
-		}
-		return errResponse
-	}
-	return nil
-}
-
-// dumpResponse is a debugging function which dumps the HTTP response to stdout
+// A debugging function which dumps the HTTP response to stdout.
 func dumpResponse(resp *http.Response) {
 	fmt.Printf("response status: %s\n", resp.Status)
 	dump, err := httputil.DumpResponse(resp, true)
@@ -220,10 +186,11 @@ func dumpResponse(resp *http.Response) {
 		log.Printf("error dumping response: %s", err)
 		return
 	}
+
 	log.Printf("response body: %s\n\n", string(dump))
 }
 
-// dumpRequest is a debugging function which dumps the HTTP request to stdout
+// A debugging function which dumps the HTTP request to stdout.
 func dumpRequest(req *http.Request) {
 	if req.Body == nil {
 		return

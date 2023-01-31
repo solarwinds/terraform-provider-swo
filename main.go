@@ -31,11 +31,10 @@ var (
 func main() {
 	var debug bool
 
-	flag.BoolVar(&debug, "debug", false, "Set to true to run the provider with support for debuggers like delve.")
+	flag.BoolVar(&debug, "debug", false, "Set to true to run the provider with support for debuggers.")
 	flag.Parse()
 
 	opts := providerserver.ServeOpts{
-		// TODO: Update this string with the published name of your provider.
 		Address: "github.com/solarwindscloud/swo",
 		Debug:   debug,
 	}
