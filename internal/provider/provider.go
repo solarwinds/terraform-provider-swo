@@ -30,6 +30,7 @@ type SwoProvider struct {
 type SwoProviderModel struct {
 	ApiToken            types.String `tfsdk:"api_token"`
 	RequestRetryTimeout types.Number `tfsdk:"request_retry_timeout"`
+	DebugMode           types.Bool   `tfsdk:"debug_mode"`
 }
 
 func (p *SwoProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
@@ -52,6 +53,10 @@ func (p *SwoProvider) Schema(ctx context.Context, req provider.SchemaRequest, re
 			"request_retry_timeout": schema.NumberAttribute{
 				Optional:    true,
 				Description: "The request retry timeout period. Specify 0 for no retries. Default is 30 seconds.",
+			},
+			"debug_mode": schema.BoolAttribute{
+				Optional:    true,
+				Description: "Setting to true will provide additional logging details.",
 			},
 		},
 	}
@@ -82,7 +87,7 @@ func (p *SwoProvider) Configure(ctx context.Context, req provider.ConfigureReque
 
 	// Client configuration for data sources and resources.
 	client := swoClient.NewClient(config.ApiToken.ValueString(),
-		swoClient.DebugOption(true))
+		swoClient.DebugOption(config.DebugMode.ValueBool()))
 
 	if client == nil {
 		resp.Diagnostics.AddError("Client Error", "Unable to create an instance of the SWO client.")

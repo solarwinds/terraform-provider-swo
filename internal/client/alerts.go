@@ -11,12 +11,12 @@ type AlertsService struct {
 
 type AlertDefinitionCreate = CreateAlertDefinitionAlertMutationsCreateAlertDefinition
 type AlertDefinitionUpdate = UpdateAlertDefinitionAlertMutationsUpdateAlertDefinition
-type AlertDefinitionRead = GetAlertAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinition
+type AlertDefinitionRead = GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinition
 
 type AlertsCommunicator interface {
-	Create(AlertDefinitionCreate) (*AlertDefinitionCreate, error)
+	Create(AlertDefinitionInput) (*AlertDefinitionCreate, error)
 	Read(string) (*AlertDefinitionRead, error)
-	Update(AlertDefinitionUpdate) error
+	Update(string, AlertDefinitionInput) error
 	Delete(string) error
 }
 
@@ -25,13 +25,11 @@ func NewAlertsService(c *Client) *AlertsService {
 }
 
 // Creates a new alert with the given definition.
-func (as *AlertsService) Create(a AlertDefinitionCreate) (*AlertDefinitionCreate, error) {
-	log.Printf("Create alert request. Name: %s", a.Name)
-
-	// a.Id = "0bc4710d-e3b0-4590-9c9b-e5e46d81d912"
+func (as *AlertsService) Create(input AlertDefinitionInput) (*AlertDefinitionCreate, error) {
+	log.Printf("Create alert request. Name: %s", input.Name)
 
 	ctx := context.Background()
-	resp, err := CreateAlertDefinition(ctx, as.client.gql)
+	resp, err := CreateAlertDefinition(ctx, as.client.gql, input)
 
 	if err != nil {
 		return nil, err
@@ -48,7 +46,13 @@ func (as *AlertsService) Read(id string) (*AlertDefinitionRead, error) {
 	log.Printf("Read alert request. Id: %s", id)
 
 	ctx := context.Background()
-	resp, err := GetAlert(ctx, as.client.gql)
+	filter := AlertFilterInput{
+		Id: id,
+	}
+	paging := PagingInput{}
+	sortBy := SortInput{}
+
+	resp, err := GetAlertDefinitions(ctx, as.client.gql, filter, paging, sortBy)
 
 	if err != nil {
 		return nil, err
@@ -62,17 +66,17 @@ func (as *AlertsService) Read(id string) (*AlertDefinitionRead, error) {
 }
 
 // Updates the alert with the given id.
-func (as *AlertsService) Update(a AlertDefinitionUpdate) error {
-	log.Printf("Update alert request. Id: %s", a.Id)
+func (as *AlertsService) Update(id string, input AlertDefinitionInput) error {
+	log.Printf("Update alert request. Id: %s", id)
 
 	ctx := context.Background()
-	_, err := UpdateAlertDefinition(ctx, as.client.gql)
+	_, err := UpdateAlertDefinition(ctx, as.client.gql, input, id)
 
 	if err != nil {
 		return err
 	}
 
-	log.Printf("Update alert success. Id: %s", a.Id)
+	log.Printf("Update alert success. Id: %s", id)
 
 	return nil
 }
@@ -82,7 +86,7 @@ func (as *AlertsService) Delete(id string) error {
 	log.Printf("Delete alert request. Id: %s", id)
 
 	ctx := context.Background()
-	_, err := DeleteAlertDefinition(ctx, as.client.gql)
+	_, err := DeleteAlertDefinition(ctx, as.client.gql, id)
 
 	if err != nil {
 		return err
