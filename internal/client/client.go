@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"net/http/httputil"
 	"net/url"
 	"time"
 
 	"github.com/Khan/genqlient/graphql"
+	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -17,6 +17,7 @@ const (
 	defaultMediaType      = "application/json"
 	defaultRequestTimeout = 30 * time.Second
 	clientIdentifier      = "swo-api-go"
+	requestIdentifier     = "swo-request-id"
 )
 
 // ServiceAccessor defines an interface for talking to via domain-specific service constructs
@@ -49,14 +50,12 @@ type apiTokenAuthTransport struct {
 	client *Client // SWO client object.
 }
 
-// ClientOption provides functional option-setting behavior.
-type ClientOption func(*Client) error
-
-// Returns a new SWO API client. Functional option-settings.
+// Returns a new SWO API client with functional override options.
 // * BaseUrlOption
 // * DebugOption
 // * TransportOption
 // * UserAgentOption
+// * RequestTimeoutOption
 func NewClient(apiToken string, opts ...ClientOption) *Client {
 	baseURL, err := url.Parse(defaultBaseURL)
 
@@ -66,7 +65,8 @@ func NewClient(apiToken string, opts ...ClientOption) *Client {
 	}
 
 	swoClient := &Client{
-		baseURL: baseURL,
+		apiToken: apiToken,
+		baseURL:  baseURL,
 	}
 
 	// Set any user options that were provided.
@@ -80,6 +80,11 @@ func NewClient(apiToken string, opts ...ClientOption) *Client {
 	// Use the default http transport if one wasn't provided.
 	if swoClient.transport == nil {
 		swoClient.transport = http.DefaultTransport
+	}
+
+	if swoClient.debugMode {
+		log.SetLevel(log.TraceLevel)
+		log.Info("DebugMode set to true.")
 	}
 
 	swoClient.gql = graphql.NewClient(swoClient.baseURL.String(), &http.Client{
@@ -96,71 +101,27 @@ func NewClient(apiToken string, opts ...ClientOption) *Client {
 
 // RoundTrip implements the http.RoundTrip interface.
 func (t *apiTokenAuthTransport) RoundTrip(request *http.Request) (*http.Response, error) {
-	request = request.Clone(context.Background())
+	// When using the RoundTipper interface it is important that the original request is not modified.
+	// See https://pkg.go.dev/net/http#RoundTripper for more details.
+	clone := request.Clone(context.Background())
 
-	request.Header.Set("Authorization", "Bearer "+t.client.apiToken)
-	request.Header.Set("User-Agent", t.client.completeUserAgentString())
+	clone.Header.Set("Authorization", "Bearer "+t.client.apiToken)
+	clone.Header.Set("User-Agent", t.client.completeUserAgentString())
+	clone.Header.Set(requestIdentifier, uuid.NewString())
 	// request.Header.Set("Accept", defaultMediaType)
 	// request.Header.Set("Content-Type", defaultMediaType)
 
 	if t.client.debugMode {
-		dumpRequest(request)
+		dumpRequest(clone)
 	}
 
-	response, err := t.client.transport.RoundTrip(request)
+	response, err := t.client.transport.RoundTrip(clone)
 
 	if t.client.debugMode {
 		dumpResponse(response)
 	}
 
 	return response, err
-}
-
-// UserAgentOption is a config function allowing setting of the User-Agent header in requests.
-func UserAgentOption(userAgent string) ClientOption {
-	return func(c *Client) error {
-		c.userAgent = userAgent
-		return nil
-	}
-}
-
-// Configuation function that allows setting of the http request timeout.
-func RequestTimeoutOption(duration time.Duration) ClientOption {
-	return func(c *Client) error {
-		c.requestTimeout = duration
-		return nil
-	}
-}
-
-// TransportOption is a config function allowing setting of the http.Transport.
-func TransportOption(transport http.RoundTripper) ClientOption {
-	return func(c *Client) error {
-		c.transport = transport
-		return nil
-	}
-}
-
-// BaseUrlOption is a config function allowing setting of the base URL the API is targeted towards.
-func BaseUrlOption(urlString string) ClientOption {
-	return func(c *Client) error {
-		urlObj, err := url.Parse(urlString)
-
-		if err != nil {
-			return err
-		}
-
-		c.baseURL = urlObj
-
-		return nil
-	}
-}
-
-// Sets the debug mode to on or off. Debug 'on' produces verbose logging to stdout.
-func DebugOption(on bool) ClientOption {
-	return func(c *Client) error {
-		c.debugMode = on
-		return nil
-	}
 }
 
 // A subset of the API that deals with Alerts.
@@ -175,32 +136,4 @@ func (c *Client) completeUserAgentString() string {
 		return clientIdentifier
 	}
 	return fmt.Sprintf("%s:%s", c.userAgent, clientIdentifier)
-}
-
-// A debugging function which dumps the HTTP response to stdout.
-func dumpResponse(resp *http.Response) {
-	fmt.Printf("response status: %s\n", resp.Status)
-	dump, err := httputil.DumpResponse(resp, true)
-
-	if err != nil {
-		log.Printf("error dumping response: %s", err)
-		return
-	}
-
-	log.Printf("response body: %s\n\n", string(dump))
-}
-
-// A debugging function which dumps the HTTP request to stdout.
-func dumpRequest(req *http.Request) {
-	if req.Body == nil {
-		return
-	}
-
-	dump, err := httputil.DumpRequestOut(req, true)
-	if err != nil {
-		log.Printf("error dumping request: %s", err)
-		return
-	}
-
-	log.Printf("request body: %s\n\n", string(dump))
 }

@@ -28,7 +28,7 @@ terraform {
   required_providers {
     swo = {
       source  = "github.com/solarwindscloud/terraform-provider-swo"
-      version = ">= 0.0.1"
+      version = ">= 0.1.0"
     }
   }
 }

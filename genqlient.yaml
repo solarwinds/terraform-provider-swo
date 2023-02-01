@@ -3,4 +3,4 @@
 schema: ./graphql/schema.graphql
 operations:
 - ./graphql/genqlient.graphql
-generated: ./internal/client/generated.go
+generated: ./internal/client/genqlient_generated.go

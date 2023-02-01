@@ -23,16 +23,20 @@ terraform {
 }
 
 provider "swo" {
-  api_token             = "123xyz"
+  api_token             = "[UPDATE WITH SWO TOKEN]"
   request_retry_timeout = 10
+  debug_mode = true
 }
 
 resource "swo_alert" "https_response_time" {
   name        = "High HTTPS Response Time"
-  description = ""
-  severity    = "INFO"
-  type        = "metric"
-  entity_type = "Website"
+  description = "A high response time has been identified."
+  severity    = "CRITICAL"
+  type        = "ENTITY_METRIC"
+  enabled     = true
+  target_entity_types = [
+    "Website"
+  ]
   conditions = [
     {
       metric_name      = "synthetics.https.response.time"
@@ -55,7 +59,7 @@ resource "swo_alert" "https_response_time" {
       exclude_tags = []
     },
   ]
-  notifications = ["123", "456"]
+  notifications = [123, 456]
 }
 ```
 
@@ -68,4 +72,5 @@ resource "swo_alert" "https_response_time" {
 
 ### Optional
 
+- `debug_mode` (Boolean) Setting to true will provide additional logging details.
 - `request_retry_timeout` (Number) The request retry timeout period. Specify 0 for no retries. Default is 30 seconds.

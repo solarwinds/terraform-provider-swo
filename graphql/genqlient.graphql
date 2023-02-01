@@ -1,40 +1,17 @@
-# query GetProbes {
-#   dem {
-#     probes {
-#       id
-#       ipv4
-#       ipv6
-#       region
-#       city
-#       country
-#       coordinates {
-#         latitude
-#         longitude
-#       }
-#       active
-#       name
-#       platform
-#     }
-#   }
-# }
-
-query GetAlert {
+query GetAlertDefinitions(
+  $filter: AlertFilterInput!
+  $paging: PagingInput
+  $sortBy: SortInput
+) {
   alertQueries {
-    alertDefinitions(filter: {id: "0bc4710d-e3b0-4590-9c9b-e5e46d81d912"}) {
+    alertDefinitions(filter: $filter, paging: $paging, sortBy: $sortBy) {
       alertDefinitions {
-        id
-        organizationId
-        name
-        description
-        severity
-        enabled
-        muteInfo {
-          muted
-          until
+        actions {
+          configurationIds
+          type
         }
-        triggered
+        triggerResetActions
         conditionType
-        conditionUpdatedAt
         flatCondition {
           id
           links {
@@ -42,147 +19,87 @@ query GetAlert {
             values
           }
           value {
-            type
-            operator
-            entityFilter {
-              type
-              ids
-            }
-            dataType
             fieldName
-            value
-            metricFilter {
-              id
-              links {
-                name
-                values
-              }
-              value {
-                operation
-                propertyValue
-                propertyValues
-                propertyName
-              }
-            }
-            source
+            operator
+            type
             query
           }
         }
-        actions {
-          type
-          configurationIds
+        description
+        enabled
+        id
+        name
+        organizationId
+        severity
+        triggered
+        triggeredTime
+        targetEntityTypes
+        muteInfo {
+          muted
+          until
         }
-        triggerResetActions
+        userId
       }
     }
   }
 }
 
-mutation CreateAlertDefinition {
+mutation CreateAlertDefinition($definition: AlertDefinitionInput!) {
   alertMutations {
-    createAlertDefinition(
-      definition: {
-        name: "Metric alert", severity: INFO, enabled: true,
-        condition: [
-          { id: 0, type: "logicalOperator", operator: "OR", operandIds: [1, 6] },
-          { id: 1, type: "binaryOperator", operator: "<", operandIds: [2, 5] },
-          { id: 2, type: "aggregationOperator", operator: "AVG", operandIds: [3, 4] },
-          { id: 3, type: "metricField", entityFilter: { type: "Website" }, fieldName: "healthscore" },
-          { id: 4, type: "constantValue", dataType: "string", value: "10m" },
-          { id: 5, type: "constantValue", dataType: "number", value: "70" },
-          { id: 6, type: "binaryOperator", operator: ">", operandIds: [7, 10] },
-          { id: 7, type: "aggregationOperator", operator: "AVG", operandIds: [8, 9] },
-          { id: 8, type: "metricField", entityFilter:{
-            type: "Website",
-            ids: ["e-1415678067767222272"]},
-            fieldName: "synthetics.https.response.time",
-            metricFilter: {
-              operation: NOT,
-              children: {
-                propertyName: "tagName",
-                propertyValue: "tagValue",
-                operation: EQ
-                }
-              }
-            },
-          { id: 9, type: "constantValue", dataType: "string", value: "5m"},
-          { id: 10, type: "constantValue", dataType: "number", value: "100" }
-        ],
-        actions: [{type: "slack", configurationIds: ["notification-id-1"]}],
-        triggerResetActions: true
+    createAlertDefinition(definition: $definition) {
+      actions {
+        configurationIds
+        type
       }
-    ) {
-      id
-      organizationId
-      name
-      description
-      severity
-      enabled
-      conditionType
-      conditionUpdatedAt
       flatCondition {
         id
-        links {
-          name
-          values
-        }
-        value {
-          type
-          operator
-          entityFilter {
-            type              
-          } 
-          fieldName
-          dataType
-          value
-          query
-          source
-        }
       }
-      actions {
-        type
-        configurationIds
-      }
-      triggerResetActions
-    }
-  }
-}
-
-mutation UpdateAlertDefinition {
-  alertMutations {
-    updateAlertDefinition(id: "246f719b-d160-4222-97e2-e9ced2203a8a",
-      definition: {
-        name: "My modified alert", description: "Modified description", severity: INFO, enabled: true,
-        condition: [
-          { id: 0, type: "binaryOperator", operator: "<", operandIds: [1, 4] },
-          { id: 1, type: "aggregationOperator", operator: "AVG", operandIds: [2, 3] },
-          { id: 2, type: "metricField", entityFilter: { type: "Website" }, fieldName: "healthscore" },
-          { id: 3, type: "constantValue", dataType: "string", value: "10m" },
-          { id: 4, type: "constantValue", dataType: "number", value: "70" }
-        ],
-        actions: [{type: "slack", configurationIds: ["notification-id-1"]}],
-        triggerResetActions: false
-      }
-    ) {
-      id
-      organizationId
-      name
       description
-      severity
       enabled
-      conditionType
-      conditionUpdatedAt
-      actions {
-        type
-        configurationIds
-      }
-      triggerResetActions
+      id
+      name
+      organizationId
+      severity
     }
   }
 }
 
-mutation DeleteAlertDefinition {
+mutation UpdateAlertDefinition(
+  $definition: AlertDefinitionInput!
+  $updateAlertDefinitionId: ID!
+) {
   alertMutations {
-    deleteAlertDefinition(id: "246f719b-d160-4222-97e2-e9ced2203a8a")
+    updateAlertDefinition(
+      definition: $definition
+      id: $updateAlertDefinitionId
+    ) {
+      actions {
+        configurationIds
+        type
+      }
+      flatCondition {
+        id
+      }
+      description
+      enabled
+      id
+      muteInfo {
+        muted
+        until
+      }
+      name
+      organizationId
+      severity
+      triggered
+      triggeredTime
+      targetEntityTypes
+      userId
+    }
+  }
+}
+
+mutation DeleteAlertDefinition($deleteAlertDefinitionId: ID!) {
+  alertMutations {
+    deleteAlertDefinition(id: $deleteAlertDefinitionId)
   }
 }

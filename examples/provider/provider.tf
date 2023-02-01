@@ -1,7 +1,7 @@
 terraform {
   required_providers {
     swo = {
-      version = "0.1.0"
+      version = "0.0.1"
       source  = "github.com/solarwindscloud/swo"
     }
   }
@@ -10,6 +10,7 @@ terraform {
 provider "swo" {
   api_token             = "[UPDATE WITH SWO TOKEN]"
   request_retry_timeout = 10
+  debug_mode = true
 }
 
 resource "swo_alert" "https_response_time" {
