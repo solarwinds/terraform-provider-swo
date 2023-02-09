@@ -10,7 +10,6 @@ import (
 	"github.com/Khan/genqlient/graphql"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
-	"github.com/solarwindscloud/swo-session-creator-go/session"
 )
 
 const (
@@ -30,9 +29,6 @@ type ServiceAccessor interface {
 type Client struct {
 	// SWO api key used for making remote requests to the SWO platform.
 	apiToken string
-	// UserSession is used to make requests to the non-public GQL Gateway.
-	// Used when creating a new private client.
-	userSession *session.UserSession
 
 	// Option settings
 	baseURL        *url.URL
