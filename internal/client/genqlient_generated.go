@@ -9,19 +9,23 @@ import (
 )
 
 type AlertActionInput struct {
+	// Type of a notification service
+	Type string `json:"type"`
+	// List of notification configuration IDs
 	ConfigurationIds []string `json:"configurationIds"`
-	Type             string   `json:"type"`
 }
-
-// GetConfigurationIds returns AlertActionInput.ConfigurationIds, and is useful for accessing the field via an interface.
-func (v *AlertActionInput) GetConfigurationIds() []string { return v.ConfigurationIds }
 
 // GetType returns AlertActionInput.Type, and is useful for accessing the field via an interface.
 func (v *AlertActionInput) GetType() string { return v.Type }
 
+// GetConfigurationIds returns AlertActionInput.ConfigurationIds, and is useful for accessing the field via an interface.
+func (v *AlertActionInput) GetConfigurationIds() []string { return v.ConfigurationIds }
+
 type AlertConditionMatchFieldRuleInput struct {
-	FieldName string                         `json:"fieldName"`
-	Rules     []AlertConditionMatchRuleInput `json:"rules"`
+	// Field name to apply filtering rule on
+	FieldName string `json:"fieldName"`
+	// Rules to apply - multiple rules are joined by `OR`
+	Rules []AlertConditionMatchRuleInput `json:"rules"`
 }
 
 // GetFieldName returns AlertConditionMatchFieldRuleInput.FieldName, and is useful for accessing the field via an interface.
@@ -31,43 +35,44 @@ func (v *AlertConditionMatchFieldRuleInput) GetFieldName() string { return v.Fie
 func (v *AlertConditionMatchFieldRuleInput) GetRules() []AlertConditionMatchRuleInput { return v.Rules }
 
 type AlertConditionMatchRuleInput struct {
-	Negate bool                        `json:"negate"`
-	Type   AlertConditionMatchRuleType `json:"type"`
-	Value  string                      `json:"value"`
+	Type AlertConditionMatchRuleType `json:"type"`
+	// Negate match (wraps in `NOT`)
+	Negate bool `json:"negate"`
+	// Value match match
+	Value string `json:"value"`
 }
-
-// GetNegate returns AlertConditionMatchRuleInput.Negate, and is useful for accessing the field via an interface.
-func (v *AlertConditionMatchRuleInput) GetNegate() bool { return v.Negate }
 
 // GetType returns AlertConditionMatchRuleInput.Type, and is useful for accessing the field via an interface.
 func (v *AlertConditionMatchRuleInput) GetType() AlertConditionMatchRuleType { return v.Type }
 
+// GetNegate returns AlertConditionMatchRuleInput.Negate, and is useful for accessing the field via an interface.
+func (v *AlertConditionMatchRuleInput) GetNegate() bool { return v.Negate }
+
 // GetValue returns AlertConditionMatchRuleInput.Value, and is useful for accessing the field via an interface.
 func (v *AlertConditionMatchRuleInput) GetValue() string { return v.Value }
 
+// Alert definition condition matching rule types
 type AlertConditionMatchRuleType string
 
 const (
-	AlertConditionMatchRuleTypeContains AlertConditionMatchRuleType = "CONTAINS"
 	AlertConditionMatchRuleTypeEq       AlertConditionMatchRuleType = "EQ"
-	AlertConditionMatchRuleTypeMatches  AlertConditionMatchRuleType = "MATCHES"
 	AlertConditionMatchRuleTypeNe       AlertConditionMatchRuleType = "NE"
+	AlertConditionMatchRuleTypeContains AlertConditionMatchRuleType = "CONTAINS"
+	AlertConditionMatchRuleTypeMatches  AlertConditionMatchRuleType = "MATCHES"
 )
 
 type AlertConditionNodeEntityFilterInput struct {
+	// **DEPRECATED:** Use the `types` field instead
+	Type string `json:"type"`
+	// Filter by Entity types
+	Types []string `json:"types"`
+	// Filter by Entity IDs
+	Ids []string `json:"ids"`
+	// Contextual (smart) search query
+	Query *string `json:"query"`
+	// Filter by Entity fields - multiple fields are joined by `AND`
 	Fields []AlertConditionMatchFieldRuleInput `json:"fields"`
-	Ids    []string                            `json:"ids"`
-	Type   string                              `json:"type"`
-	Types  []string                            `json:"types"`
 }
-
-// GetFields returns AlertConditionNodeEntityFilterInput.Fields, and is useful for accessing the field via an interface.
-func (v *AlertConditionNodeEntityFilterInput) GetFields() []AlertConditionMatchFieldRuleInput {
-	return v.Fields
-}
-
-// GetIds returns AlertConditionNodeEntityFilterInput.Ids, and is useful for accessing the field via an interface.
-func (v *AlertConditionNodeEntityFilterInput) GetIds() []string { return v.Ids }
 
 // GetType returns AlertConditionNodeEntityFilterInput.Type, and is useful for accessing the field via an interface.
 func (v *AlertConditionNodeEntityFilterInput) GetType() string { return v.Type }
@@ -75,131 +80,203 @@ func (v *AlertConditionNodeEntityFilterInput) GetType() string { return v.Type }
 // GetTypes returns AlertConditionNodeEntityFilterInput.Types, and is useful for accessing the field via an interface.
 func (v *AlertConditionNodeEntityFilterInput) GetTypes() []string { return v.Types }
 
+// GetIds returns AlertConditionNodeEntityFilterInput.Ids, and is useful for accessing the field via an interface.
+func (v *AlertConditionNodeEntityFilterInput) GetIds() []string { return v.Ids }
+
+// GetQuery returns AlertConditionNodeEntityFilterInput.Query, and is useful for accessing the field via an interface.
+func (v *AlertConditionNodeEntityFilterInput) GetQuery() *string { return v.Query }
+
+// GetFields returns AlertConditionNodeEntityFilterInput.Fields, and is useful for accessing the field via an interface.
+func (v *AlertConditionNodeEntityFilterInput) GetFields() []AlertConditionMatchFieldRuleInput {
+	return v.Fields
+}
+
+// See [docs](https://github.com/solarwindscloud/nighthawk-alerting/blob/develop/docs/how-to-build-condition.md) on how to work with condition nodes.
 type AlertConditionNodeInput struct {
-	DataType     string                              `json:"dataType"`
-	EntityFilter AlertConditionNodeEntityFilterInput `json:"entityFilter"`
-	FieldName    string                              `json:"fieldName"`
-	Id           int                                 `json:"id"`
-	MetricFilter AlertFilterExpressionInput          `json:"metricFilter"`
-	OperandIds   []int                               `json:"operandIds"`
-	Operator     string                              `json:"operator"`
-	Query        string                              `json:"query"`
-	Source       string                              `json:"source"`
-	Type         string                              `json:"type"`
-	Value        string                              `json:"value"`
+	// Condition node ID.
+	Id int `json:"id"`
+	// Node (operator) type. Supported values:
+	// - `aggregationOperator` (child of `binaryOperator`)
+	// - `binaryOperator` (root, or child of `logicalOperator`, `unaryOperator`)
+	// - `constantValue` (root, or child of `aggregationOperator`, `binaryOperator`)
+	// - `logicalOperator` (root, or child of `logicalOperator`, `unaryOperator`)
+	// - `metricField` (child of `binaryOperator`, `aggregationOperator`)
+	// - `queryField` (child of `aggregationOperator`)
+	// - `unaryOperator` (root, or child of `logicalOperator`, `unaryOperator`)
+	Type string `json:"type"`
+	// Operator for combining operands. Supported values:
+	// - For aggregationOperator: `COUNT`, `MIN`, `MAX`, `AVG`, `SUM`, `LAST`
+	// - For binaryOperator: `=`, `!=`, `>`, `<`, `>=`, `<=`
+	// - For logicalOperator: `AND`, `OR`
+	// - For unaryOperator: `!`
+	Operator *string `json:"operator"`
+	// Ordered list of child condition nodes IDs.
+	OperandIds []int `json:"operandIds"`
+	// Entity filter for `metricField` nodes, when defined (not null) metric is scoped to entity
+	EntityFilter *AlertConditionNodeEntityFilterInput `json:"entityFilter"`
+	// Measurement filter for metric tags
+	MetricFilter *AlertFilterExpressionInput `json:"metricFilter"`
+	// Entity metric field for `metricField` nodes
+	FieldName *string `json:"fieldName"`
+	// Data type for `constantValue` nodes. Supported values: `boolean`, `number`, `string`
+	DataType *string `json:"dataType"`
+	// String representation of value for `constantValue` nodes.
+	Value *string `json:"value"`
+	// Source specification for `queryField` nodes.
+	Source *string `json:"source"`
+	// Query specification for `queryField` nodes.
+	Query *string `json:"query"`
 }
-
-// GetDataType returns AlertConditionNodeInput.DataType, and is useful for accessing the field via an interface.
-func (v *AlertConditionNodeInput) GetDataType() string { return v.DataType }
-
-// GetEntityFilter returns AlertConditionNodeInput.EntityFilter, and is useful for accessing the field via an interface.
-func (v *AlertConditionNodeInput) GetEntityFilter() AlertConditionNodeEntityFilterInput {
-	return v.EntityFilter
-}
-
-// GetFieldName returns AlertConditionNodeInput.FieldName, and is useful for accessing the field via an interface.
-func (v *AlertConditionNodeInput) GetFieldName() string { return v.FieldName }
 
 // GetId returns AlertConditionNodeInput.Id, and is useful for accessing the field via an interface.
 func (v *AlertConditionNodeInput) GetId() int { return v.Id }
 
-// GetMetricFilter returns AlertConditionNodeInput.MetricFilter, and is useful for accessing the field via an interface.
-func (v *AlertConditionNodeInput) GetMetricFilter() AlertFilterExpressionInput { return v.MetricFilter }
+// GetType returns AlertConditionNodeInput.Type, and is useful for accessing the field via an interface.
+func (v *AlertConditionNodeInput) GetType() string { return v.Type }
+
+// GetOperator returns AlertConditionNodeInput.Operator, and is useful for accessing the field via an interface.
+func (v *AlertConditionNodeInput) GetOperator() *string { return v.Operator }
 
 // GetOperandIds returns AlertConditionNodeInput.OperandIds, and is useful for accessing the field via an interface.
 func (v *AlertConditionNodeInput) GetOperandIds() []int { return v.OperandIds }
 
-// GetOperator returns AlertConditionNodeInput.Operator, and is useful for accessing the field via an interface.
-func (v *AlertConditionNodeInput) GetOperator() string { return v.Operator }
-
-// GetQuery returns AlertConditionNodeInput.Query, and is useful for accessing the field via an interface.
-func (v *AlertConditionNodeInput) GetQuery() string { return v.Query }
-
-// GetSource returns AlertConditionNodeInput.Source, and is useful for accessing the field via an interface.
-func (v *AlertConditionNodeInput) GetSource() string { return v.Source }
-
-// GetType returns AlertConditionNodeInput.Type, and is useful for accessing the field via an interface.
-func (v *AlertConditionNodeInput) GetType() string { return v.Type }
-
-// GetValue returns AlertConditionNodeInput.Value, and is useful for accessing the field via an interface.
-func (v *AlertConditionNodeInput) GetValue() string { return v.Value }
-
-type AlertDefinitionInput struct {
-	Actions             []AlertActionInput        `json:"actions"`
-	Condition           []AlertConditionNodeInput `json:"condition"`
-	Description         string                    `json:"description"`
-	Enabled             bool                      `json:"enabled"`
-	Name                string                    `json:"name"`
-	Severity            AlertSeverity             `json:"severity"`
-	TriggerResetActions bool                      `json:"triggerResetActions"`
+// GetEntityFilter returns AlertConditionNodeInput.EntityFilter, and is useful for accessing the field via an interface.
+func (v *AlertConditionNodeInput) GetEntityFilter() *AlertConditionNodeEntityFilterInput {
+	return v.EntityFilter
 }
 
-// GetActions returns AlertDefinitionInput.Actions, and is useful for accessing the field via an interface.
-func (v *AlertDefinitionInput) GetActions() []AlertActionInput { return v.Actions }
+// GetMetricFilter returns AlertConditionNodeInput.MetricFilter, and is useful for accessing the field via an interface.
+func (v *AlertConditionNodeInput) GetMetricFilter() *AlertFilterExpressionInput {
+	return v.MetricFilter
+}
 
-// GetCondition returns AlertDefinitionInput.Condition, and is useful for accessing the field via an interface.
-func (v *AlertDefinitionInput) GetCondition() []AlertConditionNodeInput { return v.Condition }
+// GetFieldName returns AlertConditionNodeInput.FieldName, and is useful for accessing the field via an interface.
+func (v *AlertConditionNodeInput) GetFieldName() *string { return v.FieldName }
 
-// GetDescription returns AlertDefinitionInput.Description, and is useful for accessing the field via an interface.
-func (v *AlertDefinitionInput) GetDescription() string { return v.Description }
+// GetDataType returns AlertConditionNodeInput.DataType, and is useful for accessing the field via an interface.
+func (v *AlertConditionNodeInput) GetDataType() *string { return v.DataType }
 
-// GetEnabled returns AlertDefinitionInput.Enabled, and is useful for accessing the field via an interface.
-func (v *AlertDefinitionInput) GetEnabled() bool { return v.Enabled }
+// GetValue returns AlertConditionNodeInput.Value, and is useful for accessing the field via an interface.
+func (v *AlertConditionNodeInput) GetValue() *string { return v.Value }
+
+// GetSource returns AlertConditionNodeInput.Source, and is useful for accessing the field via an interface.
+func (v *AlertConditionNodeInput) GetSource() *string { return v.Source }
+
+// GetQuery returns AlertConditionNodeInput.Query, and is useful for accessing the field via an interface.
+func (v *AlertConditionNodeInput) GetQuery() *string { return v.Query }
+
+type AlertDefinitionInput struct {
+	// Alert definition name
+	Name string `json:"name"`
+	// Alert definition description
+	Description *string `json:"description"`
+	// Alert definition severity
+	Severity AlertSeverity `json:"severity"`
+	// Enabled whether Alert definition shall be evaluated
+	Enabled bool `json:"enabled"`
+	// Ordered list of condition nodes representing the flatten condition tree.
+	// The first item is the tree root.
+	Condition []AlertConditionNodeInput `json:"condition"`
+	// List of alert actions that shall be triggered in case of alert **FIRING**
+	Actions []AlertActionInput `json:"actions"`
+	// A flag indicating whether to send a notification when active alert returns to normal.
+	// It will be set to *false* if not specified.
+	TriggerResetActions *bool `json:"triggerResetActions"`
+}
 
 // GetName returns AlertDefinitionInput.Name, and is useful for accessing the field via an interface.
 func (v *AlertDefinitionInput) GetName() string { return v.Name }
 
+// GetDescription returns AlertDefinitionInput.Description, and is useful for accessing the field via an interface.
+func (v *AlertDefinitionInput) GetDescription() *string { return v.Description }
+
 // GetSeverity returns AlertDefinitionInput.Severity, and is useful for accessing the field via an interface.
 func (v *AlertDefinitionInput) GetSeverity() AlertSeverity { return v.Severity }
 
-// GetTriggerResetActions returns AlertDefinitionInput.TriggerResetActions, and is useful for accessing the field via an interface.
-func (v *AlertDefinitionInput) GetTriggerResetActions() bool { return v.TriggerResetActions }
+// GetEnabled returns AlertDefinitionInput.Enabled, and is useful for accessing the field via an interface.
+func (v *AlertDefinitionInput) GetEnabled() bool { return v.Enabled }
 
+// GetCondition returns AlertDefinitionInput.Condition, and is useful for accessing the field via an interface.
+func (v *AlertDefinitionInput) GetCondition() []AlertConditionNodeInput { return v.Condition }
+
+// GetActions returns AlertDefinitionInput.Actions, and is useful for accessing the field via an interface.
+func (v *AlertDefinitionInput) GetActions() []AlertActionInput { return v.Actions }
+
+// GetTriggerResetActions returns AlertDefinitionInput.TriggerResetActions, and is useful for accessing the field via an interface.
+func (v *AlertDefinitionInput) GetTriggerResetActions() *bool { return v.TriggerResetActions }
+
+// Input type for filtering
 type AlertFilterExpressionInput struct {
-	Children       []AlertFilterExpressionInput `json:"children"`
-	Operation      FilterOperation              `json:"operation"`
-	PropertyName   string                       `json:"propertyName"`
-	PropertyValue  string                       `json:"propertyValue"`
-	PropertyValues []string                     `json:"propertyValues"`
+	// Name of the property to filter on.
+	PropertyName *string `json:"propertyName"`
+	// Value of the property for operations that expect single value such as EQ, NE, GT, ...
+	PropertyValue *string `json:"propertyValue"`
+	// Values of the property for operations expecting multiple values, such as IN.
+	PropertyValues []*string `json:"propertyValues"`
+	// Operation to use for the evaluation. Default: "EQ"
+	Operation FilterOperation `json:"operation"`
+	// Children filters in case of "operator" being one of "OR", "AND", "NOT".
+	// In such case the "propertyName" and "propertyValue" are ignored.
+	Children []AlertFilterExpressionInput `json:"children"`
 }
 
-// GetChildren returns AlertFilterExpressionInput.Children, and is useful for accessing the field via an interface.
-func (v *AlertFilterExpressionInput) GetChildren() []AlertFilterExpressionInput { return v.Children }
+// GetPropertyName returns AlertFilterExpressionInput.PropertyName, and is useful for accessing the field via an interface.
+func (v *AlertFilterExpressionInput) GetPropertyName() *string { return v.PropertyName }
+
+// GetPropertyValue returns AlertFilterExpressionInput.PropertyValue, and is useful for accessing the field via an interface.
+func (v *AlertFilterExpressionInput) GetPropertyValue() *string { return v.PropertyValue }
+
+// GetPropertyValues returns AlertFilterExpressionInput.PropertyValues, and is useful for accessing the field via an interface.
+func (v *AlertFilterExpressionInput) GetPropertyValues() []*string { return v.PropertyValues }
 
 // GetOperation returns AlertFilterExpressionInput.Operation, and is useful for accessing the field via an interface.
 func (v *AlertFilterExpressionInput) GetOperation() FilterOperation { return v.Operation }
 
-// GetPropertyName returns AlertFilterExpressionInput.PropertyName, and is useful for accessing the field via an interface.
-func (v *AlertFilterExpressionInput) GetPropertyName() string { return v.PropertyName }
-
-// GetPropertyValue returns AlertFilterExpressionInput.PropertyValue, and is useful for accessing the field via an interface.
-func (v *AlertFilterExpressionInput) GetPropertyValue() string { return v.PropertyValue }
-
-// GetPropertyValues returns AlertFilterExpressionInput.PropertyValues, and is useful for accessing the field via an interface.
-func (v *AlertFilterExpressionInput) GetPropertyValues() []string { return v.PropertyValues }
+// GetChildren returns AlertFilterExpressionInput.Children, and is useful for accessing the field via an interface.
+func (v *AlertFilterExpressionInput) GetChildren() []AlertFilterExpressionInput { return v.Children }
 
 type AlertFilterInput struct {
-	ActionConfigurationId string                     `json:"actionConfigurationId"`
-	ConditionTypes        []ConditionType            `json:"conditionTypes"`
-	Enabled               bool                       `json:"enabled"`
-	Entities              []string                   `json:"entities"`
-	EntityTypes           []string                   `json:"entityTypes"`
-	Filter                AlertFilterExpressionInput `json:"filter"`
-	Id                    string                     `json:"id"`
-	Name                  string                     `json:"name"`
-	Severities            []AlertSeverity            `json:"severities"`
-	Triggered             bool                       `json:"triggered"`
-	UserId                string                     `json:"userId"`
+	// By Alert definition ID
+	Id *string `json:"id"`
+	// By user ID
+	UserId *string `json:"userId"`
+	// By Alert definition name
+	Name *string `json:"name"`
+	// By list of Alert definition severities
+	Severities []AlertSeverity `json:"severities"`
+	// By Alert definition enablement
+	Enabled *bool `json:"enabled"`
+	// By trigger status
+	Triggered *bool `json:"triggered"`
+	// By list of Entity IDs
+	Entities []string `json:"entities"`
+	// By list of Entity types
+	EntityTypes []string `json:"entityTypes"`
+	// By alert filter expression
+	Filter *AlertFilterExpressionInput `json:"filter"`
+	// By action configuration ID
+	ActionConfigurationId *string `json:"actionConfigurationId"`
+	// By list of condition types
+	ConditionTypes []ConditionType `json:"conditionTypes"`
 }
 
-// GetActionConfigurationId returns AlertFilterInput.ActionConfigurationId, and is useful for accessing the field via an interface.
-func (v *AlertFilterInput) GetActionConfigurationId() string { return v.ActionConfigurationId }
+// GetId returns AlertFilterInput.Id, and is useful for accessing the field via an interface.
+func (v *AlertFilterInput) GetId() *string { return v.Id }
 
-// GetConditionTypes returns AlertFilterInput.ConditionTypes, and is useful for accessing the field via an interface.
-func (v *AlertFilterInput) GetConditionTypes() []ConditionType { return v.ConditionTypes }
+// GetUserId returns AlertFilterInput.UserId, and is useful for accessing the field via an interface.
+func (v *AlertFilterInput) GetUserId() *string { return v.UserId }
+
+// GetName returns AlertFilterInput.Name, and is useful for accessing the field via an interface.
+func (v *AlertFilterInput) GetName() *string { return v.Name }
+
+// GetSeverities returns AlertFilterInput.Severities, and is useful for accessing the field via an interface.
+func (v *AlertFilterInput) GetSeverities() []AlertSeverity { return v.Severities }
 
 // GetEnabled returns AlertFilterInput.Enabled, and is useful for accessing the field via an interface.
-func (v *AlertFilterInput) GetEnabled() bool { return v.Enabled }
+func (v *AlertFilterInput) GetEnabled() *bool { return v.Enabled }
+
+// GetTriggered returns AlertFilterInput.Triggered, and is useful for accessing the field via an interface.
+func (v *AlertFilterInput) GetTriggered() *bool { return v.Triggered }
 
 // GetEntities returns AlertFilterInput.Entities, and is useful for accessing the field via an interface.
 func (v *AlertFilterInput) GetEntities() []string { return v.Entities }
@@ -208,60 +285,64 @@ func (v *AlertFilterInput) GetEntities() []string { return v.Entities }
 func (v *AlertFilterInput) GetEntityTypes() []string { return v.EntityTypes }
 
 // GetFilter returns AlertFilterInput.Filter, and is useful for accessing the field via an interface.
-func (v *AlertFilterInput) GetFilter() AlertFilterExpressionInput { return v.Filter }
+func (v *AlertFilterInput) GetFilter() *AlertFilterExpressionInput { return v.Filter }
 
-// GetId returns AlertFilterInput.Id, and is useful for accessing the field via an interface.
-func (v *AlertFilterInput) GetId() string { return v.Id }
+// GetActionConfigurationId returns AlertFilterInput.ActionConfigurationId, and is useful for accessing the field via an interface.
+func (v *AlertFilterInput) GetActionConfigurationId() *string { return v.ActionConfigurationId }
 
-// GetName returns AlertFilterInput.Name, and is useful for accessing the field via an interface.
-func (v *AlertFilterInput) GetName() string { return v.Name }
+// GetConditionTypes returns AlertFilterInput.ConditionTypes, and is useful for accessing the field via an interface.
+func (v *AlertFilterInput) GetConditionTypes() []ConditionType { return v.ConditionTypes }
 
-// GetSeverities returns AlertFilterInput.Severities, and is useful for accessing the field via an interface.
-func (v *AlertFilterInput) GetSeverities() []AlertSeverity { return v.Severities }
-
-// GetTriggered returns AlertFilterInput.Triggered, and is useful for accessing the field via an interface.
-func (v *AlertFilterInput) GetTriggered() bool { return v.Triggered }
-
-// GetUserId returns AlertFilterInput.UserId, and is useful for accessing the field via an interface.
-func (v *AlertFilterInput) GetUserId() string { return v.UserId }
-
+// Alert Definition severities
 type AlertSeverity string
 
 const (
-	AlertSeverityCritical AlertSeverity = "CRITICAL"
 	AlertSeverityInfo     AlertSeverity = "INFO"
 	AlertSeverityWarning  AlertSeverity = "WARNING"
+	AlertSeverityCritical AlertSeverity = "CRITICAL"
 )
 
+// Alert definition condition types
 type ConditionType string
 
 const (
 	ConditionTypeEntityMetric     ConditionType = "ENTITY_METRIC"
-	ConditionTypeLogQuery         ConditionType = "LOG_QUERY"
 	ConditionTypeStandaloneMetric ConditionType = "STANDALONE_METRIC"
+	ConditionTypeLogQuery         ConditionType = "LOG_QUERY"
 	ConditionTypeUnknown          ConditionType = "UNKNOWN"
 )
 
 // CreateAlertDefinitionAlertMutations includes the requested fields of the GraphQL type AlertMutations.
 type CreateAlertDefinitionAlertMutations struct {
-	CreateAlertDefinition CreateAlertDefinitionAlertMutationsCreateAlertDefinition `json:"createAlertDefinition"`
+	// Creates a new Alert definition and returns it on success, or null on error.
+	// Requires JWT payload (*x-jwt-verified* header) with `org_id` claim containing Organization ID.
+	CreateAlertDefinition *CreateAlertDefinitionAlertMutationsCreateAlertDefinition `json:"createAlertDefinition"`
 }
 
 // GetCreateAlertDefinition returns CreateAlertDefinitionAlertMutations.CreateAlertDefinition, and is useful for accessing the field via an interface.
-func (v *CreateAlertDefinitionAlertMutations) GetCreateAlertDefinition() CreateAlertDefinitionAlertMutationsCreateAlertDefinition {
+func (v *CreateAlertDefinitionAlertMutations) GetCreateAlertDefinition() *CreateAlertDefinitionAlertMutationsCreateAlertDefinition {
 	return v.CreateAlertDefinition
 }
 
 // CreateAlertDefinitionAlertMutationsCreateAlertDefinition includes the requested fields of the GraphQL type AlertDefinition.
 type CreateAlertDefinitionAlertMutationsCreateAlertDefinition struct {
-	Actions        []CreateAlertDefinitionAlertMutationsCreateAlertDefinitionActionsAlertAction                        `json:"actions"`
-	FlatCondition  []CreateAlertDefinitionAlertMutationsCreateAlertDefinitionFlatConditionFlatAlertConditionExpression `json:"flatCondition"`
-	Description    string                                                                                              `json:"description"`
-	Enabled        bool                                                                                                `json:"enabled"`
-	Id             string                                                                                              `json:"id"`
-	Name           string                                                                                              `json:"name"`
-	OrganizationId string                                                                                              `json:"organizationId"`
-	Severity       AlertSeverity                                                                                       `json:"severity"`
+	// List of alert actions that shall be triggered in case of alert FIRING
+	Actions []CreateAlertDefinitionAlertMutationsCreateAlertDefinitionActionsAlertAction `json:"actions"`
+	// Ordered list of condition nodes representing the flatten condition tree.
+	// The first item is the tree root.
+	FlatCondition []CreateAlertDefinitionAlertMutationsCreateAlertDefinitionFlatConditionFlatAlertConditionExpression `json:"flatCondition"`
+	// Alert definition description
+	Description *string `json:"description"`
+	// Enabled whether Alert definition shall be evaluated
+	Enabled bool `json:"enabled"`
+	// Alert definition ID in UUID format
+	Id string `json:"id"`
+	// Alert definition name
+	Name string `json:"name"`
+	// Organization ID
+	OrganizationId string `json:"organizationId"`
+	// Alert definition severity
+	Severity AlertSeverity `json:"severity"`
 }
 
 // GetActions returns CreateAlertDefinitionAlertMutationsCreateAlertDefinition.Actions, and is useful for accessing the field via an interface.
@@ -275,7 +356,7 @@ func (v *CreateAlertDefinitionAlertMutationsCreateAlertDefinition) GetFlatCondit
 }
 
 // GetDescription returns CreateAlertDefinitionAlertMutationsCreateAlertDefinition.Description, and is useful for accessing the field via an interface.
-func (v *CreateAlertDefinitionAlertMutationsCreateAlertDefinition) GetDescription() string {
+func (v *CreateAlertDefinitionAlertMutationsCreateAlertDefinition) GetDescription() *string {
 	return v.Description
 }
 
@@ -302,8 +383,10 @@ func (v *CreateAlertDefinitionAlertMutationsCreateAlertDefinition) GetSeverity()
 
 // CreateAlertDefinitionAlertMutationsCreateAlertDefinitionActionsAlertAction includes the requested fields of the GraphQL type AlertAction.
 type CreateAlertDefinitionAlertMutationsCreateAlertDefinitionActionsAlertAction struct {
+	// List of notification configuration IDs
 	ConfigurationIds []string `json:"configurationIds"`
-	Type             string   `json:"type"`
+	// Type of a notification service
+	Type string `json:"type"`
 }
 
 // GetConfigurationIds returns CreateAlertDefinitionAlertMutationsCreateAlertDefinitionActionsAlertAction.ConfigurationIds, and is useful for accessing the field via an interface.
@@ -318,6 +401,7 @@ func (v *CreateAlertDefinitionAlertMutationsCreateAlertDefinitionActionsAlertAct
 
 // CreateAlertDefinitionAlertMutationsCreateAlertDefinitionFlatConditionFlatAlertConditionExpression includes the requested fields of the GraphQL type FlatAlertConditionExpression.
 type CreateAlertDefinitionAlertMutationsCreateAlertDefinitionFlatConditionFlatAlertConditionExpression struct {
+	// Alert Condition Expression Tree Node ID
 	Id string `json:"id"`
 }
 
@@ -328,6 +412,7 @@ func (v *CreateAlertDefinitionAlertMutationsCreateAlertDefinitionFlatConditionFl
 
 // CreateAlertDefinitionResponse is returned by CreateAlertDefinition on success.
 type CreateAlertDefinitionResponse struct {
+	// Mutations related to Alerting.
 	AlertMutations CreateAlertDefinitionAlertMutations `json:"alertMutations"`
 }
 
@@ -338,16 +423,19 @@ func (v *CreateAlertDefinitionResponse) GetAlertMutations() CreateAlertDefinitio
 
 // DeleteAlertDefinitionAlertMutations includes the requested fields of the GraphQL type AlertMutations.
 type DeleteAlertDefinitionAlertMutations struct {
-	DeleteAlertDefinition string `json:"deleteAlertDefinition"`
+	// Deletes an Alert definition by ID and returns the ID on success, or null when no such Alert definition exists.
+	// Requires JWT payload (*x-jwt-verified* header) with `org_id` claim containing Organization ID.
+	DeleteAlertDefinition *string `json:"deleteAlertDefinition"`
 }
 
 // GetDeleteAlertDefinition returns DeleteAlertDefinitionAlertMutations.DeleteAlertDefinition, and is useful for accessing the field via an interface.
-func (v *DeleteAlertDefinitionAlertMutations) GetDeleteAlertDefinition() string {
+func (v *DeleteAlertDefinitionAlertMutations) GetDeleteAlertDefinition() *string {
 	return v.DeleteAlertDefinition
 }
 
 // DeleteAlertDefinitionResponse is returned by DeleteAlertDefinition on success.
 type DeleteAlertDefinitionResponse struct {
+	// Mutations related to Alerting.
 	AlertMutations DeleteAlertDefinitionAlertMutations `json:"alertMutations"`
 }
 
@@ -356,26 +444,32 @@ func (v *DeleteAlertDefinitionResponse) GetAlertMutations() DeleteAlertDefinitio
 	return v.AlertMutations
 }
 
+// Allowed entity filtering operators
 type FilterOperation string
 
 const (
-	FilterOperationAnd      FilterOperation = "AND"
-	FilterOperationContains FilterOperation = "CONTAINS"
 	FilterOperationEq       FilterOperation = "EQ"
-	FilterOperationExists   FilterOperation = "EXISTS"
-	FilterOperationGe       FilterOperation = "GE"
-	FilterOperationGt       FilterOperation = "GT"
-	FilterOperationIn       FilterOperation = "IN"
-	FilterOperationLe       FilterOperation = "LE"
-	FilterOperationLt       FilterOperation = "LT"
-	FilterOperationMatches  FilterOperation = "MATCHES"
 	FilterOperationNe       FilterOperation = "NE"
-	FilterOperationNot      FilterOperation = "NOT"
+	FilterOperationGt       FilterOperation = "GT"
+	FilterOperationGe       FilterOperation = "GE"
+	FilterOperationLt       FilterOperation = "LT"
+	FilterOperationLe       FilterOperation = "LE"
+	FilterOperationContains FilterOperation = "CONTAINS"
+	FilterOperationMatches  FilterOperation = "MATCHES"
+	FilterOperationIn       FilterOperation = "IN"
+	FilterOperationAnd      FilterOperation = "AND"
 	FilterOperationOr       FilterOperation = "OR"
+	FilterOperationNot      FilterOperation = "NOT"
+	FilterOperationExists   FilterOperation = "EXISTS"
 )
 
 // GetAlertDefinitionsAlertQueries includes the requested fields of the GraphQL type AlertQueries.
 type GetAlertDefinitionsAlertQueries struct {
+	// Returns all Alert definitions with given Filter, Paging and Sorting.
+	// Filtering can be performed either using dedicated fields in the `filter` input, or using a generic `filter.filter`
+	// field. The latter one can be also used to filter Alert definitions with no configured actions/condition evaluations
+	// using `propertyName: "actions:`/`propertyName: "conditionEvaluations"` and 'operation: EXISTS'.
+	// Requires JWT payload (*x-jwt-verified* header) with `org_id` claim containing Organization ID.
 	AlertDefinitions GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResult `json:"alertDefinitions"`
 }
 
@@ -386,6 +480,7 @@ func (v *GetAlertDefinitionsAlertQueries) GetAlertDefinitions() GetAlertDefiniti
 
 // GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResult includes the requested fields of the GraphQL type AlertDefinitionsResult.
 type GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResult struct {
+	// List of Alert definitions
 	AlertDefinitions []GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinition `json:"alertDefinitions"`
 }
 
@@ -396,21 +491,37 @@ func (v *GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResult) 
 
 // GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinition includes the requested fields of the GraphQL type AlertDefinition.
 type GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinition struct {
-	Actions             []GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionActionsAlertAction                        `json:"actions"`
-	TriggerResetActions bool                                                                                                                                            `json:"triggerResetActions"`
-	ConditionType       ConditionType                                                                                                                                   `json:"conditionType"`
-	FlatCondition       []GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionFlatConditionFlatAlertConditionExpression `json:"flatCondition"`
-	Description         string                                                                                                                                          `json:"description"`
-	Enabled             bool                                                                                                                                            `json:"enabled"`
-	Id                  string                                                                                                                                          `json:"id"`
-	Name                string                                                                                                                                          `json:"name"`
-	OrganizationId      string                                                                                                                                          `json:"organizationId"`
-	Severity            AlertSeverity                                                                                                                                   `json:"severity"`
-	Triggered           bool                                                                                                                                            `json:"triggered"`
-	TriggeredTime       string                                                                                                                                          `json:"triggeredTime"`
-	TargetEntityTypes   []string                                                                                                                                        `json:"targetEntityTypes"`
-	MuteInfo            GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionMuteInfo                                    `json:"muteInfo"`
-	UserId              string                                                                                                                                          `json:"userId"`
+	// List of alert actions that shall be triggered in case of alert FIRING
+	Actions []GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionActionsAlertAction `json:"actions"`
+	// A flag indicating whether to send a notification when active alert returns to normal.
+	TriggerResetActions bool `json:"triggerResetActions"`
+	// Alert definition condition type
+	ConditionType ConditionType `json:"conditionType"`
+	// Ordered list of condition nodes representing the flatten condition tree.
+	// The first item is the tree root.
+	FlatCondition []GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionFlatConditionFlatAlertConditionExpression `json:"flatCondition"`
+	// Alert definition description
+	Description *string `json:"description"`
+	// Enabled whether Alert definition shall be evaluated
+	Enabled bool `json:"enabled"`
+	// Alert definition ID in UUID format
+	Id string `json:"id"`
+	// Alert definition name
+	Name string `json:"name"`
+	// Organization ID
+	OrganizationId string `json:"organizationId"`
+	// Alert definition severity
+	Severity AlertSeverity `json:"severity"`
+	// Indication whether alert is triggered
+	Triggered bool `json:"triggered"`
+	// Time when the Alert definition was triggered in ISO-8601 date format (e.g. `2011-12-03T10:15:30Z`)
+	TriggeredTime *string `json:"triggeredTime"`
+	// List of targeted Entity types
+	TargetEntityTypes []string `json:"targetEntityTypes"`
+	// Information about any pending mutes on the Alert definition
+	MuteInfo GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionMuteInfo `json:"muteInfo"`
+	// User ID
+	UserId string `json:"userId"`
 }
 
 // GetActions returns GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinition.Actions, and is useful for accessing the field via an interface.
@@ -434,7 +545,7 @@ func (v *GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAl
 }
 
 // GetDescription returns GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinition.Description, and is useful for accessing the field via an interface.
-func (v *GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinition) GetDescription() string {
+func (v *GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinition) GetDescription() *string {
 	return v.Description
 }
 
@@ -469,7 +580,7 @@ func (v *GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAl
 }
 
 // GetTriggeredTime returns GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinition.TriggeredTime, and is useful for accessing the field via an interface.
-func (v *GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinition) GetTriggeredTime() string {
+func (v *GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinition) GetTriggeredTime() *string {
 	return v.TriggeredTime
 }
 
@@ -490,8 +601,10 @@ func (v *GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAl
 
 // GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionActionsAlertAction includes the requested fields of the GraphQL type AlertAction.
 type GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionActionsAlertAction struct {
+	// List of notification configuration IDs
 	ConfigurationIds []string `json:"configurationIds"`
-	Type             string   `json:"type"`
+	// Type of a notification service
+	Type string `json:"type"`
 }
 
 // GetConfigurationIds returns GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionActionsAlertAction.ConfigurationIds, and is useful for accessing the field via an interface.
@@ -506,9 +619,13 @@ func (v *GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAl
 
 // GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionFlatConditionFlatAlertConditionExpression includes the requested fields of the GraphQL type FlatAlertConditionExpression.
 type GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionFlatConditionFlatAlertConditionExpression struct {
-	Id    string                                                                                                                                                                   `json:"id"`
-	Links []GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionFlatConditionFlatAlertConditionExpressionLinksNamedLinks           `json:"links"`
-	Value GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionFlatConditionFlatAlertConditionExpressionValueFlatAlertConditionNode `json:"value"`
+	// Alert Condition Expression Tree Node ID
+	Id string `json:"id"`
+	// List of named child condition node IDs.
+	Links []GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionFlatConditionFlatAlertConditionExpressionLinksNamedLinks `json:"links"`
+	// Ordered list of expression nodes representing the flatten tree.
+	// The first item is the tree root with named links using `operands`.
+	Value *GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionFlatConditionFlatAlertConditionExpressionValueFlatAlertConditionNode `json:"value"`
 }
 
 // GetId returns GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionFlatConditionFlatAlertConditionExpression.Id, and is useful for accessing the field via an interface.
@@ -522,13 +639,15 @@ func (v *GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAl
 }
 
 // GetValue returns GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionFlatConditionFlatAlertConditionExpression.Value, and is useful for accessing the field via an interface.
-func (v *GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionFlatConditionFlatAlertConditionExpression) GetValue() GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionFlatConditionFlatAlertConditionExpressionValueFlatAlertConditionNode {
+func (v *GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionFlatConditionFlatAlertConditionExpression) GetValue() *GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionFlatConditionFlatAlertConditionExpressionValueFlatAlertConditionNode {
 	return v.Value
 }
 
 // GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionFlatConditionFlatAlertConditionExpressionLinksNamedLinks includes the requested fields of the GraphQL type NamedLinks.
 type GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionFlatConditionFlatAlertConditionExpressionLinksNamedLinks struct {
-	Name   string   `json:"name"`
+	// Name of the link
+	Name string `json:"name"`
+	// List of linked node IDs
 	Values []string `json:"values"`
 }
 
@@ -543,20 +662,38 @@ func (v *GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAl
 }
 
 // GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionFlatConditionFlatAlertConditionExpressionValueFlatAlertConditionNode includes the requested fields of the GraphQL type FlatAlertConditionNode.
+// The GraphQL type's documentation follows.
+//
+// See https://swicloud.atlassian.net/wiki/spaces/NIT/pages/2700936948/Data+Format+for+storing+alerts.
 type GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionFlatConditionFlatAlertConditionExpressionValueFlatAlertConditionNode struct {
-	FieldName string `json:"fieldName"`
-	Operator  string `json:"operator"`
-	Type      string `json:"type"`
-	Query     string `json:"query"`
+	// Entity metric field for `metricField` nodes
+	FieldName *string `json:"fieldName"`
+	// Operator for combining operands. Supported values:
+	// - For aggregationOperator: `COUNT`, `MIN`, `MAX`, `AVG`, `SUM`, `LAST`
+	// - For binaryOperator: `=`, `!=`, `>`, `<`, `>=`, `<=`
+	// - For logicalOperator: `AND`, `OR`
+	// - For unaryOperator: `!`
+	Operator *string `json:"operator"`
+	// Node (operator) type. Supported values:
+	// - `aggregationOperator` (child of `binaryOperator`)
+	// - `binaryOperator` (root, or child of `logicalOperator`, `unaryOperator`)
+	// - `constantValue` (root, or child of `aggregationOperator`, `binaryOperator`)
+	// - `logicalOperator` (root, or child of `logicalOperator`, `unaryOperator`)
+	// - `metricField` (child of `binaryOperator`, `aggregationOperator`)
+	// - `queryField` (child of `aggregationOperator`)
+	// - `unaryOperator` (root, or child of `logicalOperator`, `unaryOperator`)
+	Type string `json:"type"`
+	// Query specification for `queryField` nodes.
+	Query *string `json:"query"`
 }
 
 // GetFieldName returns GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionFlatConditionFlatAlertConditionExpressionValueFlatAlertConditionNode.FieldName, and is useful for accessing the field via an interface.
-func (v *GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionFlatConditionFlatAlertConditionExpressionValueFlatAlertConditionNode) GetFieldName() string {
+func (v *GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionFlatConditionFlatAlertConditionExpressionValueFlatAlertConditionNode) GetFieldName() *string {
 	return v.FieldName
 }
 
 // GetOperator returns GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionFlatConditionFlatAlertConditionExpressionValueFlatAlertConditionNode.Operator, and is useful for accessing the field via an interface.
-func (v *GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionFlatConditionFlatAlertConditionExpressionValueFlatAlertConditionNode) GetOperator() string {
+func (v *GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionFlatConditionFlatAlertConditionExpressionValueFlatAlertConditionNode) GetOperator() *string {
 	return v.Operator
 }
 
@@ -566,14 +703,22 @@ func (v *GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAl
 }
 
 // GetQuery returns GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionFlatConditionFlatAlertConditionExpressionValueFlatAlertConditionNode.Query, and is useful for accessing the field via an interface.
-func (v *GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionFlatConditionFlatAlertConditionExpressionValueFlatAlertConditionNode) GetQuery() string {
+func (v *GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionFlatConditionFlatAlertConditionExpressionValueFlatAlertConditionNode) GetQuery() *string {
 	return v.Query
 }
 
 // GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionMuteInfo includes the requested fields of the GraphQL type AlertDefinitionMuteInfo.
+// The GraphQL type's documentation follows.
+//
+// Alert definitions can be muted for certain period of time or muted until resolved.
+//
+// If the muted is set to *true* and until attribute is not set meaning no notification will be sent until
+// all of the evaluations are set to **OK** state or alert definition is reset
 type GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionMuteInfo struct {
-	Muted bool   `json:"muted"`
-	Until string `json:"until"`
+	// When muted no notifications are sent
+	Muted bool `json:"muted"`
+	// Time until the mute expires in ISO-8601 date format - `2011-12-03T10:15:30Z` or `null` - muted until resolved
+	Until *string `json:"until"`
 }
 
 // GetMuted returns GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionMuteInfo.Muted, and is useful for accessing the field via an interface.
@@ -582,12 +727,13 @@ func (v *GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAl
 }
 
 // GetUntil returns GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionMuteInfo.Until, and is useful for accessing the field via an interface.
-func (v *GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionMuteInfo) GetUntil() string {
+func (v *GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionMuteInfo) GetUntil() *string {
 	return v.Until
 }
 
 // GetAlertDefinitionsResponse is returned by GetAlertDefinitions on success.
 type GetAlertDefinitionsResponse struct {
+	// Queries related to Alerting.
 	AlertQueries GetAlertDefinitionsAlertQueries `json:"alertQueries"`
 }
 
@@ -596,25 +742,34 @@ func (v *GetAlertDefinitionsResponse) GetAlertQueries() GetAlertDefinitionsAlert
 	return v.AlertQueries
 }
 
+// Paging input for paginated queries. If not specified the first page of the results is returned and it will contain
+// up to X items where X is a value configured in the system.
 type PagingInput struct {
-	After  string `json:"after"`
-	Before string `json:"before"`
-	First  int    `json:"first"`
-	Last   int    `json:"last"`
+	// Fetch items that exist before this cursor. Cursor can be obtained from PageInfo data returned in previous query.
+	Before *string `json:"before"`
+	// Fetch items that exist after this cursor. Cursor can be obtained from PageInfo data returned in previous query.
+	After *string `json:"after"`
+	// Get first X items from the result. This value can be used alone or in combination with "after".
+	// Other combinations are invalid and will lead to query error.
+	First *int `json:"first"`
+	// Get last X items from the result. This value can be used alone or in combination with "before".
+	// Other combinations are invalid and will lead to query error.
+	Last *int `json:"last"`
 }
 
-// GetAfter returns PagingInput.After, and is useful for accessing the field via an interface.
-func (v *PagingInput) GetAfter() string { return v.After }
-
 // GetBefore returns PagingInput.Before, and is useful for accessing the field via an interface.
-func (v *PagingInput) GetBefore() string { return v.Before }
+func (v *PagingInput) GetBefore() *string { return v.Before }
+
+// GetAfter returns PagingInput.After, and is useful for accessing the field via an interface.
+func (v *PagingInput) GetAfter() *string { return v.After }
 
 // GetFirst returns PagingInput.First, and is useful for accessing the field via an interface.
-func (v *PagingInput) GetFirst() int { return v.First }
+func (v *PagingInput) GetFirst() *int { return v.First }
 
 // GetLast returns PagingInput.Last, and is useful for accessing the field via an interface.
-func (v *PagingInput) GetLast() int { return v.Last }
+func (v *PagingInput) GetLast() *int { return v.Last }
 
+// Sort direction for query result sorting
 type SortDirection string
 
 const (
@@ -622,6 +777,7 @@ const (
 	SortDirectionDesc SortDirection = "DESC"
 )
 
+// Query sort definition. Sort support multiple properties and two sort directions.
 type SortInput struct {
 	Sorts []SortItemInput `json:"sorts"`
 }
@@ -629,42 +785,59 @@ type SortInput struct {
 // GetSorts returns SortInput.Sorts, and is useful for accessing the field via an interface.
 func (v *SortInput) GetSorts() []SortItemInput { return v.Sorts }
 
+// Single property sort definition.
 type SortItemInput struct {
-	Direction    SortDirection `json:"direction"`
-	PropertyName string        `json:"propertyName"`
+	PropertyName string         `json:"propertyName"`
+	Direction    *SortDirection `json:"direction"`
 }
-
-// GetDirection returns SortItemInput.Direction, and is useful for accessing the field via an interface.
-func (v *SortItemInput) GetDirection() SortDirection { return v.Direction }
 
 // GetPropertyName returns SortItemInput.PropertyName, and is useful for accessing the field via an interface.
 func (v *SortItemInput) GetPropertyName() string { return v.PropertyName }
 
+// GetDirection returns SortItemInput.Direction, and is useful for accessing the field via an interface.
+func (v *SortItemInput) GetDirection() *SortDirection { return v.Direction }
+
 // UpdateAlertDefinitionAlertMutations includes the requested fields of the GraphQL type AlertMutations.
 type UpdateAlertDefinitionAlertMutations struct {
-	UpdateAlertDefinition UpdateAlertDefinitionAlertMutationsUpdateAlertDefinition `json:"updateAlertDefinition"`
+	// Updates an Alert definition by ID and returns the alert on success, or null when no such Alert definition exists.
+	// Requires JWT payload (*x-jwt-verified* header) with `org_id` claim containing Organization ID.
+	UpdateAlertDefinition *UpdateAlertDefinitionAlertMutationsUpdateAlertDefinition `json:"updateAlertDefinition"`
 }
 
 // GetUpdateAlertDefinition returns UpdateAlertDefinitionAlertMutations.UpdateAlertDefinition, and is useful for accessing the field via an interface.
-func (v *UpdateAlertDefinitionAlertMutations) GetUpdateAlertDefinition() UpdateAlertDefinitionAlertMutationsUpdateAlertDefinition {
+func (v *UpdateAlertDefinitionAlertMutations) GetUpdateAlertDefinition() *UpdateAlertDefinitionAlertMutationsUpdateAlertDefinition {
 	return v.UpdateAlertDefinition
 }
 
 // UpdateAlertDefinitionAlertMutationsUpdateAlertDefinition includes the requested fields of the GraphQL type AlertDefinition.
 type UpdateAlertDefinitionAlertMutationsUpdateAlertDefinition struct {
-	Actions           []UpdateAlertDefinitionAlertMutationsUpdateAlertDefinitionActionsAlertAction                        `json:"actions"`
-	FlatCondition     []UpdateAlertDefinitionAlertMutationsUpdateAlertDefinitionFlatConditionFlatAlertConditionExpression `json:"flatCondition"`
-	Description       string                                                                                              `json:"description"`
-	Enabled           bool                                                                                                `json:"enabled"`
-	Id                string                                                                                              `json:"id"`
-	MuteInfo          UpdateAlertDefinitionAlertMutationsUpdateAlertDefinitionMuteInfo                                    `json:"muteInfo"`
-	Name              string                                                                                              `json:"name"`
-	OrganizationId    string                                                                                              `json:"organizationId"`
-	Severity          AlertSeverity                                                                                       `json:"severity"`
-	Triggered         bool                                                                                                `json:"triggered"`
-	TriggeredTime     string                                                                                              `json:"triggeredTime"`
-	TargetEntityTypes []string                                                                                            `json:"targetEntityTypes"`
-	UserId            string                                                                                              `json:"userId"`
+	// List of alert actions that shall be triggered in case of alert FIRING
+	Actions []UpdateAlertDefinitionAlertMutationsUpdateAlertDefinitionActionsAlertAction `json:"actions"`
+	// Ordered list of condition nodes representing the flatten condition tree.
+	// The first item is the tree root.
+	FlatCondition []UpdateAlertDefinitionAlertMutationsUpdateAlertDefinitionFlatConditionFlatAlertConditionExpression `json:"flatCondition"`
+	// Alert definition description
+	Description *string `json:"description"`
+	// Enabled whether Alert definition shall be evaluated
+	Enabled bool `json:"enabled"`
+	// Alert definition ID in UUID format
+	Id string `json:"id"`
+	// Information about any pending mutes on the Alert definition
+	MuteInfo UpdateAlertDefinitionAlertMutationsUpdateAlertDefinitionMuteInfo `json:"muteInfo"`
+	// Alert definition name
+	Name string `json:"name"`
+	// Organization ID
+	OrganizationId string `json:"organizationId"`
+	// Alert definition severity
+	Severity AlertSeverity `json:"severity"`
+	// Indication whether alert is triggered
+	Triggered bool `json:"triggered"`
+	// Time when the Alert definition was triggered in ISO-8601 date format (e.g. `2011-12-03T10:15:30Z`)
+	TriggeredTime *string `json:"triggeredTime"`
+	// List of targeted Entity types
+	TargetEntityTypes []string `json:"targetEntityTypes"`
+	// User ID
+	UserId string `json:"userId"`
 }
 
 // GetActions returns UpdateAlertDefinitionAlertMutationsUpdateAlertDefinition.Actions, and is useful for accessing the field via an interface.
@@ -678,7 +851,7 @@ func (v *UpdateAlertDefinitionAlertMutationsUpdateAlertDefinition) GetFlatCondit
 }
 
 // GetDescription returns UpdateAlertDefinitionAlertMutationsUpdateAlertDefinition.Description, and is useful for accessing the field via an interface.
-func (v *UpdateAlertDefinitionAlertMutationsUpdateAlertDefinition) GetDescription() string {
+func (v *UpdateAlertDefinitionAlertMutationsUpdateAlertDefinition) GetDescription() *string {
 	return v.Description
 }
 
@@ -714,7 +887,7 @@ func (v *UpdateAlertDefinitionAlertMutationsUpdateAlertDefinition) GetTriggered(
 }
 
 // GetTriggeredTime returns UpdateAlertDefinitionAlertMutationsUpdateAlertDefinition.TriggeredTime, and is useful for accessing the field via an interface.
-func (v *UpdateAlertDefinitionAlertMutationsUpdateAlertDefinition) GetTriggeredTime() string {
+func (v *UpdateAlertDefinitionAlertMutationsUpdateAlertDefinition) GetTriggeredTime() *string {
 	return v.TriggeredTime
 }
 
@@ -730,8 +903,10 @@ func (v *UpdateAlertDefinitionAlertMutationsUpdateAlertDefinition) GetUserId() s
 
 // UpdateAlertDefinitionAlertMutationsUpdateAlertDefinitionActionsAlertAction includes the requested fields of the GraphQL type AlertAction.
 type UpdateAlertDefinitionAlertMutationsUpdateAlertDefinitionActionsAlertAction struct {
+	// List of notification configuration IDs
 	ConfigurationIds []string `json:"configurationIds"`
-	Type             string   `json:"type"`
+	// Type of a notification service
+	Type string `json:"type"`
 }
 
 // GetConfigurationIds returns UpdateAlertDefinitionAlertMutationsUpdateAlertDefinitionActionsAlertAction.ConfigurationIds, and is useful for accessing the field via an interface.
@@ -746,6 +921,7 @@ func (v *UpdateAlertDefinitionAlertMutationsUpdateAlertDefinitionActionsAlertAct
 
 // UpdateAlertDefinitionAlertMutationsUpdateAlertDefinitionFlatConditionFlatAlertConditionExpression includes the requested fields of the GraphQL type FlatAlertConditionExpression.
 type UpdateAlertDefinitionAlertMutationsUpdateAlertDefinitionFlatConditionFlatAlertConditionExpression struct {
+	// Alert Condition Expression Tree Node ID
 	Id string `json:"id"`
 }
 
@@ -755,9 +931,17 @@ func (v *UpdateAlertDefinitionAlertMutationsUpdateAlertDefinitionFlatConditionFl
 }
 
 // UpdateAlertDefinitionAlertMutationsUpdateAlertDefinitionMuteInfo includes the requested fields of the GraphQL type AlertDefinitionMuteInfo.
+// The GraphQL type's documentation follows.
+//
+// Alert definitions can be muted for certain period of time or muted until resolved.
+//
+// If the muted is set to *true* and until attribute is not set meaning no notification will be sent until
+// all of the evaluations are set to **OK** state or alert definition is reset
 type UpdateAlertDefinitionAlertMutationsUpdateAlertDefinitionMuteInfo struct {
-	Muted bool   `json:"muted"`
-	Until string `json:"until"`
+	// When muted no notifications are sent
+	Muted bool `json:"muted"`
+	// Time until the mute expires in ISO-8601 date format - `2011-12-03T10:15:30Z` or `null` - muted until resolved
+	Until *string `json:"until"`
 }
 
 // GetMuted returns UpdateAlertDefinitionAlertMutationsUpdateAlertDefinitionMuteInfo.Muted, and is useful for accessing the field via an interface.
@@ -766,12 +950,13 @@ func (v *UpdateAlertDefinitionAlertMutationsUpdateAlertDefinitionMuteInfo) GetMu
 }
 
 // GetUntil returns UpdateAlertDefinitionAlertMutationsUpdateAlertDefinitionMuteInfo.Until, and is useful for accessing the field via an interface.
-func (v *UpdateAlertDefinitionAlertMutationsUpdateAlertDefinitionMuteInfo) GetUntil() string {
+func (v *UpdateAlertDefinitionAlertMutationsUpdateAlertDefinitionMuteInfo) GetUntil() *string {
 	return v.Until
 }
 
 // UpdateAlertDefinitionResponse is returned by UpdateAlertDefinition on success.
 type UpdateAlertDefinitionResponse struct {
+	// Mutations related to Alerting.
 	AlertMutations UpdateAlertDefinitionAlertMutations `json:"alertMutations"`
 }
 
@@ -801,18 +986,18 @@ func (v *__DeleteAlertDefinitionInput) GetDeleteAlertDefinitionId() string {
 // __GetAlertDefinitionsInput is used internally by genqlient
 type __GetAlertDefinitionsInput struct {
 	Filter AlertFilterInput `json:"filter"`
-	Paging PagingInput      `json:"paging"`
-	SortBy SortInput        `json:"sortBy"`
+	Paging *PagingInput     `json:"paging"`
+	SortBy *SortInput       `json:"sortBy"`
 }
 
 // GetFilter returns __GetAlertDefinitionsInput.Filter, and is useful for accessing the field via an interface.
 func (v *__GetAlertDefinitionsInput) GetFilter() AlertFilterInput { return v.Filter }
 
 // GetPaging returns __GetAlertDefinitionsInput.Paging, and is useful for accessing the field via an interface.
-func (v *__GetAlertDefinitionsInput) GetPaging() PagingInput { return v.Paging }
+func (v *__GetAlertDefinitionsInput) GetPaging() *PagingInput { return v.Paging }
 
 // GetSortBy returns __GetAlertDefinitionsInput.SortBy, and is useful for accessing the field via an interface.
-func (v *__GetAlertDefinitionsInput) GetSortBy() SortInput { return v.SortBy }
+func (v *__GetAlertDefinitionsInput) GetSortBy() *SortInput { return v.SortBy }
 
 // __UpdateAlertDefinitionInput is used internally by genqlient
 type __UpdateAlertDefinitionInput struct {
@@ -910,8 +1095,8 @@ func GetAlertDefinitions(
 	ctx context.Context,
 	client graphql.Client,
 	filter AlertFilterInput,
-	paging PagingInput,
-	sortBy SortInput,
+	paging *PagingInput,
+	sortBy *SortInput,
 ) (*GetAlertDefinitionsResponse, error) {
 	req := &graphql.Request{
 		OpName: "GetAlertDefinitions",

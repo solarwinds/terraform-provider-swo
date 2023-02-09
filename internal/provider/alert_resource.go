@@ -25,9 +25,10 @@ type AlertResource struct {
 }
 
 func (model *AlertResourceModel) ToAlertDefinitionInput() swoClient.AlertDefinitionInput {
+	description := model.Description.String()
 	return swoClient.AlertDefinitionInput{
 		Name:        model.Name.String(),
-		Description: model.Description.String(),
+		Description: &description,
 		Enabled:     model.Enabled.ValueBool(),
 		Severity:    swoClient.AlertSeverity(model.Severity.String()),
 		Actions:     []swoClient.AlertActionInput{},

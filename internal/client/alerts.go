@@ -38,7 +38,7 @@ func (as *AlertsService) Create(input AlertDefinitionInput) (*AlertDefinitionCre
 	alertDef := resp.AlertMutations.CreateAlertDefinition
 	log.Printf("Create alert success. Id: %s", alertDef.Id)
 
-	return &alertDef, nil
+	return alertDef, nil
 }
 
 // Returns the alert identified by the given Id.
@@ -47,12 +47,25 @@ func (as *AlertsService) Read(id string) (*AlertDefinitionRead, error) {
 
 	ctx := context.Background()
 	filter := AlertFilterInput{
-		Id: id,
+		Id: &id,
 	}
-	paging := PagingInput{}
-	sortBy := SortInput{}
 
-	resp, err := GetAlertDefinitions(ctx, as.client.gql, filter, paging, sortBy)
+	pagingFirst := 15
+	paging := PagingInput{
+		First: &pagingFirst,
+	}
+
+	sortDirection := SortDirectionDesc
+	sortBy := SortInput{
+		Sorts: []SortItemInput{
+			{
+				PropertyName: "id",
+				Direction:    &sortDirection,
+			},
+		},
+	}
+
+	resp, err := GetAlertDefinitions(ctx, as.client.gql, filter, &paging, &sortBy)
 
 	if err != nil {
 		return nil, err
