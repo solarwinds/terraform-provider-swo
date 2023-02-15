@@ -5,3 +5,8 @@ operations:
 - genqlient.graphql
 generated: ../internal/client/genqlient_generated.go
 optional: pointer
+bindings:
+  DateTime:
+    type: time.Time
+  JSON:
+    type: any

@@ -17,19 +17,17 @@ const (
 	defaultMediaType      = "application/json"
 	defaultRequestTimeout = 30 * time.Second
 	clientIdentifier      = "swo-api-go"
-	requestIdentifier     = "swo-request-id"
+	requestIdentifier     = "x-request-id"
 )
 
 // ServiceAccessor defines an interface for talking to via domain-specific service constructs
 type ServiceAccessor interface {
 	AlertsService() AlertsCommunicator
+	NotificationsService() NotificationsCommunicator
 }
 
 // Client implements ServiceAccessor
 type Client struct {
-	// SWO api key used for making remote requests to the SWO platform.
-	apiToken string
-
 	// Option settings
 	baseURL        *url.URL
 	debugMode      bool
@@ -41,13 +39,15 @@ type Client struct {
 	gql graphql.Client
 
 	// Service accessors
-	alertsService AlertsCommunicator
+	alertsService        AlertsCommunicator
+	notificationsService NotificationsCommunicator
 }
 
 // apiTokentAuthTransport is an http.RoundTripper that authenticates all requests
 // using Bearer token authentication with a SWO api key.
 type apiTokenAuthTransport struct {
-	client *Client // SWO client object.
+	client   *Client
+	apiToken string
 }
 
 // Returns a new SWO API client with functional override options.
@@ -65,15 +65,15 @@ func NewClient(apiToken string, opts ...ClientOption) *Client {
 	}
 
 	swoClient := &Client{
-		apiToken: apiToken,
-		baseURL:  baseURL,
+		baseURL:        baseURL,
+		requestTimeout: defaultRequestTimeout,
 	}
 
 	// Set any user options that were provided.
 	for _, opt := range opts {
 		err = opt(swoClient)
 		if err != nil {
-			log.Error(fmt.Sprintf("Client option error. Fallback to default value: %s", err))
+			log.Error(fmt.Errorf("client option error. fallback to default value: %s", err))
 		}
 	}
 
@@ -90,11 +90,13 @@ func NewClient(apiToken string, opts ...ClientOption) *Client {
 	swoClient.gql = graphql.NewClient(swoClient.baseURL.String(), &http.Client{
 		Timeout: swoClient.requestTimeout,
 		Transport: &apiTokenAuthTransport{
-			client: swoClient,
+			apiToken: apiToken,
+			client:   swoClient,
 		},
 	})
 
 	swoClient.alertsService = NewAlertsService(swoClient)
+	swoClient.notificationsService = NewNotificationsService(swoClient)
 
 	return swoClient
 }
@@ -105,11 +107,9 @@ func (t *apiTokenAuthTransport) RoundTrip(request *http.Request) (*http.Response
 	// See https://pkg.go.dev/net/http#RoundTripper for more details.
 	clone := request.Clone(context.Background())
 
-	clone.Header.Set("Authorization", "Bearer "+t.client.apiToken)
+	clone.Header.Set("Authorization", "Bearer "+t.apiToken)
 	clone.Header.Set("User-Agent", t.client.completeUserAgentString())
 	clone.Header.Set(requestIdentifier, uuid.NewString())
-	// request.Header.Set("Accept", defaultMediaType)
-	// request.Header.Set("Content-Type", defaultMediaType)
 
 	if t.client.debugMode {
 		dumpRequest(clone)
@@ -127,6 +127,11 @@ func (t *apiTokenAuthTransport) RoundTrip(request *http.Request) (*http.Response
 // A subset of the API that deals with Alerts.
 func (c *Client) AlertsService() AlertsCommunicator {
 	return c.alertsService
+}
+
+// A subset of the API that deals with Notifications.
+func (c *Client) NotificationsService() NotificationsCommunicator {
+	return c.notificationsService
 }
 
 // Returns the string that will be placed in the User-Agent header. It ensures

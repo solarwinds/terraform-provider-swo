@@ -15,7 +15,7 @@ const (
 	providerConfig = `
 provider "swo" {
 	api_token             = "123xyz"
-	request_retry_timeout = 10
+	request_timeout = 10
 }
 `
 )
