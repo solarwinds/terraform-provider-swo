@@ -33,7 +33,7 @@ jobs:
       # - store_test_results:
       #     path: /tmp/test-reports
 
-# Invoke jobs via workflows.
+# Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
 workflows:
   sample: # This is the name of the workflow, feel free to change it to better match your workflow.
