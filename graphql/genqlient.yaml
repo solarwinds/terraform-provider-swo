@@ -2,7 +2,8 @@
 # https://github.com/Khan/genqlient/blob/main/docs/genqlient.yaml
 schema: schema.graphql
 operations:
-- genqlient.graphql
+- alerts.graphql
+- notifications.graphql
 generated: ../internal/client/genqlient_generated.go
 optional: pointer
 bindings:
