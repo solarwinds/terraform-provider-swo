@@ -1,7 +1,6 @@
 *.dll
 *.exe
 .DS_Store
-terraform-provider-swo
 example.tf
 terraform.tfplan
 terraform.tfstate
@@ -25,6 +24,7 @@ website/node_modules
 *.iml
 *.test
 *.iml
+.vscode
 
 website/vendor
 

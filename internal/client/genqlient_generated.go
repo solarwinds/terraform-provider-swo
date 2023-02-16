@@ -4,6 +4,7 @@ package client
 
 import (
 	"context"
+	"time"
 
 	"github.com/Khan/genqlient/graphql"
 )
@@ -421,6 +422,116 @@ func (v *CreateAlertDefinitionResponse) GetAlertMutations() CreateAlertDefinitio
 	return v.AlertMutations
 }
 
+// CreateNotificationCreateNotificationServiceConfigurationCreateNotificationServiceConfigurationResponse includes the requested fields of the GraphQL type CreateNotificationServiceConfigurationResponse.
+type CreateNotificationCreateNotificationServiceConfigurationCreateNotificationServiceConfigurationResponse struct {
+	Code          string                                                                                                                                  `json:"code"`
+	Success       bool                                                                                                                                    `json:"success"`
+	Message       string                                                                                                                                  `json:"message"`
+	Configuration *CreateNotificationCreateNotificationServiceConfigurationCreateNotificationServiceConfigurationResponseConfigurationNotificationService `json:"configuration"`
+}
+
+// GetCode returns CreateNotificationCreateNotificationServiceConfigurationCreateNotificationServiceConfigurationResponse.Code, and is useful for accessing the field via an interface.
+func (v *CreateNotificationCreateNotificationServiceConfigurationCreateNotificationServiceConfigurationResponse) GetCode() string {
+	return v.Code
+}
+
+// GetSuccess returns CreateNotificationCreateNotificationServiceConfigurationCreateNotificationServiceConfigurationResponse.Success, and is useful for accessing the field via an interface.
+func (v *CreateNotificationCreateNotificationServiceConfigurationCreateNotificationServiceConfigurationResponse) GetSuccess() bool {
+	return v.Success
+}
+
+// GetMessage returns CreateNotificationCreateNotificationServiceConfigurationCreateNotificationServiceConfigurationResponse.Message, and is useful for accessing the field via an interface.
+func (v *CreateNotificationCreateNotificationServiceConfigurationCreateNotificationServiceConfigurationResponse) GetMessage() string {
+	return v.Message
+}
+
+// GetConfiguration returns CreateNotificationCreateNotificationServiceConfigurationCreateNotificationServiceConfigurationResponse.Configuration, and is useful for accessing the field via an interface.
+func (v *CreateNotificationCreateNotificationServiceConfigurationCreateNotificationServiceConfigurationResponse) GetConfiguration() *CreateNotificationCreateNotificationServiceConfigurationCreateNotificationServiceConfigurationResponseConfigurationNotificationService {
+	return v.Configuration
+}
+
+// CreateNotificationCreateNotificationServiceConfigurationCreateNotificationServiceConfigurationResponseConfigurationNotificationService includes the requested fields of the GraphQL type NotificationService.
+type CreateNotificationCreateNotificationServiceConfigurationCreateNotificationServiceConfigurationResponseConfigurationNotificationService struct {
+	// The ID of the NotificationService.
+	Id string `json:"id"`
+	// The type of the NotificationService.
+	Type string `json:"type"`
+	// The title of the NotificationService.
+	Title string `json:"title"`
+	// The settings of the NotificationService.
+	Settings *any `json:"settings"`
+	// The created time of the NotificationService.
+	CreatedAt time.Time `json:"createdAt"`
+	// The createdBy user ID of the NotificationService.
+	CreatedBy string `json:"createdBy"`
+	// The description of the NotificationService.
+	Description *string `json:"description"`
+}
+
+// GetId returns CreateNotificationCreateNotificationServiceConfigurationCreateNotificationServiceConfigurationResponseConfigurationNotificationService.Id, and is useful for accessing the field via an interface.
+func (v *CreateNotificationCreateNotificationServiceConfigurationCreateNotificationServiceConfigurationResponseConfigurationNotificationService) GetId() string {
+	return v.Id
+}
+
+// GetType returns CreateNotificationCreateNotificationServiceConfigurationCreateNotificationServiceConfigurationResponseConfigurationNotificationService.Type, and is useful for accessing the field via an interface.
+func (v *CreateNotificationCreateNotificationServiceConfigurationCreateNotificationServiceConfigurationResponseConfigurationNotificationService) GetType() string {
+	return v.Type
+}
+
+// GetTitle returns CreateNotificationCreateNotificationServiceConfigurationCreateNotificationServiceConfigurationResponseConfigurationNotificationService.Title, and is useful for accessing the field via an interface.
+func (v *CreateNotificationCreateNotificationServiceConfigurationCreateNotificationServiceConfigurationResponseConfigurationNotificationService) GetTitle() string {
+	return v.Title
+}
+
+// GetSettings returns CreateNotificationCreateNotificationServiceConfigurationCreateNotificationServiceConfigurationResponseConfigurationNotificationService.Settings, and is useful for accessing the field via an interface.
+func (v *CreateNotificationCreateNotificationServiceConfigurationCreateNotificationServiceConfigurationResponseConfigurationNotificationService) GetSettings() *any {
+	return v.Settings
+}
+
+// GetCreatedAt returns CreateNotificationCreateNotificationServiceConfigurationCreateNotificationServiceConfigurationResponseConfigurationNotificationService.CreatedAt, and is useful for accessing the field via an interface.
+func (v *CreateNotificationCreateNotificationServiceConfigurationCreateNotificationServiceConfigurationResponseConfigurationNotificationService) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetCreatedBy returns CreateNotificationCreateNotificationServiceConfigurationCreateNotificationServiceConfigurationResponseConfigurationNotificationService.CreatedBy, and is useful for accessing the field via an interface.
+func (v *CreateNotificationCreateNotificationServiceConfigurationCreateNotificationServiceConfigurationResponseConfigurationNotificationService) GetCreatedBy() string {
+	return v.CreatedBy
+}
+
+// GetDescription returns CreateNotificationCreateNotificationServiceConfigurationCreateNotificationServiceConfigurationResponseConfigurationNotificationService.Description, and is useful for accessing the field via an interface.
+func (v *CreateNotificationCreateNotificationServiceConfigurationCreateNotificationServiceConfigurationResponseConfigurationNotificationService) GetDescription() *string {
+	return v.Description
+}
+
+// CreateNotificationResponse is returned by CreateNotification on success.
+type CreateNotificationResponse struct {
+	CreateNotificationServiceConfiguration CreateNotificationCreateNotificationServiceConfigurationCreateNotificationServiceConfigurationResponse `json:"createNotificationServiceConfiguration"`
+}
+
+// GetCreateNotificationServiceConfiguration returns CreateNotificationResponse.CreateNotificationServiceConfiguration, and is useful for accessing the field via an interface.
+func (v *CreateNotificationResponse) GetCreateNotificationServiceConfiguration() CreateNotificationCreateNotificationServiceConfigurationCreateNotificationServiceConfigurationResponse {
+	return v.CreateNotificationServiceConfiguration
+}
+
+type CreateNotificationServiceConfigurationInput struct {
+	Type        string  `json:"type"`
+	Title       string  `json:"title"`
+	Description *string `json:"description"`
+	Settings    any     `json:"settings"`
+}
+
+// GetType returns CreateNotificationServiceConfigurationInput.Type, and is useful for accessing the field via an interface.
+func (v *CreateNotificationServiceConfigurationInput) GetType() string { return v.Type }
+
+// GetTitle returns CreateNotificationServiceConfigurationInput.Title, and is useful for accessing the field via an interface.
+func (v *CreateNotificationServiceConfigurationInput) GetTitle() string { return v.Title }
+
+// GetDescription returns CreateNotificationServiceConfigurationInput.Description, and is useful for accessing the field via an interface.
+func (v *CreateNotificationServiceConfigurationInput) GetDescription() *string { return v.Description }
+
+// GetSettings returns CreateNotificationServiceConfigurationInput.Settings, and is useful for accessing the field via an interface.
+func (v *CreateNotificationServiceConfigurationInput) GetSettings() any { return v.Settings }
+
 // DeleteAlertDefinitionAlertMutations includes the requested fields of the GraphQL type AlertMutations.
 type DeleteAlertDefinitionAlertMutations struct {
 	// Deletes an Alert definition by ID and returns the ID on success, or null when no such Alert definition exists.
@@ -443,6 +554,45 @@ type DeleteAlertDefinitionResponse struct {
 func (v *DeleteAlertDefinitionResponse) GetAlertMutations() DeleteAlertDefinitionAlertMutations {
 	return v.AlertMutations
 }
+
+// DeleteNotificationDeleteNotificationServiceConfigurationDeleteNotificationServiceConfigurationResponse includes the requested fields of the GraphQL type DeleteNotificationServiceConfigurationResponse.
+type DeleteNotificationDeleteNotificationServiceConfigurationDeleteNotificationServiceConfigurationResponse struct {
+	Success bool   `json:"success"`
+	Code    string `json:"code"`
+	Message string `json:"message"`
+}
+
+// GetSuccess returns DeleteNotificationDeleteNotificationServiceConfigurationDeleteNotificationServiceConfigurationResponse.Success, and is useful for accessing the field via an interface.
+func (v *DeleteNotificationDeleteNotificationServiceConfigurationDeleteNotificationServiceConfigurationResponse) GetSuccess() bool {
+	return v.Success
+}
+
+// GetCode returns DeleteNotificationDeleteNotificationServiceConfigurationDeleteNotificationServiceConfigurationResponse.Code, and is useful for accessing the field via an interface.
+func (v *DeleteNotificationDeleteNotificationServiceConfigurationDeleteNotificationServiceConfigurationResponse) GetCode() string {
+	return v.Code
+}
+
+// GetMessage returns DeleteNotificationDeleteNotificationServiceConfigurationDeleteNotificationServiceConfigurationResponse.Message, and is useful for accessing the field via an interface.
+func (v *DeleteNotificationDeleteNotificationServiceConfigurationDeleteNotificationServiceConfigurationResponse) GetMessage() string {
+	return v.Message
+}
+
+// DeleteNotificationResponse is returned by DeleteNotification on success.
+type DeleteNotificationResponse struct {
+	DeleteNotificationServiceConfiguration *DeleteNotificationDeleteNotificationServiceConfigurationDeleteNotificationServiceConfigurationResponse `json:"deleteNotificationServiceConfiguration"`
+}
+
+// GetDeleteNotificationServiceConfiguration returns DeleteNotificationResponse.DeleteNotificationServiceConfiguration, and is useful for accessing the field via an interface.
+func (v *DeleteNotificationResponse) GetDeleteNotificationServiceConfiguration() *DeleteNotificationDeleteNotificationServiceConfigurationDeleteNotificationServiceConfigurationResponse {
+	return v.DeleteNotificationServiceConfiguration
+}
+
+type DeleteNotificationServiceConfigurationInput struct {
+	Id string `json:"id"`
+}
+
+// GetId returns DeleteNotificationServiceConfigurationInput.Id, and is useful for accessing the field via an interface.
+func (v *DeleteNotificationServiceConfigurationInput) GetId() string { return v.Id }
 
 // Allowed entity filtering operators
 type FilterOperation string
@@ -742,6 +892,87 @@ func (v *GetAlertDefinitionsResponse) GetAlertQueries() GetAlertDefinitionsAlert
 	return v.AlertQueries
 }
 
+// GetNotificationResponse is returned by GetNotification on success.
+type GetNotificationResponse struct {
+	User GetNotificationUserAuthenticatedUser `json:"user"`
+}
+
+// GetUser returns GetNotificationResponse.User, and is useful for accessing the field via an interface.
+func (v *GetNotificationResponse) GetUser() GetNotificationUserAuthenticatedUser { return v.User }
+
+// GetNotificationUserAuthenticatedUser includes the requested fields of the GraphQL type AuthenticatedUser.
+type GetNotificationUserAuthenticatedUser struct {
+	CurrentOrganization GetNotificationUserAuthenticatedUserCurrentOrganization `json:"currentOrganization"`
+}
+
+// GetCurrentOrganization returns GetNotificationUserAuthenticatedUser.CurrentOrganization, and is useful for accessing the field via an interface.
+func (v *GetNotificationUserAuthenticatedUser) GetCurrentOrganization() GetNotificationUserAuthenticatedUserCurrentOrganization {
+	return v.CurrentOrganization
+}
+
+// GetNotificationUserAuthenticatedUserCurrentOrganization includes the requested fields of the GraphQL type Organization.
+type GetNotificationUserAuthenticatedUserCurrentOrganization struct {
+	NotificationServiceConfiguration GetNotificationUserAuthenticatedUserCurrentOrganizationNotificationServiceConfigurationNotificationService `json:"notificationServiceConfiguration"`
+}
+
+// GetNotificationServiceConfiguration returns GetNotificationUserAuthenticatedUserCurrentOrganization.NotificationServiceConfiguration, and is useful for accessing the field via an interface.
+func (v *GetNotificationUserAuthenticatedUserCurrentOrganization) GetNotificationServiceConfiguration() GetNotificationUserAuthenticatedUserCurrentOrganizationNotificationServiceConfigurationNotificationService {
+	return v.NotificationServiceConfiguration
+}
+
+// GetNotificationUserAuthenticatedUserCurrentOrganizationNotificationServiceConfigurationNotificationService includes the requested fields of the GraphQL type NotificationService.
+type GetNotificationUserAuthenticatedUserCurrentOrganizationNotificationServiceConfigurationNotificationService struct {
+	// The ID of the NotificationService.
+	Id string `json:"id"`
+	// The type of the NotificationService.
+	Type string `json:"type"`
+	// The title of the NotificationService.
+	Title string `json:"title"`
+	// The settings of the NotificationService.
+	Settings *any `json:"settings"`
+	// The created time of the NotificationService.
+	CreatedAt time.Time `json:"createdAt"`
+	// The createdBy user ID of the NotificationService.
+	CreatedBy string `json:"createdBy"`
+	// The description of the NotificationService.
+	Description *string `json:"description"`
+}
+
+// GetId returns GetNotificationUserAuthenticatedUserCurrentOrganizationNotificationServiceConfigurationNotificationService.Id, and is useful for accessing the field via an interface.
+func (v *GetNotificationUserAuthenticatedUserCurrentOrganizationNotificationServiceConfigurationNotificationService) GetId() string {
+	return v.Id
+}
+
+// GetType returns GetNotificationUserAuthenticatedUserCurrentOrganizationNotificationServiceConfigurationNotificationService.Type, and is useful for accessing the field via an interface.
+func (v *GetNotificationUserAuthenticatedUserCurrentOrganizationNotificationServiceConfigurationNotificationService) GetType() string {
+	return v.Type
+}
+
+// GetTitle returns GetNotificationUserAuthenticatedUserCurrentOrganizationNotificationServiceConfigurationNotificationService.Title, and is useful for accessing the field via an interface.
+func (v *GetNotificationUserAuthenticatedUserCurrentOrganizationNotificationServiceConfigurationNotificationService) GetTitle() string {
+	return v.Title
+}
+
+// GetSettings returns GetNotificationUserAuthenticatedUserCurrentOrganizationNotificationServiceConfigurationNotificationService.Settings, and is useful for accessing the field via an interface.
+func (v *GetNotificationUserAuthenticatedUserCurrentOrganizationNotificationServiceConfigurationNotificationService) GetSettings() *any {
+	return v.Settings
+}
+
+// GetCreatedAt returns GetNotificationUserAuthenticatedUserCurrentOrganizationNotificationServiceConfigurationNotificationService.CreatedAt, and is useful for accessing the field via an interface.
+func (v *GetNotificationUserAuthenticatedUserCurrentOrganizationNotificationServiceConfigurationNotificationService) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetCreatedBy returns GetNotificationUserAuthenticatedUserCurrentOrganizationNotificationServiceConfigurationNotificationService.CreatedBy, and is useful for accessing the field via an interface.
+func (v *GetNotificationUserAuthenticatedUserCurrentOrganizationNotificationServiceConfigurationNotificationService) GetCreatedBy() string {
+	return v.CreatedBy
+}
+
+// GetDescription returns GetNotificationUserAuthenticatedUserCurrentOrganizationNotificationServiceConfigurationNotificationService.Description, and is useful for accessing the field via an interface.
+func (v *GetNotificationUserAuthenticatedUserCurrentOrganizationNotificationServiceConfigurationNotificationService) GetDescription() *string {
+	return v.Description
+}
+
 // Paging input for paginated queries. If not specified the first page of the results is returned and it will contain
 // up to X items where X is a value configured in the system.
 type PagingInput struct {
@@ -965,6 +1196,102 @@ func (v *UpdateAlertDefinitionResponse) GetAlertMutations() UpdateAlertDefinitio
 	return v.AlertMutations
 }
 
+// UpdateNotificationResponse is returned by UpdateNotification on success.
+type UpdateNotificationResponse struct {
+	UpdateNotificationServiceConfiguration *UpdateNotificationUpdateNotificationServiceConfigurationUpdateNotificationServiceConfigurationResponse `json:"updateNotificationServiceConfiguration"`
+}
+
+// GetUpdateNotificationServiceConfiguration returns UpdateNotificationResponse.UpdateNotificationServiceConfiguration, and is useful for accessing the field via an interface.
+func (v *UpdateNotificationResponse) GetUpdateNotificationServiceConfiguration() *UpdateNotificationUpdateNotificationServiceConfigurationUpdateNotificationServiceConfigurationResponse {
+	return v.UpdateNotificationServiceConfiguration
+}
+
+type UpdateNotificationServiceConfigurationInput struct {
+	Id          string  `json:"id"`
+	Title       *string `json:"title"`
+	Description *string `json:"description"`
+	Settings    *any    `json:"settings"`
+}
+
+// GetId returns UpdateNotificationServiceConfigurationInput.Id, and is useful for accessing the field via an interface.
+func (v *UpdateNotificationServiceConfigurationInput) GetId() string { return v.Id }
+
+// GetTitle returns UpdateNotificationServiceConfigurationInput.Title, and is useful for accessing the field via an interface.
+func (v *UpdateNotificationServiceConfigurationInput) GetTitle() *string { return v.Title }
+
+// GetDescription returns UpdateNotificationServiceConfigurationInput.Description, and is useful for accessing the field via an interface.
+func (v *UpdateNotificationServiceConfigurationInput) GetDescription() *string { return v.Description }
+
+// GetSettings returns UpdateNotificationServiceConfigurationInput.Settings, and is useful for accessing the field via an interface.
+func (v *UpdateNotificationServiceConfigurationInput) GetSettings() *any { return v.Settings }
+
+// UpdateNotificationUpdateNotificationServiceConfigurationUpdateNotificationServiceConfigurationResponse includes the requested fields of the GraphQL type UpdateNotificationServiceConfigurationResponse.
+type UpdateNotificationUpdateNotificationServiceConfigurationUpdateNotificationServiceConfigurationResponse struct {
+	Code          string                                                                                                                                  `json:"code"`
+	Success       bool                                                                                                                                    `json:"success"`
+	Message       string                                                                                                                                  `json:"message"`
+	Configuration *UpdateNotificationUpdateNotificationServiceConfigurationUpdateNotificationServiceConfigurationResponseConfigurationNotificationService `json:"configuration"`
+}
+
+// GetCode returns UpdateNotificationUpdateNotificationServiceConfigurationUpdateNotificationServiceConfigurationResponse.Code, and is useful for accessing the field via an interface.
+func (v *UpdateNotificationUpdateNotificationServiceConfigurationUpdateNotificationServiceConfigurationResponse) GetCode() string {
+	return v.Code
+}
+
+// GetSuccess returns UpdateNotificationUpdateNotificationServiceConfigurationUpdateNotificationServiceConfigurationResponse.Success, and is useful for accessing the field via an interface.
+func (v *UpdateNotificationUpdateNotificationServiceConfigurationUpdateNotificationServiceConfigurationResponse) GetSuccess() bool {
+	return v.Success
+}
+
+// GetMessage returns UpdateNotificationUpdateNotificationServiceConfigurationUpdateNotificationServiceConfigurationResponse.Message, and is useful for accessing the field via an interface.
+func (v *UpdateNotificationUpdateNotificationServiceConfigurationUpdateNotificationServiceConfigurationResponse) GetMessage() string {
+	return v.Message
+}
+
+// GetConfiguration returns UpdateNotificationUpdateNotificationServiceConfigurationUpdateNotificationServiceConfigurationResponse.Configuration, and is useful for accessing the field via an interface.
+func (v *UpdateNotificationUpdateNotificationServiceConfigurationUpdateNotificationServiceConfigurationResponse) GetConfiguration() *UpdateNotificationUpdateNotificationServiceConfigurationUpdateNotificationServiceConfigurationResponseConfigurationNotificationService {
+	return v.Configuration
+}
+
+// UpdateNotificationUpdateNotificationServiceConfigurationUpdateNotificationServiceConfigurationResponseConfigurationNotificationService includes the requested fields of the GraphQL type NotificationService.
+type UpdateNotificationUpdateNotificationServiceConfigurationUpdateNotificationServiceConfigurationResponseConfigurationNotificationService struct {
+	// The ID of the NotificationService.
+	Id string `json:"id"`
+	// The type of the NotificationService.
+	Type string `json:"type"`
+	// The title of the NotificationService.
+	Title string `json:"title"`
+	// The settings of the NotificationService.
+	Settings *any `json:"settings"`
+	// The description of the NotificationService.
+	Description *string `json:"description"`
+}
+
+// GetId returns UpdateNotificationUpdateNotificationServiceConfigurationUpdateNotificationServiceConfigurationResponseConfigurationNotificationService.Id, and is useful for accessing the field via an interface.
+func (v *UpdateNotificationUpdateNotificationServiceConfigurationUpdateNotificationServiceConfigurationResponseConfigurationNotificationService) GetId() string {
+	return v.Id
+}
+
+// GetType returns UpdateNotificationUpdateNotificationServiceConfigurationUpdateNotificationServiceConfigurationResponseConfigurationNotificationService.Type, and is useful for accessing the field via an interface.
+func (v *UpdateNotificationUpdateNotificationServiceConfigurationUpdateNotificationServiceConfigurationResponseConfigurationNotificationService) GetType() string {
+	return v.Type
+}
+
+// GetTitle returns UpdateNotificationUpdateNotificationServiceConfigurationUpdateNotificationServiceConfigurationResponseConfigurationNotificationService.Title, and is useful for accessing the field via an interface.
+func (v *UpdateNotificationUpdateNotificationServiceConfigurationUpdateNotificationServiceConfigurationResponseConfigurationNotificationService) GetTitle() string {
+	return v.Title
+}
+
+// GetSettings returns UpdateNotificationUpdateNotificationServiceConfigurationUpdateNotificationServiceConfigurationResponseConfigurationNotificationService.Settings, and is useful for accessing the field via an interface.
+func (v *UpdateNotificationUpdateNotificationServiceConfigurationUpdateNotificationServiceConfigurationResponseConfigurationNotificationService) GetSettings() *any {
+	return v.Settings
+}
+
+// GetDescription returns UpdateNotificationUpdateNotificationServiceConfigurationUpdateNotificationServiceConfigurationResponseConfigurationNotificationService.Description, and is useful for accessing the field via an interface.
+func (v *UpdateNotificationUpdateNotificationServiceConfigurationUpdateNotificationServiceConfigurationResponseConfigurationNotificationService) GetDescription() *string {
+	return v.Description
+}
+
 // __CreateAlertDefinitionInput is used internally by genqlient
 type __CreateAlertDefinitionInput struct {
 	Definition AlertDefinitionInput `json:"definition"`
@@ -972,6 +1299,16 @@ type __CreateAlertDefinitionInput struct {
 
 // GetDefinition returns __CreateAlertDefinitionInput.Definition, and is useful for accessing the field via an interface.
 func (v *__CreateAlertDefinitionInput) GetDefinition() AlertDefinitionInput { return v.Definition }
+
+// __CreateNotificationInput is used internally by genqlient
+type __CreateNotificationInput struct {
+	Configuration CreateNotificationServiceConfigurationInput `json:"configuration"`
+}
+
+// GetConfiguration returns __CreateNotificationInput.Configuration, and is useful for accessing the field via an interface.
+func (v *__CreateNotificationInput) GetConfiguration() CreateNotificationServiceConfigurationInput {
+	return v.Configuration
+}
 
 // __DeleteAlertDefinitionInput is used internally by genqlient
 type __DeleteAlertDefinitionInput struct {
@@ -981,6 +1318,16 @@ type __DeleteAlertDefinitionInput struct {
 // GetDeleteAlertDefinitionId returns __DeleteAlertDefinitionInput.DeleteAlertDefinitionId, and is useful for accessing the field via an interface.
 func (v *__DeleteAlertDefinitionInput) GetDeleteAlertDefinitionId() string {
 	return v.DeleteAlertDefinitionId
+}
+
+// __DeleteNotificationInput is used internally by genqlient
+type __DeleteNotificationInput struct {
+	Input DeleteNotificationServiceConfigurationInput `json:"input"`
+}
+
+// GetInput returns __DeleteNotificationInput.Input, and is useful for accessing the field via an interface.
+func (v *__DeleteNotificationInput) GetInput() DeleteNotificationServiceConfigurationInput {
+	return v.Input
 }
 
 // __GetAlertDefinitionsInput is used internally by genqlient
@@ -999,6 +1346,18 @@ func (v *__GetAlertDefinitionsInput) GetPaging() *PagingInput { return v.Paging 
 // GetSortBy returns __GetAlertDefinitionsInput.SortBy, and is useful for accessing the field via an interface.
 func (v *__GetAlertDefinitionsInput) GetSortBy() *SortInput { return v.SortBy }
 
+// __GetNotificationInput is used internally by genqlient
+type __GetNotificationInput struct {
+	ConfigurationId   string `json:"configurationId"`
+	ConfigurationType string `json:"configurationType"`
+}
+
+// GetConfigurationId returns __GetNotificationInput.ConfigurationId, and is useful for accessing the field via an interface.
+func (v *__GetNotificationInput) GetConfigurationId() string { return v.ConfigurationId }
+
+// GetConfigurationType returns __GetNotificationInput.ConfigurationType, and is useful for accessing the field via an interface.
+func (v *__GetNotificationInput) GetConfigurationType() string { return v.ConfigurationType }
+
 // __UpdateAlertDefinitionInput is used internally by genqlient
 type __UpdateAlertDefinitionInput struct {
 	Definition              AlertDefinitionInput `json:"definition"`
@@ -1011,6 +1370,16 @@ func (v *__UpdateAlertDefinitionInput) GetDefinition() AlertDefinitionInput { re
 // GetUpdateAlertDefinitionId returns __UpdateAlertDefinitionInput.UpdateAlertDefinitionId, and is useful for accessing the field via an interface.
 func (v *__UpdateAlertDefinitionInput) GetUpdateAlertDefinitionId() string {
 	return v.UpdateAlertDefinitionId
+}
+
+// __UpdateNotificationInput is used internally by genqlient
+type __UpdateNotificationInput struct {
+	Configuration UpdateNotificationServiceConfigurationInput `json:"configuration"`
+}
+
+// GetConfiguration returns __UpdateNotificationInput.Configuration, and is useful for accessing the field via an interface.
+func (v *__UpdateNotificationInput) GetConfiguration() UpdateNotificationServiceConfigurationInput {
+	return v.Configuration
 }
 
 func CreateAlertDefinition(
@@ -1059,6 +1428,49 @@ mutation CreateAlertDefinition ($definition: AlertDefinitionInput!) {
 	return &data, err
 }
 
+func CreateNotification(
+	ctx context.Context,
+	client graphql.Client,
+	configuration CreateNotificationServiceConfigurationInput,
+) (*CreateNotificationResponse, error) {
+	req := &graphql.Request{
+		OpName: "CreateNotification",
+		Query: `
+mutation CreateNotification ($configuration: createNotificationServiceConfigurationInput!) {
+	createNotificationServiceConfiguration(configuration: $configuration) {
+		code
+		success
+		message
+		configuration {
+			id
+			type
+			title
+			settings
+			createdAt
+			createdBy
+			description
+		}
+	}
+}
+`,
+		Variables: &__CreateNotificationInput{
+			Configuration: configuration,
+		},
+	}
+	var err error
+
+	var data CreateNotificationResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
 func DeleteAlertDefinition(
 	ctx context.Context,
 	client graphql.Client,
@@ -1080,6 +1492,40 @@ mutation DeleteAlertDefinition ($deleteAlertDefinitionId: ID!) {
 	var err error
 
 	var data DeleteAlertDefinitionResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+func DeleteNotification(
+	ctx context.Context,
+	client graphql.Client,
+	input DeleteNotificationServiceConfigurationInput,
+) (*DeleteNotificationResponse, error) {
+	req := &graphql.Request{
+		OpName: "DeleteNotification",
+		Query: `
+mutation DeleteNotification ($input: DeleteNotificationServiceConfigurationInput!) {
+	deleteNotificationServiceConfiguration(input: $input) {
+		success
+		code
+		message
+	}
+}
+`,
+		Variables: &__DeleteNotificationInput{
+			Input: input,
+		},
+	}
+	var err error
+
+	var data DeleteNotificationResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
@@ -1163,6 +1609,50 @@ query GetAlertDefinitions ($filter: AlertFilterInput!, $paging: PagingInput, $so
 	return &data, err
 }
 
+func GetNotification(
+	ctx context.Context,
+	client graphql.Client,
+	configurationId string,
+	configurationType string,
+) (*GetNotificationResponse, error) {
+	req := &graphql.Request{
+		OpName: "GetNotification",
+		Query: `
+query GetNotification ($configurationId: String!, $configurationType: String!) {
+	user {
+		currentOrganization {
+			notificationServiceConfiguration(configurationId: $configurationId, configurationType: $configurationType) {
+				id
+				type
+				title
+				settings
+				createdAt
+				createdBy
+				description
+			}
+		}
+	}
+}
+`,
+		Variables: &__GetNotificationInput{
+			ConfigurationId:   configurationId,
+			ConfigurationType: configurationType,
+		},
+	}
+	var err error
+
+	var data GetNotificationResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
 func UpdateAlertDefinition(
 	ctx context.Context,
 	client graphql.Client,
@@ -1208,6 +1698,47 @@ mutation UpdateAlertDefinition ($definition: AlertDefinitionInput!, $updateAlert
 	var err error
 
 	var data UpdateAlertDefinitionResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+func UpdateNotification(
+	ctx context.Context,
+	client graphql.Client,
+	configuration UpdateNotificationServiceConfigurationInput,
+) (*UpdateNotificationResponse, error) {
+	req := &graphql.Request{
+		OpName: "UpdateNotification",
+		Query: `
+mutation UpdateNotification ($configuration: UpdateNotificationServiceConfigurationInput!) {
+	updateNotificationServiceConfiguration(input: $configuration) {
+		code
+		success
+		message
+		configuration {
+			id
+			type
+			title
+			settings
+			description
+		}
+	}
+}
+`,
+		Variables: &__UpdateNotificationInput{
+			Configuration: configuration,
+		},
+	}
+	var err error
+
+	var data UpdateNotificationResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(

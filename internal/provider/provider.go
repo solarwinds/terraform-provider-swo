@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -28,9 +29,9 @@ type SwoProvider struct {
 
 // SwoProviderModel describes the provider data model.
 type SwoProviderModel struct {
-	ApiToken            types.String `tfsdk:"api_token"`
-	RequestRetryTimeout types.Number `tfsdk:"request_retry_timeout"`
-	DebugMode           types.Bool   `tfsdk:"debug_mode"`
+	ApiToken       types.String `tfsdk:"api_token"`
+	RequestTimeout types.Int64  `tfsdk:"request_timeout"`
+	DebugMode      types.Bool   `tfsdk:"debug_mode"`
 }
 
 func (p *SwoProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
@@ -50,9 +51,9 @@ func (p *SwoProvider) Schema(ctx context.Context, req provider.SchemaRequest, re
 				Sensitive:   true,
 				Description: fmt.Sprintf("The authentication token for the %s account.", envvar.AppName),
 			},
-			"request_retry_timeout": schema.NumberAttribute{
+			"request_timeout": schema.Int64Attribute{
 				Optional:    true,
-				Description: "The request retry timeout period. Specify 0 for no retries. Default is 30 seconds.",
+				Description: "The request timeout period in seconds. Default is 30 seconds.",
 			},
 			"debug_mode": schema.BoolAttribute{
 				Optional:    true,
@@ -87,7 +88,9 @@ func (p *SwoProvider) Configure(ctx context.Context, req provider.ConfigureReque
 
 	// Client configuration for data sources and resources.
 	client := swoClient.NewClient(config.ApiToken.ValueString(),
-		swoClient.DebugOption(config.DebugMode.ValueBool()))
+		swoClient.RequestTimeoutOption(time.Duration(config.RequestTimeout.ValueInt64())*time.Second),
+		swoClient.DebugOption(config.DebugMode.ValueBool()),
+	)
 
 	if client == nil {
 		resp.Diagnostics.AddError("Client Error", "Unable to create an instance of the SWO client.")
@@ -103,6 +106,7 @@ func (p *SwoProvider) Resources(ctx context.Context) []func() resource.Resource 
 
 	return []func() resource.Resource{
 		NewAlertResource,
+		NewNotificationResource,
 	}
 }
 
