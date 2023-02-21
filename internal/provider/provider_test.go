@@ -14,7 +14,7 @@ const (
 	// such as updating the Makefile and running the testing through that tool.
 	providerConfig = `
 provider "swo" {
-	api_token             = "123xyz"
+	api_token = "123xyz"
 	request_timeout = 10
 }
 `

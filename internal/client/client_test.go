@@ -2,6 +2,7 @@ package client
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -36,6 +37,16 @@ func setup() (client *Client, mux *http.ServeMux, serverURL string, teardown fun
 	client = NewClient("123456", BaseUrlOption(url.String()))
 
 	return client, mux, server.URL, server.Close
+}
+
+func sendResponse(t *testing.T, w io.Writer, response any) bool {
+	err := json.NewEncoder(w).Encode(response)
+	if err != nil {
+		t.Errorf("Swo.SendResponse error: %v", err)
+		return false
+	}
+
+	return true
 }
 
 func testObjects(t *testing.T, obj1 any, obj2 any) bool {

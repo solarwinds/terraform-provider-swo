@@ -46,7 +46,7 @@ func TestSwoService_ReadNotification(t *testing.T) {
 			t.Errorf("Swo.ReadNotification error: %v", err)
 		}
 
-		response := graphql.Response{
+		sendResponse(t, w, graphql.Response{
 			Data: GetNotificationResponse{
 				User: GetNotificationUserAuthenticatedUser{
 					CurrentOrganization: GetNotificationUserAuthenticatedUserCurrentOrganization{
@@ -62,12 +62,7 @@ func TestSwoService_ReadNotification(t *testing.T) {
 					},
 				},
 			},
-		}
-
-		err = json.NewEncoder(w).Encode(response)
-		if err != nil {
-			t.Errorf("Swo.ReadNotification error: %v", err)
-		}
+		})
 	})
 
 	got, err := client.NotificationsService().Read("123", "email")
@@ -75,12 +70,10 @@ func TestSwoService_ReadNotification(t *testing.T) {
 		t.Errorf("Swo.ReadNotification returned error: %v", err)
 	}
 
-	desc := "testing..."
-
 	want := &ReadNotificationResult{
 		Id:          "123",
 		Title:       "email test",
-		Description: &desc,
+		Description: &fieldDesc,
 		Type:        "email",
 		Settings:    &settings,
 		CreatedAt:   fieldCreatedAt(),
@@ -123,7 +116,7 @@ func TestSwoService_CreateNotification(t *testing.T) {
 			t.Errorf("Request input = %+v, want %+v", inputConfig, requestInput)
 		}
 
-		response := graphql.Response{
+		sendResponse(t, w, graphql.Response{
 			Data: CreateNotificationResponse{
 				CreateNotificationServiceConfiguration: CreateNotificationCreateNotificationServiceConfigurationCreateNotificationServiceConfigurationResponse{
 					Code:    "201",
@@ -140,12 +133,7 @@ func TestSwoService_CreateNotification(t *testing.T) {
 					},
 				},
 			},
-		}
-
-		err = json.NewEncoder(w).Encode(response)
-		if err != nil {
-			t.Errorf("Swo.CreateNotification error: %v", err)
-		}
+		})
 	})
 
 	got, err := client.NotificationsService().Create(&requestInput)
@@ -204,7 +192,7 @@ func TestSwoService_UpdateNotification(t *testing.T) {
 			t.Errorf("Request input = %+v, want %+v", inputConfig, requestInput)
 		}
 
-		response := graphql.Response{
+		sendResponse(t, w, graphql.Response{
 			Data: UpdateNotificationResponse{
 				UpdateNotificationServiceConfiguration: &UpdateNotificationUpdateNotificationServiceConfigurationUpdateNotificationServiceConfigurationResponse{
 					Code:    "201",
@@ -218,12 +206,7 @@ func TestSwoService_UpdateNotification(t *testing.T) {
 					},
 				},
 			},
-		}
-
-		err = json.NewEncoder(w).Encode(response)
-		if err != nil {
-			t.Errorf("Swo.UpdateNotification error: %v", err)
-		}
+		})
 	})
 
 	err := client.NotificationsService().Update(&requestInput)
@@ -264,7 +247,7 @@ func TestSwoService_DeleteNotification(t *testing.T) {
 			t.Errorf("Swo.DeleteNotification: Request body = %+v, want %+v", config, input)
 		}
 
-		response := graphql.Response{
+		sendResponse(t, w, graphql.Response{
 			Data: DeleteNotificationResponse{
 				DeleteNotificationServiceConfiguration: &DeleteNotificationDeleteNotificationServiceConfigurationDeleteNotificationServiceConfigurationResponse{
 					Code:    "201",
@@ -272,12 +255,7 @@ func TestSwoService_DeleteNotification(t *testing.T) {
 					Message: "",
 				},
 			},
-		}
-
-		err = json.NewEncoder(w).Encode(response)
-		if err != nil {
-			t.Errorf("Swo.DeleteNotification error: %v", err)
-		}
+		})
 	})
 
 	err := client.NotificationsService().Delete(input.Id)
