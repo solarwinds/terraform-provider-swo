@@ -14,7 +14,7 @@ const (
 	// such as updating the Makefile and running the testing through that tool.
 	providerConfig = `
 provider "swo" {
-	api_token             = "123xyz"
+	api_token = "123xyz"
 	request_timeout = 10
 }
 `
@@ -25,7 +25,7 @@ provider "swo" {
 // CLI command executed to create a provider server to which the CLI can
 // reattach.
 var testAccProtoV6ProviderFactories = map[string]func() (tfprotov6.ProviderServer, error){
-	"swo": providerserver.NewProtocol6WithError(New("test")()),
+	"swo": providerserver.NewProtocol6WithError(New("test", nil)()),
 }
 
 func testAccPreCheck(t *testing.T) {

@@ -1,14 +1,12 @@
 package client
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"net/url"
 	"time"
 
 	"github.com/Khan/genqlient/graphql"
-	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -43,13 +41,6 @@ type Client struct {
 	notificationsService NotificationsCommunicator
 }
 
-// apiTokentAuthTransport is an http.RoundTripper that authenticates all requests
-// using Bearer token authentication with a SWO api key.
-type apiTokenAuthTransport struct {
-	client   *Client
-	apiToken string
-}
-
 // Returns a new SWO API client with functional override options.
 // * BaseUrlOption
 // * DebugOption
@@ -77,9 +68,12 @@ func NewClient(apiToken string, opts ...ClientOption) *Client {
 		}
 	}
 
-	// Use the default http transport if one wasn't provided.
+	// Use the api token transport if one wasn't provided.
 	if swoClient.transport == nil {
-		swoClient.transport = http.DefaultTransport
+		swoClient.transport = &apiTokenAuthTransport{
+			apiToken: apiToken,
+			client:   swoClient,
+		}
 	}
 
 	if swoClient.debugMode {
@@ -88,40 +82,14 @@ func NewClient(apiToken string, opts ...ClientOption) *Client {
 	}
 
 	swoClient.gql = graphql.NewClient(swoClient.baseURL.String(), &http.Client{
-		Timeout: swoClient.requestTimeout,
-		Transport: &apiTokenAuthTransport{
-			apiToken: apiToken,
-			client:   swoClient,
-		},
+		Timeout:   swoClient.requestTimeout,
+		Transport: swoClient.transport,
 	})
 
 	swoClient.alertsService = NewAlertsService(swoClient)
 	swoClient.notificationsService = NewNotificationsService(swoClient)
 
 	return swoClient
-}
-
-// RoundTrip implements the http.RoundTrip interface.
-func (t *apiTokenAuthTransport) RoundTrip(request *http.Request) (*http.Response, error) {
-	// When using the RoundTipper interface it is important that the original request is not modified.
-	// See https://pkg.go.dev/net/http#RoundTripper for more details.
-	clone := request.Clone(context.Background())
-
-	clone.Header.Set("Authorization", "Bearer "+t.apiToken)
-	clone.Header.Set("User-Agent", t.client.completeUserAgentString())
-	clone.Header.Set(requestIdentifier, uuid.NewString())
-
-	if t.client.debugMode {
-		dumpRequest(clone)
-	}
-
-	response, err := t.client.transport.RoundTrip(clone)
-
-	if t.client.debugMode {
-		dumpResponse(response)
-	}
-
-	return response, err
 }
 
 // A subset of the API that deals with Alerts.

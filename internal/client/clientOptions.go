@@ -38,13 +38,15 @@ func TransportOption(transport http.RoundTripper) ClientOption {
 // BaseUrlOption is a config function allowing setting of the base URL the API is targeted towards.
 func BaseUrlOption(urlString string) ClientOption {
 	return func(c *Client) error {
-		urlObj, err := url.Parse(urlString)
+		if urlString != "" {
+			urlObj, err := url.Parse(urlString)
 
-		if err != nil {
-			return err
+			if err != nil {
+				return err
+			}
+
+			c.baseURL = urlObj
 		}
-
-		c.baseURL = urlObj
 
 		return nil
 	}
