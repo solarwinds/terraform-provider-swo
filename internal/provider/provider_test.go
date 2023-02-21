@@ -25,7 +25,7 @@ provider "swo" {
 // CLI command executed to create a provider server to which the CLI can
 // reattach.
 var testAccProtoV6ProviderFactories = map[string]func() (tfprotov6.ProviderServer, error){
-	"swo": providerserver.NewProtocol6WithError(New("test")()),
+	"swo": providerserver.NewProtocol6WithError(New("test", nil)()),
 }
 
 func testAccPreCheck(t *testing.T) {
