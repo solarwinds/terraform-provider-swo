@@ -1,14 +1,30 @@
 package client
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"net/http/httputil"
 )
 
+func ConvertObject[T any](from any) (*T, error) {
+	b, err := json.Marshal(&from)
+	if err != nil {
+		return nil, err
+	}
+
+	var result T
+	err = json.Unmarshal(b, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	return &result, err
+}
+
 // A debugging function which dumps the HTTP response to stdout.
-func dumpResponse(resp *http.Response) {
+func DumpResponse(resp *http.Response) {
 	fmt.Printf("response status: %s\n", resp.Status)
 	dump, err := httputil.DumpResponse(resp, true)
 
@@ -21,7 +37,7 @@ func dumpResponse(resp *http.Response) {
 }
 
 // A debugging function which dumps the HTTP request to stdout.
-func dumpRequest(req *http.Request) {
+func DumpRequest(req *http.Request) {
 	if req.Body == nil {
 		return
 	}

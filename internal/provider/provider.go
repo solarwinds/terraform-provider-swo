@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -24,13 +25,15 @@ type SwoProvider struct {
 	// Version is set to the provider version on release, "dev" when the
 	// provider is built and ran locally, and "test" when running acceptance
 	// testing.
-	version string
+	version   string
+	transport http.RoundTripper
 }
 
 // SwoProviderModel describes the provider data model.
 type SwoProviderModel struct {
 	ApiToken       types.String `tfsdk:"api_token"`
 	RequestTimeout types.Int64  `tfsdk:"request_timeout"`
+	BaseURL        types.String `tfsdk:"base_url"`
 	DebugMode      types.Bool   `tfsdk:"debug_mode"`
 }
 
@@ -55,6 +58,10 @@ func (p *SwoProvider) Schema(ctx context.Context, req provider.SchemaRequest, re
 				Optional:    true,
 				Description: "The request timeout period in seconds. Default is 30 seconds.",
 			},
+			"base_url": schema.StringAttribute{
+				Optional:    true,
+				Description: "The base url to use for requests to the server.",
+			},
 			"debug_mode": schema.BoolAttribute{
 				Optional:    true,
 				Description: "Setting to true will provide additional logging details.",
@@ -64,8 +71,6 @@ func (p *SwoProvider) Schema(ctx context.Context, req provider.SchemaRequest, re
 }
 
 func (p *SwoProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
-	tflog.Info(ctx, "SWO Provider: Configure")
-
 	var config SwoProviderModel
 
 	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
@@ -76,7 +81,7 @@ func (p *SwoProvider) Configure(ctx context.Context, req provider.ConfigureReque
 
 	if config.ApiToken.IsUnknown() {
 		resp.Diagnostics.AddAttributeError(
-			path.Root("host"),
+			path.Root("api_token"),
 			"Api Token Required",
 			"The api token was not provided.",
 		)
@@ -89,6 +94,8 @@ func (p *SwoProvider) Configure(ctx context.Context, req provider.ConfigureReque
 	// Client configuration for data sources and resources.
 	client := swoClient.NewClient(config.ApiToken.ValueString(),
 		swoClient.RequestTimeoutOption(time.Duration(config.RequestTimeout.ValueInt64())*time.Second),
+		swoClient.BaseUrlOption(config.BaseURL.ValueString()),
+		swoClient.TransportOption(p.transport),
 		swoClient.DebugOption(config.DebugMode.ValueBool()),
 	)
 
@@ -102,8 +109,6 @@ func (p *SwoProvider) Configure(ctx context.Context, req provider.ConfigureReque
 }
 
 func (p *SwoProvider) Resources(ctx context.Context) []func() resource.Resource {
-	tflog.Trace(ctx, "SWO Provider: Resources")
-
 	return []func() resource.Resource{
 		NewAlertResource,
 		NewNotificationResource,
@@ -111,15 +116,14 @@ func (p *SwoProvider) Resources(ctx context.Context) []func() resource.Resource 
 }
 
 func (p *SwoProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
-	tflog.Trace(ctx, "SWO Provider: DataSources")
-
 	return []func() datasource.DataSource{}
 }
 
-func New(version string) func() provider.Provider {
+func New(version string, transport http.RoundTripper) func() provider.Provider {
 	return func() provider.Provider {
 		return &SwoProvider{
-			version: version,
+			version:   version,
+			transport: transport,
 		}
 	}
 }

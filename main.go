@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"log"
+	"net/http"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/solarwindscloud/terraform-provider-swo/internal/provider"
@@ -39,7 +40,12 @@ func main() {
 		Debug:   debug,
 	}
 
-	err := providerserver.Serve(context.Background(), provider.New(version), opts)
+	var transport http.RoundTripper
+
+	// A custom transport can be used for various needs like specialized server authentication.
+	// transport = dev.NewUserSessionTransport("username", "password")
+
+	err := providerserver.Serve(context.Background(), provider.New(version, transport), opts)
 
 	if err != nil {
 		log.Fatal(err.Error())
