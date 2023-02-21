@@ -2,12 +2,9 @@ package client
 
 import (
 	"encoding/json"
-	"fmt"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"os"
 	"reflect"
 	"testing"
 
@@ -18,53 +15,27 @@ const (
 	baseURLPath = "/graphql"
 )
 
-// setup sets up a test HTTP server along with an swo.Client that is
-// configured to talk to that test server. Tests register handlers on
-// mux which provide mock responses for the API being tested.
+// Sets up a test HTTP server along with an swo.Client that is configured to make requests
+// to the test server. Tests register handlers on mux which provide mock responses for the
+// API being tested.
 func setup() (client *Client, mux *http.ServeMux, serverURL string, teardown func()) {
 	// mux is the HTTP request multiplexer used with the test server.
 	mux = http.NewServeMux()
 
-	// We want to ensure that tests catch mistakes where the endpoint URL is
-	// specified as absolute rather than relative. It only makes a difference
-	// when there's a non-empty base URL path. So, use that. See issue #752.
 	apiHandler := http.NewServeMux()
 	apiHandler.Handle(baseURLPath+"/", http.StripPrefix(baseURLPath, mux))
 	apiHandler.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
-		fmt.Fprintln(os.Stderr, "FAIL: Client.BaseURL path prefix is not preserved in the request URL:")
 		http.Error(w, "Client.BaseURL path prefix is not preserved in the request URL.", http.StatusInternalServerError)
 	})
 
 	// server is a test HTTP server used to provide mock API responses.
 	server := httptest.NewServer(apiHandler)
 
-	// client is the GitHub client being tested and is
-	// configured to use test server.
+	// client is the SWO client being tested and is configured to use the test server.
 	url, _ := url.Parse(server.URL + baseURLPath + "/")
 	client = NewClient("123456", BaseUrlOption(url.String()))
 
 	return client, mux, server.URL, server.Close
-}
-
-func testURLParseError(t *testing.T, err error) {
-	t.Helper()
-	if err == nil {
-		t.Errorf("Expected error to be returned")
-	}
-	if err, ok := err.(*url.Error); !ok || err.Op != "parse" {
-		t.Errorf("Expected URL parse error, got %+v", err)
-	}
-}
-
-func testBody(t *testing.T, r *http.Request, want string) {
-	t.Helper()
-	b, err := io.ReadAll(r.Body)
-	if err != nil {
-		t.Errorf("Error reading request body: %v", err)
-	}
-	if got := string(b); got != want {
-		t.Errorf("request Body is %s, want %s", got, want)
-	}
 }
 
 func testObjects(t *testing.T, obj1 any, obj2 any) bool {
