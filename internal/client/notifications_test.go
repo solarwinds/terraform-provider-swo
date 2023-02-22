@@ -46,19 +46,17 @@ func TestSwoService_ReadNotification(t *testing.T) {
 			t.Errorf("Swo.ReadNotification error: %v", err)
 		}
 
-		sendResponse(t, w, graphql.Response{
-			Data: GetNotificationResponse{
-				User: GetNotificationUserAuthenticatedUser{
-					CurrentOrganization: GetNotificationUserAuthenticatedUserCurrentOrganization{
-						NotificationServiceConfiguration: ReadNotificationResult{
-							Id:          vars.ConfigurationId,
-							Type:        vars.ConfigurationType,
-							Title:       "email test",
-							Description: &fieldDesc,
-							Settings:    &settings,
-							CreatedAt:   fieldCreatedAt(),
-							CreatedBy:   "140979956856880128",
-						},
+		sendGraphQLResponse(t, w, GetNotificationResponse{
+			User: GetNotificationUserAuthenticatedUser{
+				CurrentOrganization: GetNotificationUserAuthenticatedUserCurrentOrganization{
+					NotificationServiceConfiguration: ReadNotificationResult{
+						Id:          vars.ConfigurationId,
+						Type:        vars.ConfigurationType,
+						Title:       "email test",
+						Description: &fieldDesc,
+						Settings:    &settings,
+						CreatedAt:   fieldCreatedAt(),
+						CreatedBy:   "140979956856880128",
 					},
 				},
 			},
@@ -116,21 +114,19 @@ func TestSwoService_CreateNotification(t *testing.T) {
 			t.Errorf("Request input = %+v, want %+v", inputConfig, requestInput)
 		}
 
-		sendResponse(t, w, graphql.Response{
-			Data: CreateNotificationResponse{
-				CreateNotificationServiceConfiguration: CreateNotificationCreateNotificationServiceConfigurationCreateNotificationServiceConfigurationResponse{
-					Code:    "201",
-					Success: true,
-					Message: "",
-					Configuration: &CreateNotificationResult{
-						Id:          uuid.NewString(),
-						Type:        inputConfig.Type,
-						Title:       inputConfig.Title,
-						Description: inputConfig.Description,
-						Settings:    &inputConfig.Settings,
-						CreatedAt:   fieldCreatedAt(),
-						CreatedBy:   "140979956856880128",
-					},
+		sendGraphQLResponse(t, w, CreateNotificationResponse{
+			CreateNotificationServiceConfiguration: CreateNotificationCreateNotificationServiceConfigurationCreateNotificationServiceConfigurationResponse{
+				Code:    "201",
+				Success: true,
+				Message: "",
+				Configuration: &CreateNotificationResult{
+					Id:          uuid.NewString(),
+					Type:        inputConfig.Type,
+					Title:       inputConfig.Title,
+					Description: inputConfig.Description,
+					Settings:    &inputConfig.Settings,
+					CreatedAt:   fieldCreatedAt(),
+					CreatedBy:   "140979956856880128",
 				},
 			},
 		})
@@ -192,18 +188,16 @@ func TestSwoService_UpdateNotification(t *testing.T) {
 			t.Errorf("Request input = %+v, want %+v", inputConfig, requestInput)
 		}
 
-		sendResponse(t, w, graphql.Response{
-			Data: UpdateNotificationResponse{
-				UpdateNotificationServiceConfiguration: &UpdateNotificationUpdateNotificationServiceConfigurationUpdateNotificationServiceConfigurationResponse{
-					Code:    "201",
-					Success: true,
-					Message: "",
-					Configuration: &UpdateNotificationUpdateNotificationServiceConfigurationUpdateNotificationServiceConfigurationResponseConfigurationNotificationService{
-						Id:          inputConfig.Id,
-						Title:       *inputConfig.Title,
-						Description: inputConfig.Description,
-						Settings:    inputConfig.Settings,
-					},
+		sendGraphQLResponse(t, w, UpdateNotificationResponse{
+			UpdateNotificationServiceConfiguration: &UpdateNotificationUpdateNotificationServiceConfigurationUpdateNotificationServiceConfigurationResponse{
+				Code:    "201",
+				Success: true,
+				Message: "",
+				Configuration: &UpdateNotificationUpdateNotificationServiceConfigurationUpdateNotificationServiceConfigurationResponseConfigurationNotificationService{
+					Id:          inputConfig.Id,
+					Title:       *inputConfig.Title,
+					Description: inputConfig.Description,
+					Settings:    inputConfig.Settings,
 				},
 			},
 		})
@@ -247,13 +241,11 @@ func TestSwoService_DeleteNotification(t *testing.T) {
 			t.Errorf("Swo.DeleteNotification: Request body = %+v, want %+v", config, input)
 		}
 
-		sendResponse(t, w, graphql.Response{
-			Data: DeleteNotificationResponse{
-				DeleteNotificationServiceConfiguration: &DeleteNotificationDeleteNotificationServiceConfigurationDeleteNotificationServiceConfigurationResponse{
-					Code:    "201",
-					Success: true,
-					Message: "",
-				},
+		sendGraphQLResponse(t, w, DeleteNotificationResponse{
+			DeleteNotificationServiceConfiguration: &DeleteNotificationDeleteNotificationServiceConfigurationDeleteNotificationServiceConfigurationResponse{
+				Code:    "201",
+				Success: true,
+				Message: "",
 			},
 		})
 	})
@@ -269,7 +261,7 @@ func TestSwoService_ServerErrors(t *testing.T) {
 	defer teardown()
 
 	server.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 	})
 
 	_, err := client.NotificationsService().Create(&CreateNotificationInput{})

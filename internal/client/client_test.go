@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/Khan/genqlient/graphql"
 	"github.com/google/go-cmp/cmp"
 )
 
@@ -39,10 +40,10 @@ func setup() (client *Client, mux *http.ServeMux, serverURL string, teardown fun
 	return client, mux, server.URL, server.Close
 }
 
-func sendResponse(t *testing.T, w io.Writer, response any) bool {
-	err := json.NewEncoder(w).Encode(response)
+func sendGraphQLResponse(t *testing.T, w io.Writer, response any) bool {
+	err := json.NewEncoder(w).Encode(graphql.Response{Data: response})
 	if err != nil {
-		t.Errorf("Swo.SendResponse error: %v", err)
+		t.Errorf("Swo.SendGraphQLResponse error: %v", err)
 		return false
 	}
 

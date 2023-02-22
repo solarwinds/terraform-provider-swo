@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -27,13 +28,26 @@ const (
 
 // The main Notification Resource model that is derived from the schema.
 type NotificationResourceModel struct {
-	Id          types.String         `tfsdk:"id"`
-	Title       string               `tfsdk:"title"`
-	Description *string              `tfsdk:"description"`
-	Type        string               `tfsdk:"type"`
-	Settings    NotificationSettings `tfsdk:"settings"`
-	CreatedAt   types.String         `tfsdk:"created_at"`
-	CreatedBy   types.String         `tfsdk:"created_by"`
+	Id          types.String          `tfsdk:"id"`
+	Title       types.String          `tfsdk:"title"`
+	Description types.String          `tfsdk:"description"`
+	Type        types.String          `tfsdk:"type"`
+	Settings    *NotificationSettings `tfsdk:"settings"`
+	CreatedAt   types.String          `tfsdk:"created_at"`
+	CreatedBy   types.String          `tfsdk:"created_by"`
+}
+
+func (m *NotificationResourceModel) ParseId() (id string, notificationType string, err error) {
+	idParts := strings.Split(m.Id.ValueString(), ":")
+
+	if len(idParts) != 2 || idParts[0] == "" || idParts[1] == "" {
+		err = fmt.Errorf("expected identifier with format: id,type. got: %q", m.Id)
+	} else {
+		id = idParts[0]
+		notificationType = idParts[1]
+	}
+
+	return id, notificationType, err
 }
 
 func (r *NotificationResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {

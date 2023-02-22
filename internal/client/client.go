@@ -14,8 +14,8 @@ const (
 	defaultBaseURL        = "https://api.dc-01.cloud.solarwinds.com/graphql"
 	defaultMediaType      = "application/json"
 	defaultRequestTimeout = 30 * time.Second
-	clientIdentifier      = "swo-api-go"
-	requestIdentifier     = "x-request-id"
+	clientIdentifier      = "Swo-Api-Go"
+	requestIdentifier     = "X-Request-Id"
 )
 
 // ServiceAccessor defines an interface for talking to via domain-specific service constructs
@@ -77,8 +77,8 @@ func NewClient(apiToken string, opts ...ClientOption) *Client {
 	}
 
 	if swoClient.debugMode {
-		log.SetLevel(log.TraceLevel)
-		log.Info("DebugMode set to true.")
+		log.SetLevel(log.DebugLevel)
+		log.Info("swoclient: debugMode set to true.")
 	}
 
 	swoClient.gql = graphql.NewClient(swoClient.baseURL.String(), &http.Client{
