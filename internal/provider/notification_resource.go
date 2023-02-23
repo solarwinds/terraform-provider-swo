@@ -65,7 +65,7 @@ func (r *NotificationResource) Create(ctx context.Context, req resource.CreateRe
 	// Create the notification...
 	newNotification, err := r.client.
 		NotificationsService().
-		Create(&swoClient.CreateNotificationInput{
+		Create(ctx, swoClient.CreateNotificationInput{
 			Title:       plan.Title.ValueString(),
 			Description: &desc,
 			Type:        plan.Type.ValueString(),
@@ -111,7 +111,9 @@ func (r *NotificationResource) Read(ctx context.Context, req resource.ReadReques
 
 	// Read the notification...
 	tflog.Trace(ctx, fmt.Sprintf("read notification with id: %s", nId))
-	notification, err := r.client.NotificationsService().Read(nId, nType)
+	notification, err := r.client.
+		NotificationsService().
+		Read(ctx, nId, nType)
 
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("error reading notification %s. error: %s",
@@ -142,7 +144,7 @@ func (r *NotificationResource) Update(ctx context.Context, req resource.UpdateRe
 
 	// Read the Terraform plan.
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
-	// The plan doesn't capture the existing Id so we can take it from state.
+	// The plan doesn't capture any existing computed values so we can take it from state.
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 
 	if resp.Diagnostics.HasError() {
@@ -158,16 +160,17 @@ func (r *NotificationResource) Update(ctx context.Context, req resource.UpdateRe
 	title := plan.Title.ValueString()
 	desc := plan.Description.ValueString()
 	settings := plan.GetSettings()
-	update := &swoClient.UpdateNotificationInput{
-		Id:          nId,
-		Title:       &title,
-		Description: &desc,
-		Settings:    &settings,
-	}
 
 	// Update the notification...
 	tflog.Trace(ctx, fmt.Sprintf("updating notification with id: %s", nId))
-	err = r.client.NotificationsService().Update(update)
+	err = r.client.
+		NotificationsService().
+		Update(ctx, swoClient.UpdateNotificationInput{
+			Id:          nId,
+			Title:       &title,
+			Description: &desc,
+			Settings:    &settings,
+		})
 
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("error updating notification %s. err: %s", nId, err))
@@ -201,7 +204,9 @@ func (r *NotificationResource) Delete(ctx context.Context, req resource.DeleteRe
 
 	// Delete the notification...
 	tflog.Trace(ctx, fmt.Sprintf("deleting notification. id: %s", nId))
-	err = r.client.NotificationsService().Delete(nId)
+	err = r.client.
+		NotificationsService().
+		Delete(ctx, nId)
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("error deleting notification %s. err: %s", nId, err))
 		return

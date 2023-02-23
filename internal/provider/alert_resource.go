@@ -76,7 +76,7 @@ func (r *AlertResource) Create(ctx context.Context, req resource.CreateRequest, 
 
 	// Create the alert from the provided Terraform model...
 	input := tfModel.ToAlertDefinitionInput()
-	newAlertDef, err := r.client.AlertsService().Create(input)
+	newAlertDef, err := r.client.AlertsService().Create(ctx, input)
 
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Error creating alert definition '%s'. Error: %s",
@@ -106,7 +106,7 @@ func (r *AlertResource) Read(ctx context.Context, req resource.ReadRequest, resp
 
 	tflog.Trace(ctx, fmt.Sprintf("Getting alert with ID: %s", tfModel.ID))
 
-	alertDef, err := r.client.AlertsService().Read(tfModel.ID.String())
+	alertDef, err := r.client.AlertsService().Read(ctx, tfModel.ID.String())
 
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Error getting alert %s. Error: %s",
@@ -138,7 +138,7 @@ func (r *AlertResource) Update(ctx context.Context, req resource.UpdateRequest, 
 	tflog.Trace(ctx, fmt.Sprintf("Updating alert definition with ID: %s", alertId))
 
 	// Update the alert definition...
-	err := r.client.AlertsService().Update(alertId, input)
+	err := r.client.AlertsService().Update(ctx, alertId, input)
 
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Error updating alert definition %s. Error: %s", alertId, err))
@@ -167,7 +167,7 @@ func (r *AlertResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 	tflog.Trace(ctx, fmt.Sprintf("Deleting alert definition with ID: %s", alertDefId))
 
 	// Delete the alert definition...
-	err := r.client.AlertsService().Delete(alertDefId)
+	err := r.client.AlertsService().Delete(ctx, alertDefId)
 
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Error deleting alert definition %s. Error: %s", alertDefId, err))

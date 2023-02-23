@@ -1,13 +1,11 @@
 package client
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"testing"
 	"time"
 
-	"github.com/Khan/genqlient/graphql"
 	"github.com/google/uuid"
 )
 
@@ -26,32 +24,23 @@ var (
 )
 
 func TestSwoService_ReadNotification(t *testing.T) {
-	client, server, _, teardown := setup()
+	ctx, client, server, _, teardown := setup()
 	defer teardown()
 
 	var settings any = fieldEmailSettings
 
 	server.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		var request graphql.Request
-
-		// Decode the graphql request object from the body.
-		err := json.NewDecoder(r.Body).Decode(&request)
+		gqlInput, err := getGraphQLInput[__GetNotificationInput](r)
 		if err != nil {
-			t.Errorf("Swo.ReadNotification error: %v", err)
-		}
-
-		// Decode the variables field of the request to obtain the input variables.
-		vars, err := ConvertObject[__GetNotificationInput](request.Variables)
-		if err != nil {
-			t.Errorf("Swo.ReadNotification error: %v", err)
+			t.Errorf("Swo.ReadAlert returned error: %v", err)
 		}
 
 		sendGraphQLResponse(t, w, GetNotificationResponse{
 			User: GetNotificationUserAuthenticatedUser{
 				CurrentOrganization: GetNotificationUserAuthenticatedUserCurrentOrganization{
 					NotificationServiceConfiguration: ReadNotificationResult{
-						Id:          vars.ConfigurationId,
-						Type:        vars.ConfigurationType,
+						Id:          gqlInput.ConfigurationId,
+						Type:        gqlInput.ConfigurationType,
 						Title:       "email test",
 						Description: &fieldDesc,
 						Settings:    &settings,
@@ -63,7 +52,7 @@ func TestSwoService_ReadNotification(t *testing.T) {
 		})
 	})
 
-	got, err := client.NotificationsService().Read("123", "email")
+	got, err := client.NotificationsService().Read(ctx, "123", "email")
 	if err != nil {
 		t.Errorf("Swo.ReadNotification returned error: %v", err)
 	}
@@ -84,7 +73,7 @@ func TestSwoService_ReadNotification(t *testing.T) {
 }
 
 func TestSwoService_CreateNotification(t *testing.T) {
-	client, server, _, teardown := setup()
+	ctx, client, server, _, teardown := setup()
 	defer teardown()
 
 	var settings any = fieldEmailSettings
@@ -97,21 +86,16 @@ func TestSwoService_CreateNotification(t *testing.T) {
 	}
 
 	server.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		request := new(graphql.Request)
-		err := json.NewDecoder(r.Body).Decode(request)
+		gqlInput, err := getGraphQLInput[__CreateNotificationInput](r)
 		if err != nil {
-			t.Errorf("Swo.CreateNotification error: %v", err)
+			t.Errorf("Swo.ReadAlert returned error: %v", err)
 		}
 
-		vars, err := ConvertObject[__CreateNotificationInput](request.Variables)
-		if err != nil {
-			t.Errorf("Swo.CreateNotification error: %v", err)
-		}
+		got := gqlInput.Configuration
+		want := requestInput
 
-		inputConfig := vars.Configuration
-
-		if !testObjects(t, inputConfig, requestInput) {
-			t.Errorf("Request input = %+v, want %+v", inputConfig, requestInput)
+		if !testObjects(t, got, want) {
+			t.Errorf("Request input = %+v, want %+v", got, want)
 		}
 
 		sendGraphQLResponse(t, w, CreateNotificationResponse{
@@ -121,10 +105,10 @@ func TestSwoService_CreateNotification(t *testing.T) {
 				Message: "",
 				Configuration: &CreateNotificationResult{
 					Id:          uuid.NewString(),
-					Type:        inputConfig.Type,
-					Title:       inputConfig.Title,
-					Description: inputConfig.Description,
-					Settings:    &inputConfig.Settings,
+					Type:        got.Type,
+					Title:       got.Title,
+					Description: got.Description,
+					Settings:    &got.Settings,
 					CreatedAt:   fieldCreatedAt(),
 					CreatedBy:   "140979956856880128",
 				},
@@ -132,7 +116,7 @@ func TestSwoService_CreateNotification(t *testing.T) {
 		})
 	})
 
-	got, err := client.NotificationsService().Create(&requestInput)
+	got, err := client.NotificationsService().Create(ctx, requestInput)
 	if err != nil {
 		t.Errorf("Swo.CreateNotification returned error: %v", err)
 	}
@@ -157,13 +141,13 @@ func TestSwoService_CreateNotification(t *testing.T) {
 }
 
 func TestSwoService_UpdateNotification(t *testing.T) {
-	client, server, _, teardown := setup()
+	ctx, client, server, _, teardown := setup()
 	defer teardown()
 
 	var settings any = fieldEmailSettings
 	nTitle := "email test"
 
-	requestInput := UpdateNotificationInput{
+	input := UpdateNotificationInput{
 		Id:          "123",
 		Title:       &nTitle,
 		Description: &fieldDesc,
@@ -171,21 +155,16 @@ func TestSwoService_UpdateNotification(t *testing.T) {
 	}
 
 	server.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		request := new(graphql.Request)
-		err := json.NewDecoder(r.Body).Decode(request)
+		gqlInput, err := getGraphQLInput[__UpdateNotificationInput](r)
 		if err != nil {
-			t.Errorf("Swo.UpdateNotification error: %v", err)
+			t.Errorf("Swo.ReadAlert returned error: %v", err)
 		}
 
-		vars, err := ConvertObject[__UpdateNotificationInput](request.Variables)
-		if err != nil {
-			t.Errorf("Swo.UpdateNotification error: %v", err)
-		}
+		got := gqlInput.Configuration
+		want := input
 
-		inputConfig := vars.Configuration
-
-		if !testObjects(t, inputConfig, requestInput) {
-			t.Errorf("Request input = %+v, want %+v", inputConfig, requestInput)
+		if !testObjects(t, got, want) {
+			t.Errorf("Request input = %+v, want %+v", got, want)
 		}
 
 		sendGraphQLResponse(t, w, UpdateNotificationResponse{
@@ -194,23 +173,23 @@ func TestSwoService_UpdateNotification(t *testing.T) {
 				Success: true,
 				Message: "",
 				Configuration: &UpdateNotificationUpdateNotificationServiceConfigurationUpdateNotificationServiceConfigurationResponseConfigurationNotificationService{
-					Id:          inputConfig.Id,
-					Title:       *inputConfig.Title,
-					Description: inputConfig.Description,
-					Settings:    inputConfig.Settings,
+					Id:          got.Id,
+					Title:       *got.Title,
+					Description: got.Description,
+					Settings:    got.Settings,
 				},
 			},
 		})
 	})
 
-	err := client.NotificationsService().Update(&requestInput)
+	err := client.NotificationsService().Update(ctx, input)
 	if err != nil {
 		t.Errorf("Swo.UpdateNotification returned error: %v", err)
 	}
 }
 
 func TestSwoService_DeleteNotification(t *testing.T) {
-	client, server, _, teardown := setup()
+	ctx, client, server, _, teardown := setup()
 	defer teardown()
 
 	input := DeleteNotificationServiceConfigurationInput{
@@ -218,27 +197,16 @@ func TestSwoService_DeleteNotification(t *testing.T) {
 	}
 
 	server.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		request := new(graphql.Request)
-		err := json.NewDecoder(r.Body).Decode(request)
+		gqlInput, err := getGraphQLInput[__DeleteNotificationInput](r)
 		if err != nil {
-			t.Errorf("Swo.DeleteNotification error: %v", err)
+			t.Errorf("Swo.ReadAlert returned error: %v", err)
 		}
 
-		varsBytes, err := json.Marshal(request.Variables)
-		if err != nil {
-			t.Errorf("Swo.DeleteNotification error: %v", err)
-		}
+		got := gqlInput.Input
+		want := input
 
-		var requestInput __DeleteNotificationInput
-		err = json.Unmarshal(varsBytes, &requestInput)
-		if err != nil {
-			t.Errorf("Swo.DeleteNotification error: %v", err)
-		}
-
-		config := requestInput.Input
-
-		if !testObjects(t, config, input) {
-			t.Errorf("Swo.DeleteNotification: Request body = %+v, want %+v", config, input)
+		if !testObjects(t, got, want) {
+			t.Errorf("Swo.DeleteNotification: Request body = %+v, want %+v", got, want)
 		}
 
 		sendGraphQLResponse(t, w, DeleteNotificationResponse{
@@ -250,33 +218,31 @@ func TestSwoService_DeleteNotification(t *testing.T) {
 		})
 	})
 
-	err := client.NotificationsService().Delete(input.Id)
+	err := client.NotificationsService().Delete(ctx, input.Id)
 	if err != nil {
 		t.Errorf("Swo.DeleteNotification returned error: %v", err)
 	}
 }
 
-func TestSwoService_ServerErrors(t *testing.T) {
-	client, server, _, teardown := setup()
+func TestSwoService_NotificationsServerErrors(t *testing.T) {
+	ctx, client, server, _, teardown := setup()
 	defer teardown()
 
-	server.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-	})
+	server.HandleFunc("/", httpErrorResponse)
 
-	_, err := client.NotificationsService().Create(&CreateNotificationInput{})
+	_, err := client.NotificationsService().Create(ctx, CreateNotificationInput{})
 	if err == nil {
 		t.Error("Swo.CreateNotificationError expected an error response")
 	}
-	_, err = client.NotificationsService().Read("123", "email")
+	_, err = client.NotificationsService().Read(ctx, "123", "email")
 	if err == nil {
 		t.Error("Swo.ReadNotificationError expected an error response")
 	}
-	err = client.NotificationsService().Update(&UpdateNotificationInput{})
+	err = client.NotificationsService().Update(ctx, UpdateNotificationInput{})
 	if err == nil {
 		t.Error("Swo.UpdateNotificationError expected an error response")
 	}
-	err = client.NotificationsService().Delete("123")
+	err = client.NotificationsService().Delete(ctx, "123")
 	if err == nil {
 		t.Error("Swo.DeleteNotificationError expected an error response")
 	}
@@ -290,7 +256,7 @@ func TestNotification_Marshal(t *testing.T) {
 	desc := "testing..."
 	created := fieldCreatedAt()
 
-	got := &ReadNotificationResult{
+	got := ReadNotificationResult{
 		Id:          id,
 		Title:       "email test",
 		Description: &desc,

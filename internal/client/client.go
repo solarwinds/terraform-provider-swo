@@ -41,6 +41,11 @@ type Client struct {
 	notificationsService NotificationsCommunicator
 }
 
+// Each service derives from the service type.
+type service struct {
+	client *Client
+}
+
 // Returns a new SWO API client with functional override options.
 // * BaseUrlOption
 // * DebugOption

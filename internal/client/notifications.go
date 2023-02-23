@@ -10,15 +10,13 @@ type CreateNotificationResult = CreateNotificationCreateNotificationServiceConfi
 type ReadNotificationResult = GetNotificationUserAuthenticatedUserCurrentOrganizationNotificationServiceConfigurationNotificationService
 type UpdateNotificationInput = UpdateNotificationServiceConfigurationInput
 
-type NotificationsService struct {
-	client *Client
-}
+type NotificationsService service
 
 type NotificationsCommunicator interface {
-	Create(*CreateNotificationInput) (*CreateNotificationResult, error)
-	Read(string, string) (*ReadNotificationResult, error)
-	Update(*UpdateNotificationInput) error
-	Delete(string) error
+	Create(context.Context, CreateNotificationInput) (*CreateNotificationResult, error)
+	Read(context.Context, string, string) (*ReadNotificationResult, error)
+	Update(context.Context, UpdateNotificationInput) error
+	Delete(context.Context, string) error
 }
 
 func NewNotificationsService(c *Client) *NotificationsService {
@@ -26,11 +24,10 @@ func NewNotificationsService(c *Client) *NotificationsService {
 }
 
 // Creates a new notification.
-func (as *NotificationsService) Create(input *CreateNotificationInput) (*CreateNotificationResult, error) {
+func (service *NotificationsService) Create(ctx context.Context, input CreateNotificationInput) (*CreateNotificationResult, error) {
 	log.Printf("create notification request. title: %s", input.Title)
 
-	ctx := context.Background()
-	resp, err := CreateNotification(ctx, as.client.gql, *input)
+	resp, err := CreateNotification(ctx, service.client.gql, input)
 
 	if err != nil {
 		return nil, err
@@ -43,11 +40,10 @@ func (as *NotificationsService) Create(input *CreateNotificationInput) (*CreateN
 }
 
 // Returns the notification identified by the given Id.
-func (as *NotificationsService) Read(id string, notificationType string) (*ReadNotificationResult, error) {
+func (service *NotificationsService) Read(ctx context.Context, id string, notificationType string) (*ReadNotificationResult, error) {
 	log.Printf("read notification request. id: %s", id)
 
-	ctx := context.Background()
-	resp, err := GetNotification(ctx, as.client.gql, id, notificationType)
+	resp, err := GetNotification(ctx, service.client.gql, id, notificationType)
 
 	if err != nil {
 		return nil, err
@@ -61,11 +57,10 @@ func (as *NotificationsService) Read(id string, notificationType string) (*ReadN
 }
 
 // Updates the notification.
-func (as *NotificationsService) Update(input *UpdateNotificationInput) error {
+func (service *NotificationsService) Update(ctx context.Context, input UpdateNotificationInput) error {
 	log.Printf("update notification request. id: %s", input.Id)
 
-	ctx := context.Background()
-	_, err := UpdateNotification(ctx, as.client.gql, *input)
+	_, err := UpdateNotification(ctx, service.client.gql, input)
 
 	if err != nil {
 		return err
@@ -77,11 +72,10 @@ func (as *NotificationsService) Update(input *UpdateNotificationInput) error {
 }
 
 // Deletes the notification with the given id.
-func (as *NotificationsService) Delete(id string) error {
+func (service *NotificationsService) Delete(ctx context.Context, id string) error {
 	log.Printf("delete notification request. id: %s", id)
 
-	ctx := context.Background()
-	_, err := DeleteNotification(ctx, as.client.gql, DeleteNotificationServiceConfigurationInput{
+	_, err := DeleteNotification(ctx, service.client.gql, DeleteNotificationServiceConfigurationInput{
 		Id: id,
 	})
 

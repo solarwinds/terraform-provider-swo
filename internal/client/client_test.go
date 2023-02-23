@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -20,7 +21,7 @@ const (
 // Sets up a test HTTP server along with an swo.Client that is configured to make requests
 // to the test server. Tests register handlers on mux which provide mock responses for the
 // API being tested.
-func setup() (client *Client, mux *http.ServeMux, serverURL string, teardown func()) {
+func setup() (ctx context.Context, client *Client, mux *http.ServeMux, serverURL string, teardown func()) {
 	// mux is the HTTP request multiplexer used with the test server.
 	mux = http.NewServeMux()
 
@@ -37,7 +38,11 @@ func setup() (client *Client, mux *http.ServeMux, serverURL string, teardown fun
 	url, _ := url.Parse(server.URL + baseURLPath + "/")
 	client = NewClient("123456", BaseUrlOption(url.String()))
 
-	return client, mux, server.URL, server.Close
+	return context.Background(), client, mux, server.URL, server.Close
+}
+
+func httpErrorResponse(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, "You are a teapot.", http.StatusTeapot)
 }
 
 func sendGraphQLResponse(t *testing.T, w io.Writer, response any) bool {
@@ -48,6 +53,27 @@ func sendGraphQLResponse(t *testing.T, w io.Writer, response any) bool {
 	}
 
 	return true
+}
+
+func getGraphQLInput[T any](r *http.Request) (*T, error) {
+	request := new(graphql.Request)
+	err := json.NewDecoder(r.Body).Decode(request)
+	if err != nil {
+		return nil, err
+	}
+
+	varsBytes, err := json.Marshal(request.Variables)
+	if err != nil {
+		return nil, err
+	}
+
+	var requestInput T
+	err = json.Unmarshal(varsBytes, &requestInput)
+	if err != nil {
+		return nil, err
+	}
+
+	return &requestInput, err
 }
 
 func testObjects(t *testing.T, obj1 any, obj2 any) bool {
