@@ -32,7 +32,7 @@ func TestSwoService_ReadNotification(t *testing.T) {
 	server.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		gqlInput, err := getGraphQLInput[__GetNotificationInput](r)
 		if err != nil {
-			t.Errorf("Swo.ReadAlert returned error: %v", err)
+			t.Errorf("Swo.ReadNotification error: %v", err)
 		}
 
 		sendGraphQLResponse(t, w, GetNotificationResponse{
@@ -88,14 +88,14 @@ func TestSwoService_CreateNotification(t *testing.T) {
 	server.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		gqlInput, err := getGraphQLInput[__CreateNotificationInput](r)
 		if err != nil {
-			t.Errorf("Swo.ReadAlert returned error: %v", err)
+			t.Errorf("Swo.CreateNotification error: %v", err)
 		}
 
 		got := gqlInput.Configuration
 		want := requestInput
 
 		if !testObjects(t, got, want) {
-			t.Errorf("Request input = %+v, want %+v", got, want)
+			t.Errorf("Request got = %+v, want = %+v", got, want)
 		}
 
 		sendGraphQLResponse(t, w, CreateNotificationResponse{
@@ -157,14 +157,14 @@ func TestSwoService_UpdateNotification(t *testing.T) {
 	server.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		gqlInput, err := getGraphQLInput[__UpdateNotificationInput](r)
 		if err != nil {
-			t.Errorf("Swo.ReadAlert returned error: %v", err)
+			t.Errorf("Swo.UpdateNotification error: %v", err)
 		}
 
 		got := gqlInput.Configuration
 		want := input
 
 		if !testObjects(t, got, want) {
-			t.Errorf("Request input = %+v, want %+v", got, want)
+			t.Errorf("Request got = %+v, want = %+v", got, want)
 		}
 
 		sendGraphQLResponse(t, w, UpdateNotificationResponse{
@@ -199,14 +199,14 @@ func TestSwoService_DeleteNotification(t *testing.T) {
 	server.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		gqlInput, err := getGraphQLInput[__DeleteNotificationInput](r)
 		if err != nil {
-			t.Errorf("Swo.ReadAlert returned error: %v", err)
+			t.Errorf("Swo.DeleteNotification error: %v", err)
 		}
 
 		got := gqlInput.Input
 		want := input
 
 		if !testObjects(t, got, want) {
-			t.Errorf("Swo.DeleteNotification: Request body = %+v, want %+v", got, want)
+			t.Errorf("Swo.DeleteNotification: Request got = %+v, want %+v", got, want)
 		}
 
 		sendGraphQLResponse(t, w, DeleteNotificationResponse{
@@ -232,19 +232,19 @@ func TestSwoService_NotificationsServerErrors(t *testing.T) {
 
 	_, err := client.NotificationsService().Create(ctx, CreateNotificationInput{})
 	if err == nil {
-		t.Error("Swo.CreateNotificationError expected an error response")
+		t.Error("Swo.NotificationsServerErrors expected an error response")
 	}
 	_, err = client.NotificationsService().Read(ctx, "123", "email")
 	if err == nil {
-		t.Error("Swo.ReadNotificationError expected an error response")
+		t.Error("Swo.NotificationsServerErrors expected an error response")
 	}
 	err = client.NotificationsService().Update(ctx, UpdateNotificationInput{})
 	if err == nil {
-		t.Error("Swo.UpdateNotificationError expected an error response")
+		t.Error("Swo.NotificationsServerErrors expected an error response")
 	}
 	err = client.NotificationsService().Delete(ctx, "123")
 	if err == nil {
-		t.Error("Swo.DeleteNotificationError expected an error response")
+		t.Error("Swo.NotificationsServerErrors expected an error response")
 	}
 }
 
