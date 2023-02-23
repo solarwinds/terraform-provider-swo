@@ -126,3 +126,7 @@ resource "swo_alert" "test" {
 }
 `, name)
 }
+
+/* func TestCreateAlert(t *testing.T) {
+alertResouce := NewAlertResource()
+*/

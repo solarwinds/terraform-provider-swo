@@ -1,5 +1,5 @@
 resource "swo_alert" "https_response_time" {
-  name        = "High HTTPS Response Time"
+  name        = "TF Test - High HTTPS Response Time"
   description = ""
   severity    = "INFO"
   type        = "metric"

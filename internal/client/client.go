@@ -10,6 +10,7 @@ import (
 	"github.com/Khan/genqlient/graphql"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
+	"github.com/solarwindscloud/swo-session-creator-go/session"
 )
 
 const (
@@ -28,7 +29,8 @@ type ServiceAccessor interface {
 // Client implements ServiceAccessor
 type Client struct {
 	// SWO api key used for making remote requests to the SWO platform.
-	apiToken string
+	apiToken    string
+	userSession *session.UserSession
 
 	// Option settings
 	baseURL        *url.URL
