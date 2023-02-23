@@ -20,7 +20,9 @@ func UserAgentOption(userAgent string) ClientOption {
 // Configuation function that allows setting of the http request timeout.
 func RequestTimeoutOption(duration time.Duration) ClientOption {
 	return func(c *Client) error {
-		c.requestTimeout = duration
+		if duration > 0 {
+			c.requestTimeout = duration
+		}
 		return nil
 	}
 }
@@ -36,13 +38,15 @@ func TransportOption(transport http.RoundTripper) ClientOption {
 // BaseUrlOption is a config function allowing setting of the base URL the API is targeted towards.
 func BaseUrlOption(urlString string) ClientOption {
 	return func(c *Client) error {
-		urlObj, err := url.Parse(urlString)
+		if urlString != "" {
+			urlObj, err := url.Parse(urlString)
 
-		if err != nil {
-			return err
+			if err != nil {
+				return err
+			}
+
+			c.baseURL = urlObj
 		}
-
-		c.baseURL = urlObj
 
 		return nil
 	}

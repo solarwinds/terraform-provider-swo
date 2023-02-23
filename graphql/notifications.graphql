@@ -1,0 +1,67 @@
+query GetNotification(
+  $configurationId: String!
+  $configurationType: String!
+) {
+  user {
+    currentOrganization {
+      notificationServiceConfiguration(
+        configurationId: $configurationId
+        configurationType: $configurationType
+      ) {
+        id
+        type
+        title
+        settings
+        createdAt
+        createdBy
+        description
+      }
+    }
+  }
+}
+
+mutation CreateNotification(
+  $configuration: createNotificationServiceConfigurationInput!
+) {
+  createNotificationServiceConfiguration(configuration: $configuration) {
+    code
+    success
+    message
+    configuration {
+      id
+      type
+      title
+      settings
+      createdAt
+      createdBy
+      description
+    }
+  }
+}
+
+mutation UpdateNotification(
+  $configuration: UpdateNotificationServiceConfigurationInput!
+) {
+  updateNotificationServiceConfiguration(input: $configuration) {
+    code
+    success
+    message
+    configuration {
+      id
+      type
+      title
+      settings
+      description
+    }
+  }
+}
+
+mutation DeleteNotification(
+  $input: DeleteNotificationServiceConfigurationInput!
+) {
+  deleteNotificationServiceConfiguration(input: $input) {
+    success
+    code
+    message
+  }
+}
