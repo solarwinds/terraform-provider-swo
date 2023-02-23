@@ -71,7 +71,12 @@ func (as *AlertsService) Read(id string) (*AlertDefinitionRead, error) {
 		return nil, err
 	}
 
-	alertDef := resp.AlertQueries.AlertDefinitions.AlertDefinitions[0]
+	alertDefs := resp.AlertQueries.AlertDefinitions.AlertDefinitions
+	alertDef := AlertDefinitionRead{}
+
+	if len(alertDefs) > 0 {
+		alertDef = resp.AlertQueries.AlertDefinitions.AlertDefinitions[0]
+	}
 
 	log.Printf("Read alert success. Id: %s", id)
 

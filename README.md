@@ -86,3 +86,50 @@ In order to run the full suite of Acceptance tests, run `make testacc`.
 ```shell
 make testacc
 ```
+
+
+
+## Terraform Debugging
+Mac Install Terraform:
+ ```
+ $ brew tap hashicorp/tap
+ $ brew install hashicorp/tap/terraform
+ ```
+Follow this: https://opencredo.com/blogs/running-a-terraform-provider-with-a-debugger/
+For vscode setup a .vscode/launch.json file that looks like this 
+
+```
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "debug tf",
+            "type": "go",
+            "request": "launch",
+            "args": ["--debug"],
+            "program": "main.go" 
+        }
+    ],
+}
+```
+
+Run the new debugger. If everything was set up correctly, the plugin will output a message telling you to set the TF_REATTACH_PROVIDERS environment variable to the value shown.
+
+```
+Provider started. To attach Terraform CLI, set the TF_REATTACH_PROVIDERS environment variable with the following:
+
+	TF_REATTACH_PROVIDERS='{"github.com/solarwindscloud/swo":{"Protocol":"grpc","ProtocolVersion":6,"Pid":50111,"Test":true,"Addr":{"Network":"unix","String":"/var/folders/86/21z0bd_x39g177h5nfw2l8w80000gq/T/plugin710908482"}}}'
+  ```
+
+  export the `TF_REATTACH_PROVIDERS` you get back. 
+
+  If you're running Apple M1 chip.
+
+  ```
+  export GODEBUG=asyncpreemptoff=1
+
+  terraform init -upgrade
+  ```
+ 
+
+
