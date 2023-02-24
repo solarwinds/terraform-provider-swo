@@ -88,7 +88,7 @@ var (
 
 func GetAlertConditionType(operator string) (string, error) {
 	for operatorType, operatorArray := range AlertOperators {
-		exists := ArrayElementExists(operatorArray, operator)
+		exists := SliceValueExists(operatorArray, operator)
 		if exists {
 			return string(operatorType), nil
 		}
