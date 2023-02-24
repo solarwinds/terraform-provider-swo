@@ -85,7 +85,8 @@ func TestSwoService_CreateNotification(t *testing.T) {
 
 	var settings any = notificationsMockData.emailSettings
 
-	requestInput := CreateNotificationInput{
+	id := uuid.NewString()
+	input := CreateNotificationInput{
 		Title:       notificationsMockData.fieldTitle,
 		Description: &notificationsMockData.fieldDesc,
 		Type:        "email",
@@ -99,7 +100,7 @@ func TestSwoService_CreateNotification(t *testing.T) {
 		}
 
 		got := gqlInput.Configuration
-		want := requestInput
+		want := input
 
 		if !testObjects(t, got, want) {
 			t.Errorf("Request got = %+v, want = %+v", got, want)
@@ -111,7 +112,7 @@ func TestSwoService_CreateNotification(t *testing.T) {
 				Success: true,
 				Message: "",
 				Configuration: &CreateNotificationResult{
-					Id:          uuid.NewString(),
+					Id:          id,
 					Type:        got.Type,
 					Title:       got.Title,
 					Description: got.Description,
@@ -123,21 +124,17 @@ func TestSwoService_CreateNotification(t *testing.T) {
 		})
 	})
 
-	got, err := client.NotificationsService().Create(ctx, requestInput)
+	got, err := client.NotificationsService().Create(ctx, input)
 	if err != nil {
 		t.Errorf("Swo.CreateNotification returned error: %v", err)
 	}
 
-	if got.Id == "" {
-		t.Errorf("Swo.CreateNotification did not return an Id")
-	}
-
 	want := &CreateNotificationResult{
-		Id:          got.Id,
-		Title:       requestInput.Title,
-		Description: requestInput.Description,
-		Type:        requestInput.Type,
-		Settings:    &requestInput.Settings,
+		Id:          id,
+		Title:       input.Title,
+		Description: input.Description,
+		Type:        input.Type,
+		Settings:    &input.Settings,
 		CreatedAt:   notificationsMockData.fieldCreatedAt,
 		CreatedBy:   notificationsMockData.fieldCreatedBy,
 	}

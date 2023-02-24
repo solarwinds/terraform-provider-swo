@@ -28,14 +28,56 @@ input ActiveAlertsFilterInput {
   """List of condition types"""
   conditionTypes: [ConditionType!]
 
+  """Alert acknowledgement status"""
+  acknowledgementStatus: AlertAcknowledgementStatusFilterInput
+
   """Alert filter expression"""
   filter: AlertFilterExpressionInput
 }
 
+"""Add new NetPath endpoint input."""
+input AddNetPathEndpointInput {
+  """Hostname or IP address of endpoint."""
+  hostnameOrAddress: String!
+
+  """Port of endpoint."""
+  port: Int
+
+  """Polling/probing interval."""
+  pollInterval: Int
+
+  """Entity ID"""
+  entityId: ID
+
+  """UAMS client ID."""
+  uamsClientId: String!
+}
+
+"""Add new NetPath endpoint response."""
+type AddNetPathEndpointResponse implements MutationResponseInterface {
+  success: Boolean!
+  message: String!
+  code: String!
+}
+
+"""Input used to define dynamic filters on allowed properties"""
 input AdvancedNetflowFilter {
+  """
+  List of nested filters which will be evaluated together based on the current operation
+  """
   nestedFilters: [AdvancedNetflowFilter!]
-  operation: NetflowFilterOperation!
-  property: AllowedFilterProperty
+
+  """
+  Operation used to evaluate current property, or the list of nested filters
+  """
+  operation: String!
+
+  """
+  Contains property on which the result should be filtered based on operation
+  """
+  property: String
+
+  """Expected value of the property"""
   propertyValue: String
 }
 
@@ -81,6 +123,21 @@ enum AgentInstallPackageManager {
   ZYPPER
 }
 
+"""Alert acknowledgement status possibilities for filtering"""
+enum AlertAcknowledgementStatus {
+  ACKNOWLEDGED
+  ACKNOWLEDGED_BY_MYSELF
+  NOT_ACKNOWLEDGED
+}
+
+input AlertAcknowledgementStatusFilterInput {
+  """Alert acknowledgement status"""
+  acknowledgementStatus: [AlertAcknowledgementStatus!]
+
+  """Acknowledged by user IDs"""
+  acknowledgedByUserIds: [String!]
+}
+
 type AlertAction {
   """Type of a notification service"""
   type: String!
@@ -107,9 +164,32 @@ input AlertActionInput {
   configurationIds: [ID!]!
 }
 
+"""
+Defines what is the data source the condition is evaluated against (metrics, logs, ...).
+"""
+enum AlertConditionDataSource {
+  METRIC
+  LOG
+  EVENT
+  UNKNOWN
+}
+
+"""
+Defines additional narrowing down of the data source (e.g. `events` could be further limited to `anomaly-events`).
+"""
+enum AlertConditionDataType {
+  ANOMALY
+}
+
 interface AlertConditionEvaluationFlat {
   """Alert definition ID"""
   alertDefinitionId: String!
+
+  """
+  Defines subject of given evaluation which might be (for example) an entity, entity combined with metric tag(s),
+  metric tag(s) alone or the whole system (in case of the target not being defined - empty or `null`).
+  """
+  target: AlertEvaluationTarget
 
   """Alert definition name"""
   alertDefinitionName: String!
@@ -159,6 +239,12 @@ interface AlertConditionEvaluationFlat {
 interface AlertConditionEvaluationV2 {
   """Alert definition related to this evaluation"""
   alertDefinition: AlertDefinition
+
+  """
+  Defines subject of given evaluation which might be (for example) an entity, entity combined with metric tag(s),
+  metric tag(s) alone or the whole system (in case of the target not being defined - empty or `null`).
+  """
+  target: AlertEvaluationTarget
 
   """
   Ordered list of flat evaluated tree nodes representing the flattened condition tree.
@@ -243,6 +329,12 @@ enum AlertConditionMatchRuleType {
   MATCHES
 }
 
+type AlertConditionMetadata {
+  scopes: [AlertConditionScope!]!
+  dataSource: AlertConditionDataSource!
+  dataTypes: [AlertConditionDataType!]
+}
+
 """
 See [docs](https://github.com/solarwindscloud/nighthawk-alerting/blob/develop/docs/how-to-build-condition.md) on how to work with condition nodes.
 """
@@ -292,10 +384,13 @@ type AlertConditionNode {
   value: String
 
   """Source specification for `queryField` nodes."""
-  source: String
+  source: String @deprecated(reason: "Field is deprecated, `source` is now defined by `namespace`.")
 
   """Query specification for `queryField` nodes."""
   query: String
+
+  """Events/logs namespace (in Chainsaw) for `queryField` nodes."""
+  namespace: String
 }
 
 type AlertConditionNodeEntityFilter {
@@ -361,7 +456,7 @@ input AlertConditionNodeInput {
   operandIds: [Int!]
 
   """
-  Entity filter for `metricField` nodes, when defined (not null) metric is scoped to entity
+  Entity filter for `metricField` and `queryField` nodes. When defined (not null), node is scoped to entity.
   """
   entityFilter: AlertConditionNodeEntityFilterInput
 
@@ -379,11 +474,26 @@ input AlertConditionNodeInput {
   """String representation of value for `constantValue` nodes."""
   value: String
 
-  """Source specification for `queryField` nodes."""
+  """
+  *DEPRECATED:* Field is deprecated, `source` is now defined by `namespace`.
+  Source specification for `queryField` nodes.
+  """
   source: String
 
   """Query specification for `queryField` nodes."""
   query: String
+
+  """Events/logs namespace (in Chainsaw) for `queryField` nodes."""
+  namespace: String
+}
+
+"""
+Defines what is the alert condition scoped to. Some combinations are allowed, such as `[ENTITY, TAG]`.
+"""
+enum AlertConditionScope {
+  ENTITY
+  TAG
+  WHOLE_SYSTEM
 }
 
 """Alert definition condition evaluation states"""
@@ -427,7 +537,13 @@ type AlertDefinition {
   flatCondition: [FlatAlertConditionExpression!]!
 
   """Alert definition condition type"""
-  conditionType: ConditionType!
+  conditionType: ConditionType! @deprecated(reason: "Field is deprecated, `conditionType` should be derived from `conditionMetadata`.")
+
+  """
+  Provides key properties of alert condition in easy to access format.
+  Such metadata is useful for filtering as well as many parts of internal application logic.
+  """
+  conditionMetadata: AlertConditionMetadata
 
   """The time stamp that identifies when the condition was updated."""
   conditionUpdatedAt: String!
@@ -709,6 +825,9 @@ input AlertEvaluationFilterInput {
 
   """By list of parent Alert definition severities"""
   severities: [AlertSeverity!]
+
+  """By alert acknowledgement status"""
+  acknowledgementStatus: AlertAcknowledgementStatusFilterInput
 }
 
 """
@@ -759,6 +878,9 @@ input AlertEvaluationsFilterInput {
 
   """By list of condition types"""
   conditionTypes: [ConditionType!]
+
+  """Alert acknowledgement status"""
+  acknowledgementStatus: AlertAcknowledgementStatusFilterInput
 }
 
 type AlertEvaluationsResult {
@@ -777,10 +899,124 @@ type AlertEvaluationsResult {
 
 """Alert evaluation statistics categories"""
 enum AlertEvaluationStatisticsCategory {
+  ACKNOWLEDGEMENT_STATUS
   ACTIVE
   ENTITY_TYPE
   MUTED
   SEVERITY
+}
+
+"""
+Defines subject of given evaluation which might be (for example) an entity, entity combined with metric tag(s),
+metric tag(s) alone or the whole system (in case of the target not being defined - empty or `null`).
+"""
+type AlertEvaluationTarget {
+  """ID of target entity"""
+  entityId: String
+
+  """Metric tag(s) in name:value format"""
+  tags: [AlertKeyValueStringPair!]
+}
+
+type AlertEventConditionEvaluation implements AlertConditionEvaluationV2 {
+  """Alert definition"""
+  alertDefinition: AlertDefinition
+
+  """
+  Defines subject of given evaluation which might be (for example) an entity, entity combined with metric tag(s),
+  metric tag(s) alone or the whole system (in case of the target not being defined - empty or `null`).
+  """
+  target: AlertEvaluationTarget
+
+  """Evaluated condition containing values"""
+  evaluatedCondition: [FlatEvaluatedConditionTreeNode!]!
+
+  """Current state of evaluation"""
+  state: AlertConditionState!
+
+  """
+  Time of a last state change in ISO-8601 date format - 2011-12-03T10:15:30Z
+  """
+  changedAt: String!
+
+  """
+  Time when the evaluation was last triggered in ISO-8601 date format - 2011-12-03T10:15:30Z
+  """
+  lastTriggeredAt: String
+
+  """
+  Information about pending mute configurations related to this evaluation
+  """
+  muteInfo: AlertEvaluationMuteInfo!
+
+  """Type of the condition"""
+  conditionType: ConditionType!
+
+  """Entity details"""
+  entity: AlertEntityEvaluationData
+
+  """Trigger id in cas of firing alert"""
+  triggerId: String
+
+  """
+  UserId of user who acknowledged the evaluation, applicable only to FIRING state
+  """
+  acknowledgedByUserId: String
+}
+
+type AlertEventConditionEvaluationFlat implements AlertConditionEvaluationFlat {
+  """Alert definition ID"""
+  alertDefinitionId: String!
+
+  """
+  Defines subject of given evaluation which might be (for example) an entity, entity combined with metric tag(s),
+  metric tag(s) alone or the whole system (in case of the target not being defined - empty or `null`).
+  """
+  target: AlertEvaluationTarget
+
+  """Alert definition name"""
+  alertDefinitionName: String!
+
+  """Alert definition severity"""
+  alertDefinitionSeverity: AlertSeverity!
+
+  """
+  Ordered list of flat evaluated tree nodes representing the flattened condition tree.
+  The first item is the tree root.
+  """
+  evaluatedCondition: [FlatEvaluatedConditionTreeNode!]!
+
+  """Current state of evaluation"""
+  state: AlertConditionState!
+
+  """
+  Time of a last state change in ISO-8601 date format - 2011-12-03T10:15:30Z
+  """
+  changedAt: String!
+
+  """
+  Time when the evaluation was last triggered in ISO-8601 date format - 2011-12-03T10:15:30Z
+  """
+  lastTriggeredAt: String
+
+  """
+  Information about pending mute configurations related to this evaluation
+  """
+  muteInfo: AlertEvaluationMuteInfo!
+
+  """Type of the condition"""
+  conditionType: ConditionType!
+
+  """Entity details"""
+  entity: AlertEntityData
+
+  """Trigger id in cas of firing alert"""
+  triggerId: String
+
+  """
+  UserId of user who acknowledged the evaluation, applicable only to FIRING state
+  """
+  acknowledgedByUserId: String
 }
 
 type AlertFilterExpression {
@@ -863,6 +1099,9 @@ input AlertFilterInput {
 
   """By list of condition types"""
   conditionTypes: [ConditionType!]
+
+  """By swi-query expression"""
+  query: String
 }
 
 """
@@ -890,9 +1129,21 @@ input AlertIntRangeInput {
   to: Int
 }
 
+"""Simple string key-value pair structure"""
+type AlertKeyValueStringPair {
+  key: String!
+  value: String!
+}
+
 type AlertLogConditionEvaluation implements AlertConditionEvaluationV2 {
   """Alert definition"""
   alertDefinition: AlertDefinition
+
+  """
+  Defines subject of given evaluation which might be (for example) an entity, entity combined with metric tag(s),
+  metric tag(s) alone or the whole system (in case of the target not being defined - empty or `null`).
+  """
+  target: AlertEvaluationTarget
 
   """Evaluated condition containing values"""
   evaluatedCondition: [FlatEvaluatedConditionTreeNode!]!
@@ -933,6 +1184,12 @@ type AlertLogConditionEvaluation implements AlertConditionEvaluationV2 {
 type AlertLogConditionEvaluationFlat implements AlertConditionEvaluationFlat {
   """Alert definition ID"""
   alertDefinitionId: String!
+
+  """
+  Defines subject of given evaluation which might be (for example) an entity, entity combined with metric tag(s),
+  metric tag(s) alone or the whole system (in case of the target not being defined - empty or `null`).
+  """
+  target: AlertEvaluationTarget
 
   """Alert definition name"""
   alertDefinitionName: String!
@@ -1039,6 +1296,12 @@ type AlertMetricConditionEvaluation implements AlertConditionEvaluationV2 {
   alertDefinition: AlertDefinition
 
   """
+  Defines subject of given evaluation which might be (for example) an entity, entity combined with metric tag(s),
+  metric tag(s) alone or the whole system (in case of the target not being defined - empty or `null`).
+  """
+  target: AlertEvaluationTarget
+
+  """
   Ordered list of flat evaluated tree nodes representing the flattened condition tree.
   The first item is the tree root.
   """
@@ -1080,6 +1343,12 @@ type AlertMetricConditionEvaluation implements AlertConditionEvaluationV2 {
 type AlertMetricConditionEvaluationFlat implements AlertConditionEvaluationFlat {
   """Alert definition ID"""
   alertDefinitionId: String!
+
+  """
+  Defines subject of given evaluation which might be (for example) an entity, entity combined with metric tag(s),
+  metric tag(s) alone or the whole system (in case of the target not being defined - empty or `null`).
+  """
+  target: AlertEvaluationTarget
 
   """Alert definition name"""
   alertDefinitionName: String!
@@ -1331,6 +1600,7 @@ type AlertStatistics {
 
 """Alerting statistics categories"""
 enum AlertStatisticsCategory {
+  ACKNOWLEDGEMENT_STATUS
   ACTIVE
   ALERT_DEFINITION
   CONDITION_TYPE
@@ -1367,6 +1637,15 @@ input AlertTimeRangeInput {
   endTime: String
 }
 
+"""
+Contains properties that can be used to filter data
+TrafficFilter - NorthSouth, EastWest or Undefined. Specifies whether the traffic is external, internal, or undefined
+              - Option 'All' is no longer supported
+NetworkEntityId - string id of network entity
+IngressInterfaceId - string id of a network interface
+EgressInterfaceId - string id of a network interface
+Rest - self explanatory
+"""
 enum AllowedFilterProperty {
   TrafficFilter
   NetworkEntityId
@@ -1612,7 +1891,7 @@ type AuthenticatedUser implements SwicusUser {
 
 input AvailabilityCheckSettingsInput {
   """
-  Use this field to configure whether availability tests should check for presence/absence of a
+  Use this field to configure whether availability tests should check for presence or absence of a
   particular string on a page.
   
   If the `operator` is DOES_NOT_CONTAIN and the `value` is found on the page, the availability test
@@ -1628,20 +1907,20 @@ input AvailabilityCheckSettingsInput {
   checkForString: CheckForStringInput
 
   """
-  Configure how often should availability tests be performed.
+  Configure how often availability tests should be performed.
   
-  Provide a number of seconds that is divisible by 60 and not greater than 14400 (4 hours).
+  Provide a number of seconds that is divisible by 60 and no greater than 14400 (4 hours).
   """
   testIntervalInSeconds: Int!
 
   """
-  Configure for which protocols should availability tests be performed. At least one protocol must
+  Configure which protocols need availability tests to be performed. At least one protocol must
   be provided.
   """
   protocols: [WebsiteProtocol!]!
 
   """
-  Configure from which cloud platforms should availability tests be performed.
+  Configure cloud platforms of the synthetic availability test probes.
   
   If set to null, no particular cloud platform will be enforced.
   
@@ -1650,7 +1929,7 @@ input AvailabilityCheckSettingsInput {
   platformOptions: ProbePlatformOptionsInput
 
   """
-  Configure from which locations should availability tests be performed.
+  Configure locations of the synthetic availability test probes.
   
   Acceptable `values` depend on the selected `type` and actual values of existing probes.
   
@@ -2186,6 +2465,15 @@ type AwsApplicationELB implements Entity & HealthEntity & StatefulEntity & Alert
   The HealthyHostRate metric provides percentage of healthy hosts over all the hosts(healthy & unhealthy)
   """
   healthyHostRate: Metric!
+
+  """50th Target response time percentile"""
+  targetResponseTimeP50: Metric!
+
+  """90th Target response time percentile"""
+  targetResponseTimeP90: Metric!
+
+  """99th Target response time percentile"""
+  targetResponseTimeP99: Metric!
   alertEvaluationsV2: [AlertConditionEvaluationV2!]!
 }
 
@@ -3466,6 +3754,15 @@ type AwsELB implements Entity & HealthEntity & AlertingEntity {
   The httpCodeELB5xxRate metric provides percentage of 5xx erros over total request count
   """
   httpCodeELB5xxRate: Metric!
+
+  """50th Latency percentile"""
+  latencyP50: Metric!
+
+  """90th Latency percentile"""
+  latencyP90: Metric!
+
+  """99th Latency percentile"""
+  latencyP99: Metric!
   alertEvaluationsV2: [AlertConditionEvaluationV2!]!
 }
 
@@ -4756,6 +5053,21 @@ type AwsTransferFamily implements Entity & HealthEntity & StatefulEntity {
   onUploadExecutionsFailed: Metric!
 
   """
+  The total number of on-partial-upload workflow executions started on the server
+  """
+  onPartialUploadExecutionsStarted: Metric!
+
+  """
+  The total number of successful, on-partial-upload workflow executions on the server
+  """
+  onPartialUploadExecutionsSuccess: Metric!
+
+  """
+  The total number of unsuccessful, on-partial-upload workflow executions on the server
+  """
+  onPartialUploadExecutionsFailed: Metric!
+
+  """
   The bytesOutPercentage metrics provides percentage of bytesOut over bytesIn
   """
   bytesOutPercentage: Metric!
@@ -5040,6 +5352,11 @@ type AwsVPN implements Entity & HealthEntity & StatefulEntity & AlertingEntity {
   The bytes sent from the AWS side of the connection through the VPN tunnel to the customer gateway. Each metric data point represents the number of bytes sent after the previous data point.
   """
   tunnelDataOut: Metric!
+
+  """
+  The tunnelDataOutPercent metric is used in health score for AWS VPN, which is sum of tunnelDataOut by tunnelDataIn.
+  """
+  tunnelDataOutPercent: Metric!
   alertEvaluationsV2: [AlertConditionEvaluationV2!]!
 }
 
@@ -5242,16 +5559,6 @@ type AzureAppService implements Entity & HealthEntity & AlertingEntity {
   """5xx Error Rate"""
   errorRate5xx: Metric!
   alertEvaluationsV2: [AlertConditionEvaluationV2!]!
-}
-
-enum AzureAuthenticationState {
-  PENDING
-  SUCCESS
-  FAIL
-}
-
-type AzureAuthenticationStateResponse {
-  state: AzureAuthenticationState!
 }
 
 """Azure Blob Storage"""
@@ -5586,7 +5893,7 @@ type AzureCosmosDb implements Entity & HealthEntity & AlertingEntity {
   """
   P99 Replication Latency across source and target regions for geo-enabled account.
   """
-  replicationLatency: Metric!
+  replicationLatencyP99: Metric!
 
   """
   Account requests availability at one hour or day or month granularity. 
@@ -6688,16 +6995,16 @@ type AzureSubscription {
   id: String!
   displayName: String!
   enabled: Boolean!
-  regions: [AzureRegion!]!
-  resourceTypes: [AzureResourceType!]!
+  regions: [AzureRegion!]
+  resourceTypes: [AzureResourceType!]
 }
 
 input AzureSubscriptionInput {
   id: String!
   displayName: String!
   enabled: Boolean!
-  regions: [AzureRegionInput!]!
-  resourceTypes: [AzureResourceTypeInput!]!
+  regions: [AzureRegionInput!]
+  resourceTypes: [AzureResourceTypeInput!]
 }
 
 """Azure VirtualMachine ScaleSet"""
@@ -7121,11 +7428,15 @@ type CollectLogRow {
   downloadUrl: String
 }
 
-"""Alert definition condition types"""
+"""
+*DEPRECATED:* `ConditionType` is now described by metadata composed of `[AlertConditionScope]`, `AlertConditionDataSource` and `[AlertConditionDataType]`.
+Alert definition condition types
+"""
 enum ConditionType {
   ENTITY_METRIC
   STANDALONE_METRIC
   LOG_QUERY
+  ANOMALY_EVENTS
   UNKNOWN
 }
 
@@ -7198,15 +7509,29 @@ type Container implements Entity & AlertingEntity {
 }
 
 type ConversationMeasurements {
+  """Source IP/Hostname of the conversation"""
   source: String!
+
+  """Destination IP/Hostname of the conversation"""
   destination: String!
+
+  """Array of data points"""
   measurements: [Measurement!]!
 }
 
 input ConversationsFilterInput {
+  """
+  Sets the top limit of conversations with highest flows traffic to retrieve.
+  """
   limit: Int!
+
+  """Sets time range to load netflow data from"""
   timeFilter: TimeRangeInput!
+
+  """Sets size of aggregation buckets."""
   bucketSizeInSeconds: Int!
+
+  """Input used to construct dynamic filters"""
   advancedFilter: AdvancedNetflowFilter
 }
 
@@ -7425,13 +7750,14 @@ type CreateTokenResponse implements MutationResponseInterface {
 
 input CreateWebsiteInput {
   """
-  Name of the website. Must be unique within organization. Must not contain any control characters,
-  any whitespace other than regular space, any leading, trailing or consecutive whitespace.
+  Name of the website, which must be unique within the organization. The website must also not
+  contain any control characters, any white space other than space (U+0020), or any consecutive,
+  leading or trailing spaces.
   """
   name: String!
 
   """
-  URL of the website. Must be a valid URL with no leading or trailing whitespace. Must not contain
+  URL of the website. Must be a valid URL with no leading or trailing white space. Must not contain
   invalid port number (>65535).
   """
   url: String!
@@ -7439,7 +7765,8 @@ input CreateWebsiteInput {
   """
   Use this field to configure availability tests for the website.
   
-  If it is omitted or set to null, the resulting Website entity will have no availability tests configured.
+  If it is omitted or set to null, the resulting Website entity will have no availability tests
+  configured.
   """
   availabilityCheckSettings: AvailabilityCheckSettingsInput
 }
@@ -7678,6 +8005,11 @@ type DatabaseProfilerCategory {
   These are the columns that can be included in the table when the category is ranked
   """
   columns: [DatabaseProfilerDescribableMetric!]!
+
+  """
+  Indicates the type of value available in the description. Could be of type QUERY or TEXT.
+  """
+  descriptionType: DatabaseProfilerDescriptionType!
   filters: [DatabaseProfilerRankOption!]! @deprecated(reason: "Use options instead")
   options: [DatabaseProfilerRankOption!]!
 }
@@ -7736,6 +8068,11 @@ type DatabaseProfilerDescribableMetric {
 
   """The metric name known by the internal services"""
   metricName: String!
+}
+
+enum DatabaseProfilerDescriptionType {
+  QUERY
+  TEXT
 }
 
 type DatabaseProfilerRanking {
@@ -7947,6 +8284,14 @@ type DeleteCloudAccountsResponse implements MutationResponseInterface {
   code: String!
 }
 
+input DeleteCredentialInput {
+  ids: [ID!]!
+}
+
+type DeleteCredentialResult {
+  ids: [ID!]!
+}
+
 input DeleteDashboardInput {
   id: ID!
 }
@@ -7981,6 +8326,7 @@ input DeleteLogFilterInput {
   filterId: ID!
 }
 
+"""Delete network device response."""
 type DeleteNetworkDeviceResponse implements MutationResponseInterface {
   success: Boolean!
   message: String!
@@ -8050,7 +8396,9 @@ type DeleteWebsiteSuccess {
 """Mutations related to Digital Experience Monitoring (DEM)."""
 type DemMutations {
   internalCreateWebsite(input: InternalCreateWebsiteInput!): InternalCreateWebsiteResult!
+  internalUpdateWebsite(input: InternalUpdateWebsiteInput!): InternalUpdateWebsiteResult!
   createWebsite(input: CreateWebsiteInput!): CreateWebsiteSuccess!
+  updateWebsite(input: PublicUpdateWebsiteInput!): PublicUpdateWebsiteSuccess!
   deleteWebsite(input: DeleteWebsiteInput!): DeleteWebsiteSuccess!
   triggerOnDemandCheck(input: TriggerOnDemandCheckInput!): TriggerOnDemandCheckResult!
 }
@@ -8172,6 +8520,11 @@ enum DiagnosticsType {
 enum Direction {
   BACKWARD
   FORWARD
+}
+
+enum DurationColumn {
+  TRACE_DURATION
+  SPAN_DURATION
 }
 
 """EC2 entity extension for Host"""
@@ -8361,6 +8714,8 @@ input EditOtelReceiverInput {
   instanceName: String!
   displayName: String
   parameters: [OtelReceiverParameterInput]
+  credentials: [OtelReceiverCredentialInput]
+  attributes: [OtelReceiverAttributeInput]
 }
 
 type EmptyLogFilterResponse implements MutationResponseInterface {
@@ -8496,6 +8851,9 @@ input EntityFilterInput {
   Contextual search query string. If used along with filter, entities must match both filters.
   """
   query: String
+
+  """Optional entity telemetry status filter."""
+  status: EntityTelemetryStatus
 }
 
 """Type describing entity filter"""
@@ -8743,6 +9101,18 @@ type EntityMutations {
   Setting empty/null value removes display name and entity will use original name as its display name.
   """
   setEntityDisplayName(id: ID!, displayName: String): SetEntityDisplayNameResult
+
+  """
+  Set existing SyslogEntity's syslogAppName.
+  Setting empty/null value removes syslogAppName
+  """
+  setEntitySyslogAppName(id: ID!, syslogAppName: String): SetEntitySyslogAppNameResult
+
+  """
+  Set existing SyslogEntity's syslogHostname
+  Setting empty/null value removes syslogHostname
+  """
+  setEntitySyslogHostname(id: ID!, syslogHostname: String): SetEntitySyslogHostnameResult
 }
 
 type EntityQueries {
@@ -8791,12 +9161,24 @@ input EntitySortItemInput {
 """Various statistics queries related to a single entity"""
 type EntityTelemetryStatistics {
   """
-  Get number or unique values for given metric key across all metrics for this entity.
+  Get number or unique values for given metric key for a given metric for this entity.
+  If metric is not given, search all metrics.
   """
-  uniqueMetricKeyValuesCount(key: String!, timeRange: TimeRangeInput!): Int!
+  uniqueMetricKeyValuesCount(key: String!, timeRange: TimeRangeInput!, metricName: String): Int!
 
   """Get number of unique metrics for this entity."""
   metricsCount(timeRange: TimeRangeInput!): Int!
+}
+
+"""Entity Telemetry Status"""
+enum EntityTelemetryStatus {
+  """ Entity is considered known if any telemetry was received within the given time range 
+  """
+  KNOWN
+
+  """ Entity is considered unknown if no telemetry was received within the given time range 
+  """
+  UNKNOWN
 }
 
 type EntityTriggerCount {
@@ -8817,6 +9199,11 @@ type EntityTriggerCount {
 type EntityTypeMetadata {
   """Name of the entity type"""
   type: String!
+
+  """
+  Name of parent entity type when deducted from top-level extension, else null value.
+  """
+  parentType: String
 
   """List of all base types for this entity type"""
   baseTypes: [String!]!
@@ -9167,7 +9554,13 @@ type FeaturePermissions {
   rolePermissions: [RolePermissions!]!
 }
 
+"""
+Queries for checking whether selected feature is supported by version of orion that the org is using
+"""
 type FeatureSupport {
+  """
+  Checks whether the installation of orion which the org is using is able to filter data based on its origin
+  """
   isTrafficFilterSupported: Boolean!
 }
 
@@ -9242,15 +9635,33 @@ enum FilterOperation {
 }
 
 type FilterOptions {
+  """List of filter options"""
   options: [String!]!
+
+  """Page info metadata"""
   pageInfo: PageInfo!
 }
 
 input FilterOptionsInput {
-  property: AllowedFilterProperty!
+  """Specifies property whose options we are querying"""
+  property: String!
+
+  """Specifies filter applied to options of property"""
   filter: AdvancedNetflowFilter
+
+  """Specifies time range which should be searched for options"""
   timeFilter: TimeRangeInput!
+
+  """
+  Paging metadata for the query. If page input is not defined, the getFilterOptions returns
+  all options for a given time range and set of filters
+  """
   paging: PagingInput
+}
+
+type FirewallNetworkDeviceExtension {
+  """Firewall name"""
+  name: String
 }
 
 type FlatAlertConditionExpression {
@@ -9310,10 +9721,13 @@ type FlatAlertConditionNode {
   value: String
 
   """Source specification for `queryField` nodes."""
-  source: String
+  source: String @deprecated(reason: "Field is deprecated, `source` is now defined by `namespace`.")
 
   """Query specification for `queryField` nodes."""
   query: String
+
+  """Events/logs namespace (in Chainsaw) for `queryField` nodes."""
+  namespace: String
 }
 
 type FlatAlertFilterExpression {
@@ -9662,6 +10076,36 @@ enum HistoricalAlertsStatisticsCategory {
   TRIGGERING_OBJECT
 }
 
+type HistoricalEventAlert implements HistoricalAlert {
+  """Alert definition ID"""
+  alertDefinitionId: String!
+
+  """Alert definition name"""
+  alertDefinitionName: String!
+
+  """Alert definition severity"""
+  alertDefinitionSeverity: AlertSeverity!
+
+  """
+  Time when the evaluation was triggered in ISO-8601 date format (e.g. `2011-12-03T10:15:30Z`)
+  """
+  triggeredAt: String!
+
+  """
+  Time when the evaluation was resolved in ISO-8601 date format (e.g. `2011-12-03T10:15:30Z`)
+  """
+  resolvedAt: String!
+
+  """Resolution reason"""
+  reason: AlertReason!
+
+  """Condition type"""
+  conditionType: ConditionType!
+
+  """Entity details"""
+  entity: AlertEntityData
+}
+
 type HistoricalLogAlert implements HistoricalAlert {
   """Alert definition ID"""
   alertDefinitionId: String!
@@ -9723,7 +10167,7 @@ type HistoricalMetricAlert implements HistoricalAlert {
 }
 
 """Host entity"""
-type Host implements Entity & HealthEntity & StatefulEntity & AlertingEntity {
+type Host implements Entity & HealthEntity & StatefulEntity & SyslogEntity & AlertingEntity {
   """Unique identifier of an entity"""
   id: ID!
 
@@ -9734,7 +10178,7 @@ type Host implements Entity & HealthEntity & StatefulEntity & AlertingEntity {
   name: String
 
   """
-  Entity display name / alias. This value is equal to `name` unless it's explicitly overriden. 
+  Entity display name / alias. This value is equal to `name` unless it's explicitly overriden.
   """
   displayName: String
 
@@ -9777,7 +10221,7 @@ type Host implements Entity & HealthEntity & StatefulEntity & AlertingEntity {
   maxUnknownPeriodMinutes: Int
 
   """
-  Flag telling if given entity is in unknown state. 
+  Flag telling if given entity is in unknown state.
   Entity gets to unknown state if it doesn't receive eny telemetry for more than 'maxUnknownPeriodMinutes'.
   """
   isUnknown: Boolean
@@ -9797,6 +10241,16 @@ type Host implements Entity & HealthEntity & StatefulEntity & AlertingEntity {
   """Relation: Websites that are hosted on this host"""
   relatedWebsites: [Website!]
   healthScore: HealthScore
+
+  """
+  The hostname field identifies the machine that originally sent the syslog message.
+  """
+  syslogHostname: String
+
+  """
+  The appName field should identify the device or application that originated the message.
+  """
+  syslogAppName: String
   distro: String
   system: String
   systemVersion: String
@@ -9859,6 +10313,17 @@ type Host implements Entity & HealthEntity & StatefulEntity & AlertingEntity {
   and 'false' if there's not.
   """
   hasUams: Boolean!
+
+  """
+  Extension field that adds NetworkCollector Host fields to the Host entity
+  """
+  nc: NCHostExtension
+
+  """
+  Read-only flag that's 'true' when there is "nc" extension set on the entity
+  and 'false' if there's not.
+  """
+  hasNc: Boolean!
   alertEvaluationsV2: [AlertConditionEvaluationV2!]!
 }
 
@@ -9879,6 +10344,18 @@ type IndirectRelationship implements Relationship {
   contexts: [String!]
 }
 
+input InsertCredentialInput {
+  jweData: String!
+  displayName: String!
+  description: String!
+  tags: [TagCredentialInput]
+  secretType: String!
+}
+
+type InsertCredentialResult {
+  id: ID!
+}
+
 input InternalCreateWebsiteInput {
   name: String!
   url: String!
@@ -9897,6 +10374,22 @@ type InternalCreateWebsiteSuccess {
 input InternalProbeLocationInput {
   type: ProbeLocationType!
   value: String!
+}
+
+input InternalUpdateWebsiteInput {
+  id: ID!
+  name: String!
+  url: String!
+  options: MonitoringOptionsInput!
+  availability: AvailabilityMonitoringInput!
+  rum: RumMonitoringInput
+  customHeaders: [CustomHeaderInput!]
+}
+
+union InternalUpdateWebsiteResult = InternalUpdateWebsiteSuccess | WebsiteInputValidationError
+
+type InternalUpdateWebsiteSuccess {
+  website: Website!
 }
 
 type InvalidField {
@@ -10144,6 +10637,61 @@ type KubernetesContainer implements Entity & StatefulEntity & AlertingEntity {
   alertEvaluationsV2: [AlertConditionEvaluationV2!]!
 }
 
+"""Kubernetes CronJob entity"""
+type KubernetesCronJob implements Entity {
+  """Unique identifier of an entity"""
+  id: ID!
+
+  """Entity type."""
+  type: String!
+
+  """Entity name"""
+  name: String
+
+  """
+  Entity display name / alias. This value is equal to `name` unless it's explicitly overriden.
+  Setting the explicit value of this property updates it to that value.
+  Setting empty/null value to this property makes this property returning value of `name` property.
+  """
+  displayName: String
+
+  """Date and time of entity creation in UTC."""
+  createdTime: String
+
+  """Date and time of last entity update in UTC."""
+  updatedTime: String
+
+  """Date and time when the entity has last received telemetry in UTC."""
+  lastSeenTime: String
+
+  """
+  How long the entity may not be receiving updates/telemetry before it should be considered "unknown".
+  The platform may stop doing certain things with the entity when it is in unknown state.
+  """
+  maxUnknownPeriodMinutes: Int
+
+  """
+  Flag telling if given entity is in unknown state. 
+  Entity gets to unknown state if it doesn't receive eny telemetry for more than 'maxUnknownPeriodMinutes'.
+  """
+  isUnknown: Boolean
+
+  """Set of fields to get to things related to a given entity"""
+  related: RelatedEntityFields
+
+  """List of entity extensions that are currently set on given entity"""
+  extensions: [String!]
+
+  """The unique Id of the cluster."""
+  clusterUid: String
+
+  """The kubernetes namespace of the cron job"""
+  namespaceName: String
+
+  """Cluster to which this cron job belongs."""
+  cluster: KubernetesCluster
+}
+
 """Kubernetes DaemonSet entity"""
 type KubernetesDaemonSet implements Entity & AlertingEntity {
   """Unique identifier of an entity"""
@@ -10317,6 +10865,85 @@ type KubernetesHelmValuesResponse {
   kubernetesHelmValues: KubernetesHelmValues
 }
 
+"""Kubernetes Job entity"""
+type KubernetesJob implements Entity {
+  """Unique identifier of an entity"""
+  id: ID!
+
+  """Entity type."""
+  type: String!
+
+  """Entity name"""
+  name: String
+
+  """
+  Entity display name / alias. This value is equal to `name` unless it's explicitly overriden.
+  Setting the explicit value of this property updates it to that value.
+  Setting empty/null value to this property makes this property returning value of `name` property.
+  """
+  displayName: String
+
+  """Date and time of entity creation in UTC."""
+  createdTime: String
+
+  """Date and time of last entity update in UTC."""
+  updatedTime: String
+
+  """Date and time when the entity has last received telemetry in UTC."""
+  lastSeenTime: String
+
+  """
+  How long the entity may not be receiving updates/telemetry before it should be considered "unknown".
+  The platform may stop doing certain things with the entity when it is in unknown state.
+  """
+  maxUnknownPeriodMinutes: Int
+
+  """
+  Flag telling if given entity is in unknown state. 
+  Entity gets to unknown state if it doesn't receive eny telemetry for more than 'maxUnknownPeriodMinutes'.
+  """
+  isUnknown: Boolean
+
+  """Set of fields to get to things related to a given entity"""
+  related: RelatedEntityFields
+
+  """List of entity extensions that are currently set on given entity"""
+  extensions: [String!]
+
+  """The unique Id of the cluster."""
+  clusterUid: String
+
+  """The kubernetes namespace of the job"""
+  namespaceName: String
+
+  """Cluster to which this job belongs."""
+  cluster: KubernetesCluster
+
+  """CronJob to which this job belongs."""
+  cronJob: KubernetesCronJob
+
+  """Creation time in unix timestamp for a job"""
+  creationTime: Int
+
+  """Start time in unix timestamp for a job"""
+  startTime: Int
+
+  """Completion time in unix timestamp for a job"""
+  completionTime: Int
+
+  """Number of completions to job be completed"""
+  completions: Int
+
+  """Number of active completions"""
+  active: Int
+
+  """Number of succeeded completions"""
+  succeeded: Int
+
+  """Number of failed completions"""
+  failed: Int
+}
+
 """Kubernetes Namespace entity"""
 type KubernetesNamespace implements Entity & AlertingEntity {
   """Unique identifier of an entity"""
@@ -10407,7 +11034,7 @@ type KubernetesNode implements Entity & HealthEntity & StatefulEntity & Alerting
   maxUnknownPeriodMinutes: Int
 
   """
-  Flag telling if given entity is in unknown state. 
+  Flag telling if given entity is in unknown state.
   Entity gets to unknown state if it doesn't receive eny telemetry for more than 'maxUnknownPeriodMinutes'.
   """
   isUnknown: Boolean
@@ -10445,6 +11072,9 @@ type KubernetesNode implements Entity & HealthEntity & StatefulEntity & Alerting
   """Container runtime version that is installed on the node"""
   containerRuntimeVersion: String
 
+  """Node internal IP"""
+  internalIp: String
+
   """Provides information about pod count during the time."""
   podCount: Metric!
 
@@ -10478,6 +11108,9 @@ type KubernetesNode implements Entity & HealthEntity & StatefulEntity & Alerting
   Provides information about the network utilization - bytes transmitted.
   """
   networkBytesTransmitted: Metric!
+
+  """Creation time in unix timestamp for a node"""
+  creationTime: Int
   alertEvaluationsV2: [AlertConditionEvaluationV2!]!
 }
 
@@ -10572,6 +11205,9 @@ type KubernetesPod implements Entity & StatefulEntity & AlertingEntity {
 
   """ReplicaSet to which this pod belongs."""
   replicaset: KubernetesReplicaSet
+
+  """Job to which this pod belongs."""
+  job: KubernetesJob
 
   """Creation time in unix timestamp for a pod"""
   creationTime: Int
@@ -11026,7 +11662,7 @@ type LogViewerSettings {
   visibility: VisibilitySettings! @deprecated(reason: "No longer needed for resolver. Handled on client-side.")
 }
 
-"""Imported from entity-service-schema"""
+"""Single measurement - a metric data point"""
 type Measurement {
   """Timestamp to which this measurement belongs"""
   time: String!
@@ -11450,6 +12086,19 @@ input MockTimeSeriesInput {
   startTime: DateTime!
 }
 
+input ModifyCredentialInput {
+  id: ID!
+  jweData: String!
+  displayName: String!
+  description: String!
+  tags: [TagCredentialInput]
+  secretType: String!
+}
+
+type ModifyCredentialResult {
+  id: ID!
+}
+
 type MonitoringOptions {
   isAvailabilityActive: Boolean
   isRumActive: Boolean
@@ -11461,6 +12110,9 @@ input MonitoringOptionsInput {
 }
 
 type Mutation {
+  modifyCredential(input: ModifyCredentialInput!): ModifyCredentialResult!
+  deleteCredential(input: DeleteCredentialInput!): DeleteCredentialResult!
+  insertCredential(input: InsertCredentialInput!): InsertCredentialResult!
   observeDatabase(req: ObserveDatabaseRequest!): ObserveDatabaseResponse!
   unobserveDatabase(req: UnobserveDatabaseRequest!): UnobserveDatabaseResponse!
   deleteDatabase(req: DeleteDatabaseRequest!): DeleteDatabaseResponse!
@@ -11531,7 +12183,8 @@ type Mutation {
   createLogSearch(input: CreateLogSearchInput!): SavedLogSearchResponse!
   updateLogSearch(input: UpdateLogSearchInput!): SavedLogSearchResponse!
   createLogSearchHistory(input: CreateLogSearchHistoryInput!): MutationResponse!
-  updateWebsite(input: UpdateWebsiteInput!): UpdateWebsiteResult!
+  reTrial: MutationResponse!
+  updateWebsite(input: UpdateWebsiteInput!): UpdateWebsiteResult! @deprecated(reason: "updateWebsite is deprecated. Use internalUpdateWebsite from DemQueries instead.")
   dem: DemMutations!
   generateAwsCloudAccountWizardSession: GenerateAwsCloudAccountWizardSessionResponse!
   generateAwsCloudAccountEditWizardSession(sessionId: Guid): GenerateAwsCloudAccountEditWizardSessionResponse!
@@ -11547,7 +12200,9 @@ type Mutation {
   getAzureSubscriptions(input: AzureCredentialInput!): GetAzureSubscriptionsResponse!
   getAzureSubscriptionsForIntegration(entityId: String!): GetAzureSubscriptionsResponse!
   deleteService(input: DeleteServiceInput!): DeleteServiceResult!
+  netpath: NetPathMutations!
   nim: NimMutations
+  registerWebsite(req: RegisterWebsiteRequest!): RegisterWebsiteResponse!
   createDashboard(input: CreateDashboardInput!): CreateDashboardResponse!
   updateDashboard(input: UpdateDashboardInput!): UpdateDashboardResponse!
   deleteDashboard(input: DeleteDashboardInput!): DeleteDashboardResponse!
@@ -11624,6 +12279,57 @@ type NavigationItemsResponse {
   items: [navigationItemsPermission!]
 }
 
+"""Network Collector entity extension for Host"""
+type NCHostExtension {
+  """
+  HCO Node Uri
+  Serves as natural key for Host
+  """
+  uri: String!
+
+  """Host Category (Node Category)"""
+  category: String
+
+  """Entity name"""
+  name: String
+
+  """Host system name (Node SysName)"""
+  systemName: String
+
+  """Host DNS"""
+  dns: String
+
+  """Host IpAddress"""
+  ip: String
+
+  """Host OS name (Node MachineType)"""
+  machineType: String
+
+  """Host OS version (Node IOSVersion)"""
+  iosVersion: String
+
+  """Host OS type (Node Vendor)"""
+  vendor: String
+
+  """Host OS description (Node Description)"""
+  description: String
+
+  """CpuLoad in percent for Node"""
+  cpuLoad: Metric!
+
+  """MemoryUsage in percent for Node"""
+  percentMemoryUsed: Metric!
+
+  """Response time in milliseconds for Node"""
+  responseTime: Metric!
+
+  """Availability in percent for Node"""
+  availability: Metric!
+
+  """PercentLoss in percent for Node"""
+  percentLoss: Metric!
+}
+
 """
 The neighbors topology connection relation type used in neighbors topology data processing in the Topology service.
 """
@@ -11657,6 +12363,7 @@ type NeighborsTopologyConnection implements Relationship {
   lastChange: String
 }
 
+"""Operator that can be used to evaluate or chain filters"""
 enum NetflowFilterOperation {
   Eq
   Contains
@@ -11664,23 +12371,85 @@ enum NetflowFilterOperation {
   Or
 }
 
+"""Queries for netflows metrics."""
 type Netflows {
+  """
+  Gets top measurements of Bytes grouped by TopNetflowMetric during specified period of time.
+  Produces time series data when bucketSizeInSeconds is set to a value greater than 0, otherwise it produces
+  total sum of bytes during that period
+  """
   topMetricsByBytes(filter: NetflowsFilterInput!): [NetflowsMeasurements!]!
+
+  """
+  Gets top measurements of Bytes (time series) grouped by conversation source and destination. Time series are ordered only by time.
+  Uses dynamic filtering
+  """
   topConversationsByBytes_V2(filter: ConversationsFilterInput!): [ConversationMeasurements!]!
+
+  """
+  Retrieves filter options filtered by search string of certain property ordered alphabetically. The search is
+  case insensitive
+  """
   getFilterOptions(filter: FilterOptionsInput!): FilterOptions!
+
+  """
+  Field for retrieving top Netflow sources (Network devices) filtered by time and advanced filters
+  """
+  topNetflowSources(filter: TopNetflowSourcesInput!): NetflowSources!
 }
 
 input NetflowsFilterInput {
-  metric: TopNetflowMetric!
+  """Sets the metric attribute that is used to group Netflow data"""
+  metric: String!
+
+  """Sets the top limit of metrics with highest flows traffic to retrieve."""
   limit: Int!
+
+  """
+  Sets size of aggregation buckets. The data will be aggregated to a single bucket
+  (aggregation over whole time range) if this property is null or zero
+  """
   bucketSizeInSeconds: Int
+
+  """Sets time range to load netflow data from"""
   timeFilter: TimeRangeInput!
+
+  """Input used to construct dynamic filters"""
   advancedFilter: AdvancedNetflowFilter
 }
 
 type NetflowsMeasurements {
+  """Name of metric by which we group measurements"""
   name: String!
+
+  """Array of data points"""
   measurements: [Measurement!]!
+}
+
+"""Queries for retrieving top netflow sources"""
+type NetflowSources {
+  """Retrieves top network devices ordered by reported bytes, descending"""
+  networkDevices: [NetworkDeviceFlowSource!]!
+}
+
+type NetPath {
+  _internals: NetPathInternals
+
+  """TODO: temporarily just for testing purposes"""
+  data: String
+}
+
+"""
+Dummy internal type as a workaround for https://github.com/graphql-dotnet/graphql-dotnet/issues/1548
+"""
+type NetPathInternals {
+  id: ID
+}
+
+"""Netpath mutations."""
+type NetPathMutations {
+  """Add new NetPath endpoint."""
+  addNetPathEndpoint(netpathEndpointInput: AddNetPathEndpointInput!): AddNetPathEndpointResponse!
 }
 
 """
@@ -11839,6 +12608,11 @@ type NetworkDevice implements Entity & HealthEntity & StatefulEntity & AlertingE
   """Relation: Physical Ports that are plugged in this Network Device"""
   physicalPorts: [PhysicalPort]
 
+  """
+  Relation: Virtual Routing and Forwarding (VRF) instances this Network Device has
+  """
+  virtualRoutingForwardings: [VirtualRoutingForwarding]
+
   """CpuLoad in percent for Node"""
   cpuLoad: Metric!
 
@@ -11866,13 +12640,27 @@ type NetworkDevice implements Entity & HealthEntity & StatefulEntity & AlertingE
   wirelessController: WirelessControllerNetworkDeviceExtension
   hasWirelessController: Boolean!
 
+  """Firewall extension"""
+  firewall: FirewallNetworkDeviceExtension
+  hasFirewall: Boolean!
+
   """Netflow Source extension"""
   flowSource: FlowSourceExtension @deprecated(reason: "Using this fields properties for filtering would lead to incorrect behaviour")
   hasFlowSource: Boolean!
   alertEvaluationsV2: [AlertConditionEvaluationV2!]!
 }
 
+type NetworkDeviceFlowSource {
+  """Unique identifier of an network device entity"""
+  entityId: ID!
+
+  """Sum of bytes reported by network device"""
+  bytes: Float!
+}
+
+"""Queries for network device management."""
 type NetworkDevices {
+  """Deletes network device by network device id."""
   deleteNetworkDevice(networkDeviceId: ID!): DeleteNetworkDeviceResponse!
 }
 
@@ -12096,6 +12884,9 @@ type NginxInstance implements Entity & HealthEntity {
   connectionsCurrent: Metric!
 }
 
+"""
+Dummy internal type as a workaround for https://github.com/graphql-dotnet/graphql-dotnet/issues/1548
+"""
 type NimInternals {
   id: ID
 }
@@ -12190,7 +12981,8 @@ enum OnDemandCheckStatus {
 
 type Organization {
   id: ID!
-  credentialsV2(filter: CredentialFilter): [Credential!]!
+  credentials(filter: CredentialFilter): [Credential!]!
+  credentialsPublicKey: String!
   name: String!
   role: OrganizationRole!
   multiOrgUsers: [User!]
@@ -12205,6 +12997,8 @@ type Organization {
   notificationServicesGroupCount: NotificationServicesGroupCount!
   notificationServiceConfiguration(configurationId: String, configurationType: String): NotificationService!
   sessionTimeout: SessionTimeout!
+  attribute(id: String!): OrganizationAttribute!
+  attributes: [OrganizationAttribute!]!
   volumetricsSummary(input: VolumetricsSummaryInput!): VolumetricsSummaryResponse!
   volumetricsTimeseries(input: VolumetricsTimeseriesInput!): VolumetricsTimeseriesResponse!
   volumetricsTotal(input: VolumetricsTotalInput!): VolumetricsTotalResponse!
@@ -12223,13 +13017,14 @@ type Organization {
   allPermissions: AllPermissionsResponse!
   allResources: [ResourceResponse!]!
   navigationItems: NavigationItemsResponse!
-  credentials(filter: CredentialFilter): [Credential!]!
   entitlements(filter: EntitlementFilterInput): [Entitlement]!
   isEntitlementSubscribed(input: EntitlementFilterInput!): IsEntitlementSubscribedResponse
   retentions: [Retention!]!
   tenant: Tenant
   registeredUamsClients(role: String): [UamsClient!]
 }
+
+union OrganizationAttribute = AttributeString | AttributeInt | AttributeFloat | AttributeBool | AttributeJson
 
 input OrganizationAttributesInput {
   name: String
@@ -12286,8 +13081,40 @@ enum OsType {
   LINUX
 }
 
+type OtelReceiverAttribute {
+  name: String!
+  value: String!
+  attributeType: OtelReceiverAttributeType!
+}
+
+input OtelReceiverAttributeInput {
+  name: String!
+  value: String!
+  attributeType: OtelReceiverAttributeType!
+}
+
+enum OtelReceiverAttributeType {
+  UNDEFINED
+  STRING
+  BOOL
+  INT
+  DOUBLE
+  ENTITY_ID
+}
+
+type OtelReceiverCredential {
+  name: String!
+  value: String
+}
+
+input OtelReceiverCredentialInput {
+  key: String!
+  value: String!
+}
+
 input OtelReceiverFilter {
   clientId: String
+  pluginInstanceId: String
   receiverName: String
   instanceName: String
 }
@@ -12298,6 +13125,8 @@ input OtelReceiverInput {
   instanceName: String
   displayName: String
   parameters: [OtelReceiverParameterInput]
+  credentials: [OtelReceiverCredentialInput]
+  attributes: [OtelReceiverAttributeInput]
 }
 
 type OtelReceiverParameter {
@@ -12318,6 +13147,8 @@ type OtelReceiverResponse {
   instanceName: String!
   displayName: String
   parameters: [OtelReceiverParameter]
+  credentials: [OtelReceiverCredential]
+  attributes: [OtelReceiverAttribute]
 }
 
 """
@@ -12369,13 +13200,13 @@ input PagingInput {
   after: String
 
   """
-  Get first X items from the result. This value can be used alone or in combination with "after". 
+  Get first X items from the result. This value can be used alone or in combination with "after".
   Other combinations are invalid and will lead to query error.
   """
   first: Int
 
   """
-  Get last X items from the result. This value can be used alone or in combination with "before". 
+  Get last X items from the result. This value can be used alone or in combination with "before".
   Other combinations are invalid and will lead to query error.
   """
   last: Int
@@ -12770,7 +13601,9 @@ enum ProbePlatform {
 }
 
 input ProbePlatformOptionsInput {
-  """From which cloud platforms should availability tests be performed."""
+  """
+  Cloud platforms of the synthetic probes to be used for availability tests.
+  """
   probePlatforms: [ProbePlatform!]!
 
   """
@@ -12782,8 +13615,8 @@ input ProbePlatformOptionsInput {
   
   If set to false, only one of the selected platforms is chosen every time.
   
-  If omitted, the previous setting will stay in effect. If there is no previous setting, will
-  default to false.
+  If omitted, the previous setting will stay in effect. If there is no previous setting, the value
+  will default to false.
   """
   testFromAll: Boolean
 }
@@ -12935,6 +13768,35 @@ enum PropertySource {
   EVENT
 }
 
+input PublicUpdateWebsiteInput {
+  """The id of the website to be updated."""
+  id: ID!
+
+  """
+  Name of the website. Must be unique within organization. Must not contain any control characters,
+  any whitespace other than regular space, any leading, trailing or consecutive whitespace.
+  """
+  name: String!
+
+  """
+  URL of the website. Must be a valid URL with no leading or trailing whitespace. Must not contain
+  invalid port number (>65535).
+  """
+  url: String!
+
+  """
+  Use this field to configure availability tests for the website.
+  
+  If it is omitted or set to null, the resulting Website entity will have no availability tests configured.
+  """
+  availabilityCheckSettings: AvailabilityCheckSettingsInput
+}
+
+type PublicUpdateWebsiteSuccess {
+  """The id of the updated website."""
+  id: ID!
+}
+
 type Query {
   databaseAgents(databaseInstanceID: String!): [DatabaseAgent!]
   databaseTopQueries(input: DatabaseTopQueriesInput!): [DatabaseTopQueries!]!
@@ -12962,9 +13824,8 @@ type Query {
   """Queries related to metrics"""
   metrics: MetricQueries!
   foo: String
-  hello: String
   installationStatus(sessionId: String!): AgentInstallationSession
-  otelReceivers(filter: OtelReceiverFilter!): [OtelReceiverResponse]
+  otelReceivers(filter: OtelReceiverFilter): [OtelReceiverResponse]
   logArchives(input: ListLogArchivesInput!): LogArchiveConnection!
   logArchiveProviders: [LogArchiveProviderStatus!]!
   logArchiveProviderInstructions(input: LogArchiveProviderInstructionsInput!): LogArchiveProviderInstruction!
@@ -12989,7 +13850,6 @@ type Query {
   testAwsAccountConnection(input: TestAwsAccountConnectionInput!): AwsTestConnectionResult!
   testExistingAwsAccountConnection(input: TestExistingAwsAccountConnectionInput!): AwsTestConnectionResult!
   testAzureAccountExists(domainOrTenantdId: String!): Boolean
-  getAzureAuthenticationState(sessionId: Guid!): AzureAuthenticationStateResponse!
   awsCloudFormationRedirectUrl: String!
   azureSessionSubscriptions(sessionId: Guid!): [AzureSubscription!]!
   kubernetesHelmValues(input: KubernetesHelmValuesInput!): KubernetesHelmValuesResponse!
@@ -13003,7 +13863,7 @@ type Query {
   traceDetails(traceId: ID!, spanId: ID): TraceDetails
   traceExceptions(context: TraceContext!, after: String, before: String, filter: TraceExceptionItemsFilter, first: Int, last: Int, orderBy: TraceExceptionItemsOrderBy! = {direction: DESC, sort: TIME}): TraceExceptionConnection @deprecated(reason: "Use Trace.exceptions instead")
   traceExceptionSummary(context: TraceContext!, after: String, before: String, filter: TraceExceptionSummaryFilter, first: Int, last: Int, orderBy: TraceExceptionSummaryOrderBy! = {direction: DESC, sort: FREQUENCY}): TraceExceptionSummaryConnection @deprecated(reason: "Use Trace.exceptionSummary instead")
-  traceHistogram(context: TraceContext!, filter: TraceHistogramFilter, verticalCellCount: Int = 30, traceType: TraceType! = REQUESTS): TraceHistogram
+  traceHistogram(context: TraceContext!, filter: TraceHistogramFilter, verticalCellCount: Int = 30, traceType: TraceType! = REQUESTS, durationColumn: DurationColumn = SPAN_DURATION): TraceHistogram
   traceHosts(context: TraceContext!, after: String, before: String, filter: TraceHostSummaryFilter, first: Int, last: Int, orderBy: TraceHostSummaryOrderBy! = {direction: DESC, sort: COUNT}, traceType: TraceType! = REQUESTS): TraceHostSummaryConnection @deprecated(reason: "Use Trace.hosts instead")
   traceHttpMethodSummary(context: TraceContext!, after: String, before: String, filter: TraceHttpMethodSummaryFilter, first: Int, last: Int, orderBy: TraceHttpMethodSummaryOrderBy! = {direction: DESC, sort: AVERAGE_DURATION}): TraceHttpMethodSummaryConnection @deprecated(reason: "Use Trace.httpMethodSummary instead")
   traceHttpStatusSummary(context: TraceContext!, after: String, before: String, filter: TraceHttpStatusSummaryFilter, first: Int, last: Int, orderBy: TraceHttpStatusSummaryOrderBy! = {direction: ASC, sort: CODE}): TraceHttpStatusSummaryConnection @deprecated(reason: "Use Trace.httpStatusSummary instead")
@@ -13016,7 +13876,10 @@ type Query {
   traceTransactions(context: TraceContext!, after: String, before: String, filter: TraceTransactionSummaryFilter, first: Int, last: Int, orderBy: TraceTransactionSummaryOrderBy! = {direction: DESC, sort: AVERAGE_DURATION}, traceType: TraceType! = REQUESTS): TraceTransactionConnection @deprecated(reason: "Use Trace.transactions instead")
   traceWebsites(context: TraceContext!, after: String, before: String, filter: TraceWebsiteSummaryFilter, first: Int, last: Int, orderBy: TraceWebsiteSummaryOrderBy! = {direction: DESC, sort: COUNT}, traceType: TraceType! = REQUESTS): TraceWebsiteSummaryConnection @deprecated(reason: "Use Trace.websites instead")
   trace: Trace
+  netpath: NetPath
   nim: NimQueries
+  websiteExploits(websiteUrl: String!): [WebsiteExploit!]
+  websiteExploitSummary(websiteUrl: String!): WebsiteExploitSummary!
   dashboards: DashboardQueries
   savedSearches: SavedSearchQueries
   test9: String
@@ -13063,6 +13926,15 @@ type RecentLogSearch {
   id: ID!
   query: String!
   lastSearchedAt: Timestamp!
+}
+
+input RegisterWebsiteRequest {
+  websiteUrl: String!
+}
+
+type RegisterWebsiteResponse {
+  code: String!
+  message: String
 }
 
 """Result for related entities queries"""
@@ -13522,7 +14394,7 @@ input SearchWidgetsInput {
 scalar Seconds
 
 """Service entity"""
-type Service implements Entity & HealthEntity & AlertingEntity {
+type Service implements Entity & HealthEntity & SyslogEntity & AlertingEntity {
   """Unique identifier of an entity"""
   id: ID!
 
@@ -13579,6 +14451,16 @@ type Service implements Entity & HealthEntity & AlertingEntity {
   """Relation: Service to Website"""
   relatedWebsites: [Website!]
   healthScore: HealthScore
+
+  """
+  The hostname field identifies the machine that originally sent the syslog message.
+  """
+  syslogHostname: String
+
+  """
+  The appName field should identify the device or application that originated the message.
+  """
+  syslogAppName: String
   technology: String
   description: String
   tags: String
@@ -13756,6 +14638,26 @@ type SetEntityDisplayNameSuccess {
   displayName: String
 }
 
+union SetEntitySyslogAppNameResult = SetEntitySyslogAppNameSuccess | EntityMutationError
+
+type SetEntitySyslogAppNameSuccess {
+  """Updated entity ID"""
+  id: ID!
+
+  """New entity syslogAppName"""
+  syslogAppName: String
+}
+
+union SetEntitySyslogHostnameResult = SetEntitySyslogHostnameSuccess | EntityMutationError
+
+type SetEntitySyslogHostnameSuccess {
+  """Updated entity ID"""
+  id: ID!
+
+  """New entity syslogHostname"""
+  syslogHostname: String
+}
+
 type SlackAuthorizeUrlResponse implements MutationResponseInterface {
   code: String!
   success: Boolean!
@@ -13823,8 +14725,13 @@ type SpanSummary {
   serviceEntity: String
   hostEntity: String
   websiteEntity: String
+  serviceInstanceEntity: String
+  containerEntity: String
+  serviceEntityName: String
   hostEntityName: String
   websiteEntityName: String
+  serviceInstanceEntityName: String
+  containerEntityName: String
 }
 
 type SslCertificate {
@@ -13860,13 +14767,13 @@ input SslMonitoringInput {
   If set to false, SSL monitoring will be disabled, but the other settings will be remembered in
   case you re-enable it later.
   
-  If omitted, the previous setting will stay in effect. If there is no previous setting, will
-  default to false.
+  If omitted, the previous setting will stay in effect. If there is no previous setting, the value
+  will default to false.
   """
   enabled: Boolean
 
   """
-  How many days before the expiration date should a SSL certificate be considered 'expiring'.
+  Number of days before the expiration date an SSL certificate will be considered 'expiring.'
   """
   daysPriorToExpiration: Int
 
@@ -13877,8 +14784,8 @@ input SslMonitoringInput {
   
   This option does not affect any other certificate validity checks besides expiration.
   
-  If omitted, the previous setting will stay in effect. If there is no previous setting, will
-  default to false.
+  If omitted, the previous setting will stay in effect. If there is no previous setting, the value
+  will default to false.
   """
   ignoreIntermediateCertificates: Boolean
 }
@@ -13999,6 +14906,11 @@ type Tag {
   value: String!
 }
 
+input TagCredentialInput {
+  key: String!
+  value: String!
+}
+
 enum TailingEdge {
   Top
   Bottom
@@ -14036,6 +14948,7 @@ input TelemetryMappingConditionInput {
 type Tenant {
   status: TenantStatus!
   statusEnd: Timestamp!
+  retrialAfter: Timestamp!
 }
 
 enum TenantStatus {
@@ -14223,12 +15136,26 @@ enum TokenAccessLevel {
   FULL
 }
 
+"""Type of Simple netflow metric to query"""
 enum TopNetflowMetric {
   TopProtocols
   TopApplications
   TopAdvancedApplications
   TopEndpoints
   TopCountries
+}
+
+input TopNetflowSourcesInput {
+  """
+  Sets the top limit of netflow sources with highest flows traffic to retrieve.
+  """
+  limit: Int!
+
+  """Sets time range to load netflow data from"""
+  timeFilter: TimeRangeInput!
+
+  """Input used to construct dynamic filters"""
+  advancedFilter: AdvancedNetflowFilter
 }
 
 """
@@ -14289,7 +15216,7 @@ type Trace {
   databaseQuerySummary(context: TraceQueryContext!, search: SearchInput!, filter: TraceDatabaseQuerySummaryFilter, orderBy: TraceDatabaseQuerySummaryOrderBy! = {direction: DESC, sort: TOTAL_DURATION}, paging: PagingInput): TraceDatabaseQuerySummaryConnection
   exceptions(context: TraceQueryContext!, search: SearchInput!, filter: TraceExceptionItemsFilter, orderBy: TraceExceptionItemsOrderBy! = {direction: DESC, sort: TIME}, paging: PagingInput): TraceExceptionConnection
   exceptionSummary(context: TraceQueryContext!, search: SearchInput!, filter: TraceExceptionSummaryFilter, orderBy: TraceExceptionSummaryOrderBy! = {direction: DESC, sort: FREQUENCY}, paging: PagingInput): TraceExceptionSummaryConnection
-  histogram(context: TraceQueryContext!, search: SearchInput!, filter: TraceHistogramFilter, verticalCellCount: Int = 30, traceType: TraceType! = REQUESTS): TraceHistogram
+  histogram(context: TraceQueryContext!, search: SearchInput!, filter: TraceHistogramFilter, verticalCellCount: Int = 30, traceType: TraceType! = REQUESTS, durationColumn: DurationColumn = SPAN_DURATION): TraceHistogram
   hosts(context: TraceQueryContext!, search: SearchInput!, filter: TraceHostSummaryFilter, traceType: TraceType! = REQUESTS, orderBy: TraceHostSummaryOrderBy! = {direction: DESC, sort: COUNT}, paging: PagingInput): TraceHostSummaryConnection
   httpMethodSummary(context: TraceQueryContext!, search: SearchInput!, filter: TraceHttpMethodSummaryFilter, orderBy: TraceHttpMethodSummaryOrderBy! = {direction: DESC, sort: AVERAGE_DURATION}, paging: PagingInput): TraceHttpMethodSummaryConnection
   httpStatusSummary(context: TraceQueryContext!, search: SearchInput!, filter: TraceHttpStatusSummaryFilter, orderBy: TraceHttpStatusSummaryOrderBy! = {direction: ASC, sort: CODE}, paging: PagingInput): TraceHttpStatusSummaryConnection
@@ -14442,6 +15369,8 @@ type TraceCacheCallSummary implements TraceSpanSummary {
   frequency: TraceFrequency!
   averageDuration: TraceDuration!
   count: String!
+  serviceInstanceName: String
+  serviceInstanceId: String
   relativeCountPercentage: String!
   totalDuration: TraceDuration!
 }
@@ -14461,6 +15390,7 @@ input TraceCacheCallSummaryFilter {
   cacheHosts: [String!]
   cacheOps: [String!]
   transactions: [String!]
+  serviceInstanceIds: [String!]
   searchText: String
 }
 
@@ -14478,6 +15408,7 @@ enum TraceCacheCallSummarySort {
   TOTAL_DURATION
   CACHE_OP
   CACHE_HOST
+  SERVICE_INSTANCE_ID
 }
 
 type TraceClientCacheSpan implements TraceSpan {
@@ -14752,6 +15683,8 @@ type TraceDatabaseQuerySummary implements TraceSpanSummary {
   queryOp: String
   queryTable: String
   databaseHost: String
+  serviceInstanceName: String
+  serviceInstanceId: String
   frequency: TraceFrequency!
   averageDuration: TraceDuration!
   count: String!
@@ -14775,6 +15708,7 @@ input TraceDatabaseQuerySummaryFilter {
   queryOps: [String!]
   queryTables: [String!]
   transactions: [String!]
+  serviceInstanceIds: [String!]
   searchText: String
 }
 
@@ -14793,6 +15727,7 @@ enum TraceDatabaseQuerySummarySort {
   QUERY_TABLE
   RELATIVE_COUNT_PERCENTAGE
   DATABASE_HOST
+  SERVICE_INSTANCE_ID
 }
 
 type TraceDetails {
@@ -14913,6 +15848,8 @@ type TraceExceptionSummary implements TraceSpanSummary {
   averageDuration: TraceDuration!
   count: String!
   totalDuration: TraceDuration!
+  serviceInstanceName: String
+  serviceInstanceId: String
   relativeCountPercentage: String!
   exceptionClass: String!
   exceptionClassMessageHash: String!
@@ -14939,6 +15876,7 @@ input TraceExceptionSummaryFilter {
   exceptionClasses: [String!]
   id: String
   transactions: [String!]
+  serviceInstanceIds: [String!]
   searchText: String
 }
 
@@ -14958,6 +15896,7 @@ enum TraceExceptionSummarySort {
   EXCEPTION_MESSAGE
   FIRST_OCCURRED
   LAST_OCCURRED
+  SERVICE_INSTANCE_ID
 }
 
 enum TraceFileOperation {
@@ -15363,6 +16302,8 @@ type TraceRemoteServiceSummary implements TraceSpanSummary {
   name: String
   remoteServiceOp: String
   remoteServiceType: String
+  serviceInstanceId: String
+  serviceInstanceName: String
   frequency: TraceFrequency!
   averageDuration: TraceDuration!
   count: String!
@@ -15385,6 +16326,7 @@ input TraceRemoteServiceSummaryFilter {
   remoteServiceOps: [String!]
   remoteServiceTypes: [String!]
   transactions: [String!]
+  serviceInstanceIds: [String!]
   searchText: String
 }
 
@@ -15397,6 +16339,7 @@ enum TraceRemoteServiceSummarySort {
   NAME
   REMOTE_SERVICE_OP
   REMOTE_SERVICE_TYPE
+  SERVICE_INSTANCE_ID
   FREQUENCY
   AVERAGE_DURATION
   COUNT
@@ -15741,6 +16684,13 @@ enum TraceWebsiteSummarySort {
   COUNT
 }
 
+"""
+Type of traffic:
+NorthSouth - going outside of the network
+EastWest - traffic inside of the private network
+NotClassified - traffic that cannot be classified
+All - No filtering
+"""
 enum TrafficFilter {
   NorthSouth
   EastWest
@@ -16265,6 +17215,56 @@ enum ValidationType {
   NOT_CONTAINS_STRING
 }
 
+"""Virtual Routing Forwarding (VRF) entity"""
+type VirtualRoutingForwarding implements Entity {
+  """Unique identifier of an entity."""
+  id: ID!
+
+  """Entity type."""
+  type: String!
+
+  """Entity name."""
+  name: String
+
+  """
+  Entity display name / alias. This value is equal to `name` unless it's explicitly overriden. 
+  """
+  displayName: String
+
+  """Date and time of entity creation in UTC."""
+  createdTime: String
+
+  """Date and time of last entity update in UTC."""
+  updatedTime: String
+
+  """Date and time when the entity has last received telemetry in UTC."""
+  lastSeenTime: String
+
+  """
+  How long the entity may not be receiving updates/telemetry before it should be considered "unknown".
+  The platform may stop doing certain things with the entity when it is in unknown state.
+  """
+  maxUnknownPeriodMinutes: Int
+
+  """
+  Flag telling if given entity is in unknown state. 
+  Entity gets to unknown state if it doesn't receive eny telemetry for more than 'maxUnknownPeriodMinutes'.
+  """
+  isUnknown: Boolean
+
+  """Set of fields to get to things related to a given entity"""
+  related: RelatedEntityFields
+
+  """List of entity extensions that are currently set on given entity"""
+  extensions: [String!]
+
+  """Orion VRF Uri"""
+  uri: String!
+
+  """Relation: Network Device to VirtualRoutingForwarding"""
+  networkDevice: NetworkDevice
+}
+
 enum Visibility {
   Show
   Hide
@@ -16452,6 +17452,22 @@ type Website implements Entity & HealthEntity & AlertingEntity {
   availabilityTestAnalysis: AvailabilityTestAnalysisQueries
   availabilityTestValidations: AvailabilityTestValidationsQueries
   mockPerformanceTests: MockPerformanceTestMetric
+}
+
+type WebsiteExploit {
+  asset: String!
+  severity: String!
+  facet: String!
+  observation: String!
+  age: Int!
+  lastSeen: String!
+}
+
+type WebsiteExploitSummary {
+  total: Int!
+  high: Int!
+  medium: Int!
+  low: Int!
 }
 
 type WebsiteInputValidationError {

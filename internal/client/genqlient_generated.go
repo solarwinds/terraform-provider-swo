@@ -113,7 +113,7 @@ type AlertConditionNodeInput struct {
 	Operator *string `json:"operator"`
 	// Ordered list of child condition nodes IDs.
 	OperandIds []int `json:"operandIds"`
-	// Entity filter for `metricField` nodes, when defined (not null) metric is scoped to entity
+	// Entity filter for `metricField` and `queryField` nodes. When defined (not null), node is scoped to entity.
 	EntityFilter *AlertConditionNodeEntityFilterInput `json:"entityFilter"`
 	// Measurement filter for metric tags
 	MetricFilter *AlertFilterExpressionInput `json:"metricFilter"`
@@ -123,10 +123,13 @@ type AlertConditionNodeInput struct {
 	DataType *string `json:"dataType"`
 	// String representation of value for `constantValue` nodes.
 	Value *string `json:"value"`
+	// *DEPRECATED:* Field is deprecated, `source` is now defined by `namespace`.
 	// Source specification for `queryField` nodes.
 	Source *string `json:"source"`
 	// Query specification for `queryField` nodes.
 	Query *string `json:"query"`
+	// Events/logs namespace (in Chainsaw) for `queryField` nodes.
+	Namespace *string `json:"namespace"`
 }
 
 // GetId returns AlertConditionNodeInput.Id, and is useful for accessing the field via an interface.
@@ -165,6 +168,9 @@ func (v *AlertConditionNodeInput) GetSource() *string { return v.Source }
 
 // GetQuery returns AlertConditionNodeInput.Query, and is useful for accessing the field via an interface.
 func (v *AlertConditionNodeInput) GetQuery() *string { return v.Query }
+
+// GetNamespace returns AlertConditionNodeInput.Namespace, and is useful for accessing the field via an interface.
+func (v *AlertConditionNodeInput) GetNamespace() *string { return v.Namespace }
 
 type AlertDefinitionInput struct {
 	// Alert definition name
@@ -259,6 +265,8 @@ type AlertFilterInput struct {
 	ActionConfigurationId *string `json:"actionConfigurationId"`
 	// By list of condition types
 	ConditionTypes []ConditionType `json:"conditionTypes"`
+	// By swi-query expression
+	Query *string `json:"query"`
 }
 
 // GetId returns AlertFilterInput.Id, and is useful for accessing the field via an interface.
@@ -294,6 +302,9 @@ func (v *AlertFilterInput) GetActionConfigurationId() *string { return v.ActionC
 // GetConditionTypes returns AlertFilterInput.ConditionTypes, and is useful for accessing the field via an interface.
 func (v *AlertFilterInput) GetConditionTypes() []ConditionType { return v.ConditionTypes }
 
+// GetQuery returns AlertFilterInput.Query, and is useful for accessing the field via an interface.
+func (v *AlertFilterInput) GetQuery() *string { return v.Query }
+
 // Alert Definition severities
 type AlertSeverity string
 
@@ -303,6 +314,7 @@ const (
 	AlertSeverityCritical AlertSeverity = "CRITICAL"
 )
 
+// *DEPRECATED:* `ConditionType` is now described by metadata composed of `[AlertConditionScope]`, `AlertConditionDataSource` and `[AlertConditionDataType]`.
 // Alert definition condition types
 type ConditionType string
 
@@ -310,6 +322,7 @@ const (
 	ConditionTypeEntityMetric     ConditionType = "ENTITY_METRIC"
 	ConditionTypeStandaloneMetric ConditionType = "STANDALONE_METRIC"
 	ConditionTypeLogQuery         ConditionType = "LOG_QUERY"
+	ConditionTypeAnomalyEvents    ConditionType = "ANOMALY_EVENTS"
 	ConditionTypeUnknown          ConditionType = "UNKNOWN"
 )
 
@@ -421,6 +434,33 @@ type CreateAlertDefinitionResponse struct {
 func (v *CreateAlertDefinitionResponse) GetAlertMutations() CreateAlertDefinitionAlertMutations {
 	return v.AlertMutations
 }
+
+type CreateDashboardInput struct {
+	Name        string        `json:"name"`
+	Description *string       `json:"description"`
+	IsPrivate   *bool         `json:"isPrivate"`
+	CategoryId  *string       `json:"categoryId"`
+	Widgets     []WidgetInput `json:"widgets"`
+	Layout      []LayoutInput `json:"layout"`
+}
+
+// GetName returns CreateDashboardInput.Name, and is useful for accessing the field via an interface.
+func (v *CreateDashboardInput) GetName() string { return v.Name }
+
+// GetDescription returns CreateDashboardInput.Description, and is useful for accessing the field via an interface.
+func (v *CreateDashboardInput) GetDescription() *string { return v.Description }
+
+// GetIsPrivate returns CreateDashboardInput.IsPrivate, and is useful for accessing the field via an interface.
+func (v *CreateDashboardInput) GetIsPrivate() *bool { return v.IsPrivate }
+
+// GetCategoryId returns CreateDashboardInput.CategoryId, and is useful for accessing the field via an interface.
+func (v *CreateDashboardInput) GetCategoryId() *string { return v.CategoryId }
+
+// GetWidgets returns CreateDashboardInput.Widgets, and is useful for accessing the field via an interface.
+func (v *CreateDashboardInput) GetWidgets() []WidgetInput { return v.Widgets }
+
+// GetLayout returns CreateDashboardInput.Layout, and is useful for accessing the field via an interface.
+func (v *CreateDashboardInput) GetLayout() []LayoutInput { return v.Layout }
 
 // CreateNotificationCreateNotificationServiceConfigurationCreateNotificationServiceConfigurationResponse includes the requested fields of the GraphQL type CreateNotificationServiceConfigurationResponse.
 type CreateNotificationCreateNotificationServiceConfigurationCreateNotificationServiceConfigurationResponse struct {
@@ -554,6 +594,13 @@ type DeleteAlertDefinitionResponse struct {
 func (v *DeleteAlertDefinitionResponse) GetAlertMutations() DeleteAlertDefinitionAlertMutations {
 	return v.AlertMutations
 }
+
+type DeleteDashboardInput struct {
+	Id string `json:"id"`
+}
+
+// GetId returns DeleteDashboardInput.Id, and is useful for accessing the field via an interface.
+func (v *DeleteDashboardInput) GetId() string { return v.Id }
 
 // DeleteNotificationDeleteNotificationServiceConfigurationDeleteNotificationServiceConfigurationResponse includes the requested fields of the GraphQL type DeleteNotificationServiceConfigurationResponse.
 type DeleteNotificationDeleteNotificationServiceConfigurationDeleteNotificationServiceConfigurationResponse struct {
@@ -973,6 +1020,29 @@ func (v *GetNotificationUserAuthenticatedUserCurrentOrganizationNotificationServ
 	return v.Description
 }
 
+type LayoutInput struct {
+	Id     string `json:"id"`
+	X      int    `json:"x"`
+	Y      int    `json:"y"`
+	Width  int    `json:"width"`
+	Height int    `json:"height"`
+}
+
+// GetId returns LayoutInput.Id, and is useful for accessing the field via an interface.
+func (v *LayoutInput) GetId() string { return v.Id }
+
+// GetX returns LayoutInput.X, and is useful for accessing the field via an interface.
+func (v *LayoutInput) GetX() int { return v.X }
+
+// GetY returns LayoutInput.Y, and is useful for accessing the field via an interface.
+func (v *LayoutInput) GetY() int { return v.Y }
+
+// GetWidth returns LayoutInput.Width, and is useful for accessing the field via an interface.
+func (v *LayoutInput) GetWidth() int { return v.Width }
+
+// GetHeight returns LayoutInput.Height, and is useful for accessing the field via an interface.
+func (v *LayoutInput) GetHeight() int { return v.Height }
+
 // Paging input for paginated queries. If not specified the first page of the results is returned and it will contain
 // up to X items where X is a value configured in the system.
 type PagingInput struct {
@@ -1196,6 +1266,37 @@ func (v *UpdateAlertDefinitionResponse) GetAlertMutations() UpdateAlertDefinitio
 	return v.AlertMutations
 }
 
+type UpdateDashboardInput struct {
+	Id          string        `json:"id"`
+	Name        string        `json:"name"`
+	Description *string       `json:"description"`
+	IsPrivate   *bool         `json:"isPrivate"`
+	CategoryId  *string       `json:"categoryId"`
+	Widgets     []WidgetInput `json:"widgets"`
+	Layout      []LayoutInput `json:"layout"`
+}
+
+// GetId returns UpdateDashboardInput.Id, and is useful for accessing the field via an interface.
+func (v *UpdateDashboardInput) GetId() string { return v.Id }
+
+// GetName returns UpdateDashboardInput.Name, and is useful for accessing the field via an interface.
+func (v *UpdateDashboardInput) GetName() string { return v.Name }
+
+// GetDescription returns UpdateDashboardInput.Description, and is useful for accessing the field via an interface.
+func (v *UpdateDashboardInput) GetDescription() *string { return v.Description }
+
+// GetIsPrivate returns UpdateDashboardInput.IsPrivate, and is useful for accessing the field via an interface.
+func (v *UpdateDashboardInput) GetIsPrivate() *bool { return v.IsPrivate }
+
+// GetCategoryId returns UpdateDashboardInput.CategoryId, and is useful for accessing the field via an interface.
+func (v *UpdateDashboardInput) GetCategoryId() *string { return v.CategoryId }
+
+// GetWidgets returns UpdateDashboardInput.Widgets, and is useful for accessing the field via an interface.
+func (v *UpdateDashboardInput) GetWidgets() []WidgetInput { return v.Widgets }
+
+// GetLayout returns UpdateDashboardInput.Layout, and is useful for accessing the field via an interface.
+func (v *UpdateDashboardInput) GetLayout() []LayoutInput { return v.Layout }
+
 // UpdateNotificationResponse is returned by UpdateNotification on success.
 type UpdateNotificationResponse struct {
 	UpdateNotificationServiceConfiguration *UpdateNotificationUpdateNotificationServiceConfigurationUpdateNotificationServiceConfigurationResponse `json:"updateNotificationServiceConfiguration"`
@@ -1292,6 +1393,25 @@ func (v *UpdateNotificationUpdateNotificationServiceConfigurationUpdateNotificat
 	return v.Description
 }
 
+type WidgetInput struct {
+	Id         string  `json:"id"`
+	Title      *string `json:"title"`
+	Type       string  `json:"type"`
+	Properties *any    `json:"properties"`
+}
+
+// GetId returns WidgetInput.Id, and is useful for accessing the field via an interface.
+func (v *WidgetInput) GetId() string { return v.Id }
+
+// GetTitle returns WidgetInput.Title, and is useful for accessing the field via an interface.
+func (v *WidgetInput) GetTitle() *string { return v.Title }
+
+// GetType returns WidgetInput.Type, and is useful for accessing the field via an interface.
+func (v *WidgetInput) GetType() string { return v.Type }
+
+// GetProperties returns WidgetInput.Properties, and is useful for accessing the field via an interface.
+func (v *WidgetInput) GetProperties() *any { return v.Properties }
+
 // __CreateAlertDefinitionInput is used internally by genqlient
 type __CreateAlertDefinitionInput struct {
 	Definition AlertDefinitionInput `json:"definition"`
@@ -1380,6 +1500,400 @@ type __UpdateNotificationInput struct {
 // GetConfiguration returns __UpdateNotificationInput.Configuration, and is useful for accessing the field via an interface.
 func (v *__UpdateNotificationInput) GetConfiguration() UpdateNotificationServiceConfigurationInput {
 	return v.Configuration
+}
+
+// __createDashboardInput is used internally by genqlient
+type __createDashboardInput struct {
+	Input CreateDashboardInput `json:"input"`
+}
+
+// GetInput returns __createDashboardInput.Input, and is useful for accessing the field via an interface.
+func (v *__createDashboardInput) GetInput() CreateDashboardInput { return v.Input }
+
+// __deleteDashboardInput is used internally by genqlient
+type __deleteDashboardInput struct {
+	Input DeleteDashboardInput `json:"input"`
+}
+
+// GetInput returns __deleteDashboardInput.Input, and is useful for accessing the field via an interface.
+func (v *__deleteDashboardInput) GetInput() DeleteDashboardInput { return v.Input }
+
+// __getDashboardByIdInput is used internally by genqlient
+type __getDashboardByIdInput struct {
+	Id string `json:"id"`
+}
+
+// GetId returns __getDashboardByIdInput.Id, and is useful for accessing the field via an interface.
+func (v *__getDashboardByIdInput) GetId() string { return v.Id }
+
+// __updateDashboardInput is used internally by genqlient
+type __updateDashboardInput struct {
+	Input UpdateDashboardInput `json:"input"`
+}
+
+// GetInput returns __updateDashboardInput.Input, and is useful for accessing the field via an interface.
+func (v *__updateDashboardInput) GetInput() UpdateDashboardInput { return v.Input }
+
+// createDashboardCreateDashboardCreateDashboardResponse includes the requested fields of the GraphQL type CreateDashboardResponse.
+type createDashboardCreateDashboardCreateDashboardResponse struct {
+	Code      string                                                          `json:"code"`
+	Success   bool                                                            `json:"success"`
+	Message   string                                                          `json:"message"`
+	Dashboard *createDashboardCreateDashboardCreateDashboardResponseDashboard `json:"dashboard"`
+}
+
+// GetCode returns createDashboardCreateDashboardCreateDashboardResponse.Code, and is useful for accessing the field via an interface.
+func (v *createDashboardCreateDashboardCreateDashboardResponse) GetCode() string { return v.Code }
+
+// GetSuccess returns createDashboardCreateDashboardCreateDashboardResponse.Success, and is useful for accessing the field via an interface.
+func (v *createDashboardCreateDashboardCreateDashboardResponse) GetSuccess() bool { return v.Success }
+
+// GetMessage returns createDashboardCreateDashboardCreateDashboardResponse.Message, and is useful for accessing the field via an interface.
+func (v *createDashboardCreateDashboardCreateDashboardResponse) GetMessage() string { return v.Message }
+
+// GetDashboard returns createDashboardCreateDashboardCreateDashboardResponse.Dashboard, and is useful for accessing the field via an interface.
+func (v *createDashboardCreateDashboardCreateDashboardResponse) GetDashboard() *createDashboardCreateDashboardCreateDashboardResponseDashboard {
+	return v.Dashboard
+}
+
+// createDashboardCreateDashboardCreateDashboardResponseDashboard includes the requested fields of the GraphQL type Dashboard.
+type createDashboardCreateDashboardCreateDashboardResponseDashboard struct {
+	Id              string                                                               `json:"id"`
+	SystemReference *string                                                              `json:"systemReference"`
+	Owner           *createDashboardCreateDashboardCreateDashboardResponseDashboardOwner `json:"owner"`
+	CreatedAt       time.Time                                                            `json:"createdAt"`
+	UpdatedAt       time.Time                                                            `json:"updatedAt"`
+}
+
+// GetId returns createDashboardCreateDashboardCreateDashboardResponseDashboard.Id, and is useful for accessing the field via an interface.
+func (v *createDashboardCreateDashboardCreateDashboardResponseDashboard) GetId() string { return v.Id }
+
+// GetSystemReference returns createDashboardCreateDashboardCreateDashboardResponseDashboard.SystemReference, and is useful for accessing the field via an interface.
+func (v *createDashboardCreateDashboardCreateDashboardResponseDashboard) GetSystemReference() *string {
+	return v.SystemReference
+}
+
+// GetOwner returns createDashboardCreateDashboardCreateDashboardResponseDashboard.Owner, and is useful for accessing the field via an interface.
+func (v *createDashboardCreateDashboardCreateDashboardResponseDashboard) GetOwner() *createDashboardCreateDashboardCreateDashboardResponseDashboardOwner {
+	return v.Owner
+}
+
+// GetCreatedAt returns createDashboardCreateDashboardCreateDashboardResponseDashboard.CreatedAt, and is useful for accessing the field via an interface.
+func (v *createDashboardCreateDashboardCreateDashboardResponseDashboard) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns createDashboardCreateDashboardCreateDashboardResponseDashboard.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *createDashboardCreateDashboardCreateDashboardResponseDashboard) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
+}
+
+// createDashboardCreateDashboardCreateDashboardResponseDashboardOwner includes the requested fields of the GraphQL type DashboardOwner.
+type createDashboardCreateDashboardCreateDashboardResponseDashboardOwner struct {
+	Id   string `json:"id"`
+	Name string `json:"name"`
+}
+
+// GetId returns createDashboardCreateDashboardCreateDashboardResponseDashboardOwner.Id, and is useful for accessing the field via an interface.
+func (v *createDashboardCreateDashboardCreateDashboardResponseDashboardOwner) GetId() string {
+	return v.Id
+}
+
+// GetName returns createDashboardCreateDashboardCreateDashboardResponseDashboardOwner.Name, and is useful for accessing the field via an interface.
+func (v *createDashboardCreateDashboardCreateDashboardResponseDashboardOwner) GetName() string {
+	return v.Name
+}
+
+// createDashboardResponse is returned by createDashboard on success.
+type createDashboardResponse struct {
+	CreateDashboard createDashboardCreateDashboardCreateDashboardResponse `json:"createDashboard"`
+}
+
+// GetCreateDashboard returns createDashboardResponse.CreateDashboard, and is useful for accessing the field via an interface.
+func (v *createDashboardResponse) GetCreateDashboard() createDashboardCreateDashboardCreateDashboardResponse {
+	return v.CreateDashboard
+}
+
+// deleteDashboardDeleteDashboardDeleteDashboardResponse includes the requested fields of the GraphQL type DeleteDashboardResponse.
+type deleteDashboardDeleteDashboardDeleteDashboardResponse struct {
+	Code    string `json:"code"`
+	Success bool   `json:"success"`
+	Message string `json:"message"`
+}
+
+// GetCode returns deleteDashboardDeleteDashboardDeleteDashboardResponse.Code, and is useful for accessing the field via an interface.
+func (v *deleteDashboardDeleteDashboardDeleteDashboardResponse) GetCode() string { return v.Code }
+
+// GetSuccess returns deleteDashboardDeleteDashboardDeleteDashboardResponse.Success, and is useful for accessing the field via an interface.
+func (v *deleteDashboardDeleteDashboardDeleteDashboardResponse) GetSuccess() bool { return v.Success }
+
+// GetMessage returns deleteDashboardDeleteDashboardDeleteDashboardResponse.Message, and is useful for accessing the field via an interface.
+func (v *deleteDashboardDeleteDashboardDeleteDashboardResponse) GetMessage() string { return v.Message }
+
+// deleteDashboardResponse is returned by deleteDashboard on success.
+type deleteDashboardResponse struct {
+	DeleteDashboard deleteDashboardDeleteDashboardDeleteDashboardResponse `json:"deleteDashboard"`
+}
+
+// GetDeleteDashboard returns deleteDashboardResponse.DeleteDashboard, and is useful for accessing the field via an interface.
+func (v *deleteDashboardResponse) GetDeleteDashboard() deleteDashboardDeleteDashboardDeleteDashboardResponse {
+	return v.DeleteDashboard
+}
+
+// getDashboardByIdDashboardsDashboardQueries includes the requested fields of the GraphQL type DashboardQueries.
+type getDashboardByIdDashboardsDashboardQueries struct {
+	ById *getDashboardByIdDashboardsDashboardQueriesByIdDashboard `json:"byId"`
+}
+
+// GetById returns getDashboardByIdDashboardsDashboardQueries.ById, and is useful for accessing the field via an interface.
+func (v *getDashboardByIdDashboardsDashboardQueries) GetById() *getDashboardByIdDashboardsDashboardQueriesByIdDashboard {
+	return v.ById
+}
+
+// getDashboardByIdDashboardsDashboardQueriesByIdDashboard includes the requested fields of the GraphQL type Dashboard.
+type getDashboardByIdDashboardsDashboardQueriesByIdDashboard struct {
+	Id              string                                                                 `json:"id"`
+	Name            string                                                                 `json:"name"`
+	Description     *string                                                                `json:"description"`
+	IsPrivate       *bool                                                                  `json:"isPrivate"`
+	SystemReference *string                                                                `json:"systemReference"`
+	CreatedAt       time.Time                                                              `json:"createdAt"`
+	UpdatedAt       time.Time                                                              `json:"updatedAt"`
+	Category        *getDashboardByIdDashboardsDashboardQueriesByIdDashboardCategory       `json:"category"`
+	Owner           *getDashboardByIdDashboardsDashboardQueriesByIdDashboardOwner          `json:"owner"`
+	Layout          []getDashboardByIdDashboardsDashboardQueriesByIdDashboardLayout        `json:"layout"`
+	Widgets         []getDashboardByIdDashboardsDashboardQueriesByIdDashboardWidgetsWidget `json:"widgets"`
+}
+
+// GetId returns getDashboardByIdDashboardsDashboardQueriesByIdDashboard.Id, and is useful for accessing the field via an interface.
+func (v *getDashboardByIdDashboardsDashboardQueriesByIdDashboard) GetId() string { return v.Id }
+
+// GetName returns getDashboardByIdDashboardsDashboardQueriesByIdDashboard.Name, and is useful for accessing the field via an interface.
+func (v *getDashboardByIdDashboardsDashboardQueriesByIdDashboard) GetName() string { return v.Name }
+
+// GetDescription returns getDashboardByIdDashboardsDashboardQueriesByIdDashboard.Description, and is useful for accessing the field via an interface.
+func (v *getDashboardByIdDashboardsDashboardQueriesByIdDashboard) GetDescription() *string {
+	return v.Description
+}
+
+// GetIsPrivate returns getDashboardByIdDashboardsDashboardQueriesByIdDashboard.IsPrivate, and is useful for accessing the field via an interface.
+func (v *getDashboardByIdDashboardsDashboardQueriesByIdDashboard) GetIsPrivate() *bool {
+	return v.IsPrivate
+}
+
+// GetSystemReference returns getDashboardByIdDashboardsDashboardQueriesByIdDashboard.SystemReference, and is useful for accessing the field via an interface.
+func (v *getDashboardByIdDashboardsDashboardQueriesByIdDashboard) GetSystemReference() *string {
+	return v.SystemReference
+}
+
+// GetCreatedAt returns getDashboardByIdDashboardsDashboardQueriesByIdDashboard.CreatedAt, and is useful for accessing the field via an interface.
+func (v *getDashboardByIdDashboardsDashboardQueriesByIdDashboard) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns getDashboardByIdDashboardsDashboardQueriesByIdDashboard.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *getDashboardByIdDashboardsDashboardQueriesByIdDashboard) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
+}
+
+// GetCategory returns getDashboardByIdDashboardsDashboardQueriesByIdDashboard.Category, and is useful for accessing the field via an interface.
+func (v *getDashboardByIdDashboardsDashboardQueriesByIdDashboard) GetCategory() *getDashboardByIdDashboardsDashboardQueriesByIdDashboardCategory {
+	return v.Category
+}
+
+// GetOwner returns getDashboardByIdDashboardsDashboardQueriesByIdDashboard.Owner, and is useful for accessing the field via an interface.
+func (v *getDashboardByIdDashboardsDashboardQueriesByIdDashboard) GetOwner() *getDashboardByIdDashboardsDashboardQueriesByIdDashboardOwner {
+	return v.Owner
+}
+
+// GetLayout returns getDashboardByIdDashboardsDashboardQueriesByIdDashboard.Layout, and is useful for accessing the field via an interface.
+func (v *getDashboardByIdDashboardsDashboardQueriesByIdDashboard) GetLayout() []getDashboardByIdDashboardsDashboardQueriesByIdDashboardLayout {
+	return v.Layout
+}
+
+// GetWidgets returns getDashboardByIdDashboardsDashboardQueriesByIdDashboard.Widgets, and is useful for accessing the field via an interface.
+func (v *getDashboardByIdDashboardsDashboardQueriesByIdDashboard) GetWidgets() []getDashboardByIdDashboardsDashboardQueriesByIdDashboardWidgetsWidget {
+	return v.Widgets
+}
+
+// getDashboardByIdDashboardsDashboardQueriesByIdDashboardCategory includes the requested fields of the GraphQL type DashboardCategory.
+type getDashboardByIdDashboardsDashboardQueriesByIdDashboardCategory struct {
+	Id        string                                                                `json:"id"`
+	Name      string                                                                `json:"name"`
+	Type      string                                                                `json:"type"`
+	Owner     *getDashboardByIdDashboardsDashboardQueriesByIdDashboardCategoryOwner `json:"owner"`
+	CreatedAt time.Time                                                             `json:"createdAt"`
+	UpdatedAt time.Time                                                             `json:"updatedAt"`
+}
+
+// GetId returns getDashboardByIdDashboardsDashboardQueriesByIdDashboardCategory.Id, and is useful for accessing the field via an interface.
+func (v *getDashboardByIdDashboardsDashboardQueriesByIdDashboardCategory) GetId() string { return v.Id }
+
+// GetName returns getDashboardByIdDashboardsDashboardQueriesByIdDashboardCategory.Name, and is useful for accessing the field via an interface.
+func (v *getDashboardByIdDashboardsDashboardQueriesByIdDashboardCategory) GetName() string {
+	return v.Name
+}
+
+// GetType returns getDashboardByIdDashboardsDashboardQueriesByIdDashboardCategory.Type, and is useful for accessing the field via an interface.
+func (v *getDashboardByIdDashboardsDashboardQueriesByIdDashboardCategory) GetType() string {
+	return v.Type
+}
+
+// GetOwner returns getDashboardByIdDashboardsDashboardQueriesByIdDashboardCategory.Owner, and is useful for accessing the field via an interface.
+func (v *getDashboardByIdDashboardsDashboardQueriesByIdDashboardCategory) GetOwner() *getDashboardByIdDashboardsDashboardQueriesByIdDashboardCategoryOwner {
+	return v.Owner
+}
+
+// GetCreatedAt returns getDashboardByIdDashboardsDashboardQueriesByIdDashboardCategory.CreatedAt, and is useful for accessing the field via an interface.
+func (v *getDashboardByIdDashboardsDashboardQueriesByIdDashboardCategory) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns getDashboardByIdDashboardsDashboardQueriesByIdDashboardCategory.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *getDashboardByIdDashboardsDashboardQueriesByIdDashboardCategory) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
+}
+
+// getDashboardByIdDashboardsDashboardQueriesByIdDashboardCategoryOwner includes the requested fields of the GraphQL type CategoryOwner.
+type getDashboardByIdDashboardsDashboardQueriesByIdDashboardCategoryOwner struct {
+	Id   string `json:"id"`
+	Name string `json:"name"`
+}
+
+// GetId returns getDashboardByIdDashboardsDashboardQueriesByIdDashboardCategoryOwner.Id, and is useful for accessing the field via an interface.
+func (v *getDashboardByIdDashboardsDashboardQueriesByIdDashboardCategoryOwner) GetId() string {
+	return v.Id
+}
+
+// GetName returns getDashboardByIdDashboardsDashboardQueriesByIdDashboardCategoryOwner.Name, and is useful for accessing the field via an interface.
+func (v *getDashboardByIdDashboardsDashboardQueriesByIdDashboardCategoryOwner) GetName() string {
+	return v.Name
+}
+
+// getDashboardByIdDashboardsDashboardQueriesByIdDashboardLayout includes the requested fields of the GraphQL type Layout.
+type getDashboardByIdDashboardsDashboardQueriesByIdDashboardLayout struct {
+	Id     string `json:"id"`
+	X      int    `json:"x"`
+	Y      int    `json:"y"`
+	Height int    `json:"height"`
+	Width  int    `json:"width"`
+}
+
+// GetId returns getDashboardByIdDashboardsDashboardQueriesByIdDashboardLayout.Id, and is useful for accessing the field via an interface.
+func (v *getDashboardByIdDashboardsDashboardQueriesByIdDashboardLayout) GetId() string { return v.Id }
+
+// GetX returns getDashboardByIdDashboardsDashboardQueriesByIdDashboardLayout.X, and is useful for accessing the field via an interface.
+func (v *getDashboardByIdDashboardsDashboardQueriesByIdDashboardLayout) GetX() int { return v.X }
+
+// GetY returns getDashboardByIdDashboardsDashboardQueriesByIdDashboardLayout.Y, and is useful for accessing the field via an interface.
+func (v *getDashboardByIdDashboardsDashboardQueriesByIdDashboardLayout) GetY() int { return v.Y }
+
+// GetHeight returns getDashboardByIdDashboardsDashboardQueriesByIdDashboardLayout.Height, and is useful for accessing the field via an interface.
+func (v *getDashboardByIdDashboardsDashboardQueriesByIdDashboardLayout) GetHeight() int {
+	return v.Height
+}
+
+// GetWidth returns getDashboardByIdDashboardsDashboardQueriesByIdDashboardLayout.Width, and is useful for accessing the field via an interface.
+func (v *getDashboardByIdDashboardsDashboardQueriesByIdDashboardLayout) GetWidth() int {
+	return v.Width
+}
+
+// getDashboardByIdDashboardsDashboardQueriesByIdDashboardOwner includes the requested fields of the GraphQL type DashboardOwner.
+type getDashboardByIdDashboardsDashboardQueriesByIdDashboardOwner struct {
+	Id   string `json:"id"`
+	Name string `json:"name"`
+}
+
+// GetId returns getDashboardByIdDashboardsDashboardQueriesByIdDashboardOwner.Id, and is useful for accessing the field via an interface.
+func (v *getDashboardByIdDashboardsDashboardQueriesByIdDashboardOwner) GetId() string { return v.Id }
+
+// GetName returns getDashboardByIdDashboardsDashboardQueriesByIdDashboardOwner.Name, and is useful for accessing the field via an interface.
+func (v *getDashboardByIdDashboardsDashboardQueriesByIdDashboardOwner) GetName() string {
+	return v.Name
+}
+
+// getDashboardByIdDashboardsDashboardQueriesByIdDashboardWidgetsWidget includes the requested fields of the GraphQL type Widget.
+type getDashboardByIdDashboardsDashboardQueriesByIdDashboardWidgetsWidget struct {
+	Id         string `json:"id"`
+	Type       string `json:"type"`
+	Properties *any   `json:"properties"`
+}
+
+// GetId returns getDashboardByIdDashboardsDashboardQueriesByIdDashboardWidgetsWidget.Id, and is useful for accessing the field via an interface.
+func (v *getDashboardByIdDashboardsDashboardQueriesByIdDashboardWidgetsWidget) GetId() string {
+	return v.Id
+}
+
+// GetType returns getDashboardByIdDashboardsDashboardQueriesByIdDashboardWidgetsWidget.Type, and is useful for accessing the field via an interface.
+func (v *getDashboardByIdDashboardsDashboardQueriesByIdDashboardWidgetsWidget) GetType() string {
+	return v.Type
+}
+
+// GetProperties returns getDashboardByIdDashboardsDashboardQueriesByIdDashboardWidgetsWidget.Properties, and is useful for accessing the field via an interface.
+func (v *getDashboardByIdDashboardsDashboardQueriesByIdDashboardWidgetsWidget) GetProperties() *any {
+	return v.Properties
+}
+
+// getDashboardByIdResponse is returned by getDashboardById on success.
+type getDashboardByIdResponse struct {
+	Dashboards *getDashboardByIdDashboardsDashboardQueries `json:"dashboards"`
+}
+
+// GetDashboards returns getDashboardByIdResponse.Dashboards, and is useful for accessing the field via an interface.
+func (v *getDashboardByIdResponse) GetDashboards() *getDashboardByIdDashboardsDashboardQueries {
+	return v.Dashboards
+}
+
+// updateDashboardResponse is returned by updateDashboard on success.
+type updateDashboardResponse struct {
+	UpdateDashboard updateDashboardUpdateDashboardUpdateDashboardResponse `json:"updateDashboard"`
+}
+
+// GetUpdateDashboard returns updateDashboardResponse.UpdateDashboard, and is useful for accessing the field via an interface.
+func (v *updateDashboardResponse) GetUpdateDashboard() updateDashboardUpdateDashboardUpdateDashboardResponse {
+	return v.UpdateDashboard
+}
+
+// updateDashboardUpdateDashboardUpdateDashboardResponse includes the requested fields of the GraphQL type UpdateDashboardResponse.
+type updateDashboardUpdateDashboardUpdateDashboardResponse struct {
+	Code      string                                                          `json:"code"`
+	Success   bool                                                            `json:"success"`
+	Message   string                                                          `json:"message"`
+	Dashboard *updateDashboardUpdateDashboardUpdateDashboardResponseDashboard `json:"dashboard"`
+}
+
+// GetCode returns updateDashboardUpdateDashboardUpdateDashboardResponse.Code, and is useful for accessing the field via an interface.
+func (v *updateDashboardUpdateDashboardUpdateDashboardResponse) GetCode() string { return v.Code }
+
+// GetSuccess returns updateDashboardUpdateDashboardUpdateDashboardResponse.Success, and is useful for accessing the field via an interface.
+func (v *updateDashboardUpdateDashboardUpdateDashboardResponse) GetSuccess() bool { return v.Success }
+
+// GetMessage returns updateDashboardUpdateDashboardUpdateDashboardResponse.Message, and is useful for accessing the field via an interface.
+func (v *updateDashboardUpdateDashboardUpdateDashboardResponse) GetMessage() string { return v.Message }
+
+// GetDashboard returns updateDashboardUpdateDashboardUpdateDashboardResponse.Dashboard, and is useful for accessing the field via an interface.
+func (v *updateDashboardUpdateDashboardUpdateDashboardResponse) GetDashboard() *updateDashboardUpdateDashboardUpdateDashboardResponseDashboard {
+	return v.Dashboard
+}
+
+// updateDashboardUpdateDashboardUpdateDashboardResponseDashboard includes the requested fields of the GraphQL type Dashboard.
+type updateDashboardUpdateDashboardUpdateDashboardResponseDashboard struct {
+	Id        string    `json:"id"`
+	OwnerId   *string   `json:"ownerId"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// GetId returns updateDashboardUpdateDashboardUpdateDashboardResponseDashboard.Id, and is useful for accessing the field via an interface.
+func (v *updateDashboardUpdateDashboardUpdateDashboardResponseDashboard) GetId() string { return v.Id }
+
+// GetOwnerId returns updateDashboardUpdateDashboardUpdateDashboardResponseDashboard.OwnerId, and is useful for accessing the field via an interface.
+func (v *updateDashboardUpdateDashboardUpdateDashboardResponseDashboard) GetOwnerId() *string {
+	return v.OwnerId
+}
+
+// GetUpdatedAt returns updateDashboardUpdateDashboardUpdateDashboardResponseDashboard.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *updateDashboardUpdateDashboardUpdateDashboardResponseDashboard) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
 }
 
 func CreateAlertDefinition(
@@ -1739,6 +2253,190 @@ mutation UpdateNotification ($configuration: UpdateNotificationServiceConfigurat
 	var err error
 
 	var data UpdateNotificationResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+func createDashboard(
+	ctx context.Context,
+	client graphql.Client,
+	input CreateDashboardInput,
+) (*createDashboardResponse, error) {
+	req := &graphql.Request{
+		OpName: "createDashboard",
+		Query: `
+mutation createDashboard ($input: CreateDashboardInput!) {
+	createDashboard(input: $input) {
+		code
+		success
+		message
+		dashboard {
+			id
+			systemReference
+			owner {
+				id
+				name
+			}
+			createdAt
+			updatedAt
+		}
+	}
+}
+`,
+		Variables: &__createDashboardInput{
+			Input: input,
+		},
+	}
+	var err error
+
+	var data createDashboardResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+func deleteDashboard(
+	ctx context.Context,
+	client graphql.Client,
+	input DeleteDashboardInput,
+) (*deleteDashboardResponse, error) {
+	req := &graphql.Request{
+		OpName: "deleteDashboard",
+		Query: `
+mutation deleteDashboard ($input: DeleteDashboardInput!) {
+	deleteDashboard(input: $input) {
+		code
+		success
+		message
+	}
+}
+`,
+		Variables: &__deleteDashboardInput{
+			Input: input,
+		},
+	}
+	var err error
+
+	var data deleteDashboardResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+func getDashboardById(
+	ctx context.Context,
+	client graphql.Client,
+	id string,
+) (*getDashboardByIdResponse, error) {
+	req := &graphql.Request{
+		OpName: "getDashboardById",
+		Query: `
+query getDashboardById ($id: ID!) {
+	dashboards {
+		byId(id: $id) {
+			id
+			name
+			description
+			isPrivate
+			systemReference
+			createdAt
+			updatedAt
+			category {
+				id
+				name
+				type
+				owner {
+					id
+					name
+				}
+				createdAt
+				updatedAt
+			}
+			owner {
+				id
+				name
+			}
+			layout {
+				id
+				x
+				y
+				height
+				width
+			}
+			widgets {
+				id
+				type
+				properties
+			}
+		}
+	}
+}
+`,
+		Variables: &__getDashboardByIdInput{
+			Id: id,
+		},
+	}
+	var err error
+
+	var data getDashboardByIdResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+func updateDashboard(
+	ctx context.Context,
+	client graphql.Client,
+	input UpdateDashboardInput,
+) (*updateDashboardResponse, error) {
+	req := &graphql.Request{
+		OpName: "updateDashboard",
+		Query: `
+mutation updateDashboard ($input: UpdateDashboardInput!) {
+	updateDashboard(input: $input) {
+		code
+		success
+		message
+		dashboard {
+			id
+			ownerId
+			updatedAt
+		}
+	}
+}
+`,
+		Variables: &__updateDashboardInput{
+			Input: input,
+		},
+	}
+	var err error
+
+	var data updateDashboardResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
