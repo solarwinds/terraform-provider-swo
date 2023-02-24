@@ -1,158 +1,340 @@
 package client
 
 import (
-	"encoding/json"
-	"io"
-	"log"
 	"net/http"
-	"strings"
 	"testing"
-
-	"github.com/Khan/genqlient/graphql"
-	"github.com/solarwindscloud/terraform-provider-swo/internal/client/mocks"
-	"github.com/stretchr/testify/assert"
-)
-
-const (
-	createResponseJson = `{"data":{"alertMutations":{"createAlertDefinition":{"actions":[],"flatCondition":[{"id":"c56d2530-d445-4436-ba94-9bce4004c9a0"},{"id":"26641dd3-92a1-4479-b4bb-e46a5e5c8361"},{"id":"3e325c1d-f3fa-4054-aaa2-500c6156d9c6"},{"id":"ffe08f50-e05a-43c3-bc16-3c75486be7c9"},{"id":"f4167d89-d6e8-47f6-b084-82ee5378cb53"}],"description":"this is an alert to test nothing","enabled":false,"id":"43a1743c-91ca-43ee-a37e-df01902d2dc4","name":"terraform-provider-swo-test-alert","organizationId":"140638900734749696","severity":"INFO"}}}}`
-	readResponseJson   = `{"data":{"alertQueries":{"alertDefinitions":{"alertDefinitions":[{"actions":[],"triggerResetActions":false,"conditionType":"ENTITY_METRIC","flatCondition":[{"id":"935b93f6-f94f-4b25-98a6-e66bbf80eaee","links":[{"name":"operands","values":["0f9212ff-c437-4496-aabd-72a3d0c4dea0","9b3f1343-4936-40d2-bb2c-7ee8a7612f46"]}],"value":{"fieldName":null,"operator":">","type":"binaryOperator","query":null}},{"id":"0f9212ff-c437-4496-aabd-72a3d0c4dea0","links":[{"name":"operands","values":["8fc84a11-dece-4561-9b36-573c4e38929f","fa655d66-673c-444c-b368-4c173585699d"]}],"value":{"fieldName":null,"operator":"MAX","type":"aggregationOperator","query":null}},{"id":"9b3f1343-4936-40d2-bb2c-7ee8a7612f46","links":[],"value":{"fieldName":null,"operator":null,"type":"constantValue","query":null}},{"id":"8fc84a11-dece-4561-9b36-573c4e38929f","links":[],"value":{"fieldName":"Orion.NPM.InterfaceTraffic.InTotalBytes","operator":null,"type":"metricField","query":null}},{"id":"fa655d66-673c-444c-b368-4c173585699d","links":[],
-	"value":{"fieldName":null,"operator":null,"type":"constantValue","query":null}}],"description":"this is an alert to test nothing","enabled":false,"id":"43a1743c-91ca-43ee-a37e-df01902d2dc4","name":"terraform-provider-swo-test-alert","organizationId":"140638900734749696","severity":"INFO","triggered":false,"triggeredTime":null,"targetEntityTypes":["DeviceVolume"],"muteInfo":{"muted":false,"until":null},"userId":"151686710111094784"}]}}}}`
-	updateResponseJson = `{"data":{"alertMutations":{"updateAlertDefinition":{"actions":[],"flatCondition":[{"id":"e6be7955-4dcd-4b4c-9cf1-f0161fec02fa"},{"id":"75e6e17b-2028-4c74-acc9-396d45456ccb"},{"id":"34c53802-e994-47de-adad-8bf394f36b1f"},{"id":"73c5560c-fef8-4a75-af0c-44c3ab7a89e7"},{"id":"78caaf1f-4be5-4d89-a061-cac4a535ee5c"}],"description":"this is an alert to test nothing","enabled":false,"id":"43a1743c-91ca-43ee-a37e-df01902d2dc4","muteInfo":{"muted":false,"until":null},"name":"terraform-provider-swo-test-alert","organizationId":"140638900734749696","severity":"INFO","triggered":false,"triggeredTime":null,"targetEntityTypes":["DeviceVolume"],"userId":"151686710111094784"}}}}`
-	deleteResponseJson = `{"data":{"alertMutations":{"deleteAlertDefinition":"43a1743c-91ca-43ee-a37e-df01902d2dc4"}}}`
-	alertId            = "43a1743c-91ca-43ee-a37e-df01902d2dc4"
 )
 
 var (
-	alertsService *AlertsService
+	mockAlertId              = "43a1743c-91ca-43ee-a37e-df01902d2dc4"
+	mockAlertName            = "swo-client-go_test-alert"
+	mockAlertDescription     = "testing alert creation from swo-client-go"
+	mockAlertDefinitionInput = func(name string, description string) AlertDefinitionInput {
+		operatorGt := ">"
+		operatorMax := "MAX"
+
+		alertExpression := AlertFilterExpressionInput{Operation: FilterOperationEq}
+		entityFilter := AlertConditionNodeEntityFilterInput{Type: "DeviceVolume"}
+
+		dataTypeString := "string"
+		dataTypeNumber := "number"
+
+		oneDValue := "1d"
+		Ninety := "90"
+
+		fieldName := "Orion.NPM.InterfaceTraffic.InTotalBytes"
+
+		return AlertDefinitionInput{
+			Name:        name,
+			Description: &description,
+			Enabled:     true,
+			Severity:    AlertSeverityInfo,
+			Condition: []AlertConditionNodeInput{
+				{Id: 0, Type: "binaryOperator", Operator: &operatorGt, OperandIds: []int{1, 4}},
+				{Id: 1, Type: "aggregationOperator", Operator: &operatorMax, OperandIds: []int{2, 3}, MetricFilter: &alertExpression},
+				{Id: 2, Type: "metricField", EntityFilter: &entityFilter, FieldName: &fieldName},
+				{Id: 3, Type: "constantValue", DataType: &dataTypeString, Value: &oneDValue},
+				{Id: 4, Type: "constantValue", DataType: &dataTypeNumber, Value: &Ninety},
+			},
+		}
+	}
+	mockCreateAlertDefinitionResult = func(id string, name string, description string) *AlertDefinitionCreate {
+		return &AlertDefinitionCreate{
+			Id:             id,
+			Name:           name,
+			Description:    &description,
+			Enabled:        true,
+			OrganizationId: "140638900734749696",
+			Severity:       "INFO",
+			Actions:        []CreateAlertDefinitionAlertMutationsCreateAlertDefinitionActionsAlertAction{},
+			FlatCondition: []CreateAlertDefinitionAlertMutationsCreateAlertDefinitionFlatConditionFlatAlertConditionExpression{
+				{
+					Id: "935b93f6-f94f-4b25-98a6-e66bbf80eaee",
+				},
+				{
+					Id: "0f9212ff-c437-4496-aabd-72a3d0c4dea0",
+				},
+				{
+					Id: "9b3f1343-4936-40d2-bb2c-7ee8a7612f46",
+				},
+				{
+					Id: "8fc84a11-dece-4561-9b36-573c4e38929f",
+				},
+				{
+					Id: "fa655d66-673c-444c-b368-4c173585699d",
+				},
+			},
+		}
+	}
+	mockReadAlertDefinitionResult = func(id string, description string) *GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinition {
+		operatorGT := ">"
+		operatorMAX := "MAX"
+		metricFieldName := "Orion.NPM.InterfaceTraffic.InTotalBytes"
+
+		return &GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinition{
+			Id:                id,
+			Name:              "terraform-provider-swo-test-alert",
+			Description:       &description,
+			Enabled:           false,
+			OrganizationId:    "140638900734749696",
+			UserId:            "151686710111094784",
+			Severity:          "INFO",
+			Triggered:         false,
+			TargetEntityTypes: []string{"DeviceVolume"},
+			MuteInfo: GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionMuteInfo{
+				Muted: false,
+			},
+			Actions:             []GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionActionsAlertAction{},
+			TriggerResetActions: false,
+			ConditionType:       "ENTITY_METRIC",
+			FlatCondition: []GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionFlatConditionFlatAlertConditionExpression{
+				{
+					Id: "935b93f6-f94f-4b25-98a6-e66bbf80eaee",
+					Links: []GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionFlatConditionFlatAlertConditionExpressionLinksNamedLinks{
+						{
+							Name: "operands",
+							Values: []string{
+								"0f9212ff-c437-4496-aabd-72a3d0c4dea0",
+								"9b3f1343-4936-40d2-bb2c-7ee8a7612f46",
+							},
+						},
+					},
+					Value: &GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionFlatConditionFlatAlertConditionExpressionValueFlatAlertConditionNode{
+						FieldName: nil,
+						Operator:  &operatorGT,
+						Type:      "binaryOperator",
+						Query:     nil,
+					},
+				},
+				{
+					Id: "0f9212ff-c437-4496-aabd-72a3d0c4dea0",
+					Links: []GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionFlatConditionFlatAlertConditionExpressionLinksNamedLinks{
+						{
+							Name: "operands",
+							Values: []string{
+								"8fc84a11-dece-4561-9b36-573c4e38929f",
+								"fa655d66-673c-444c-b368-4c173585699d",
+							},
+						},
+					},
+					Value: &GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionFlatConditionFlatAlertConditionExpressionValueFlatAlertConditionNode{
+						FieldName: nil,
+						Operator:  &operatorMAX,
+						Type:      "aggregationOperator",
+						Query:     nil,
+					},
+				},
+				{
+					Id:    "9b3f1343-4936-40d2-bb2c-7ee8a7612f46",
+					Links: []GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionFlatConditionFlatAlertConditionExpressionLinksNamedLinks{},
+					Value: &GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionFlatConditionFlatAlertConditionExpressionValueFlatAlertConditionNode{
+						FieldName: nil,
+						Operator:  nil,
+						Type:      "constantValue",
+						Query:     nil,
+					},
+				},
+				{
+					Id:    "8fc84a11-dece-4561-9b36-573c4e38929f",
+					Links: []GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionFlatConditionFlatAlertConditionExpressionLinksNamedLinks{},
+					Value: &GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionFlatConditionFlatAlertConditionExpressionValueFlatAlertConditionNode{
+						FieldName: &metricFieldName,
+						Operator:  nil,
+						Type:      "metricField",
+						Query:     nil,
+					},
+				},
+				{
+					Id:    "fa655d66-673c-444c-b368-4c173585699d",
+					Links: []GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionFlatConditionFlatAlertConditionExpressionLinksNamedLinks{},
+					Value: &GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinitionFlatConditionFlatAlertConditionExpressionValueFlatAlertConditionNode{
+						FieldName: nil,
+						Operator:  nil,
+						Type:      "constantValue",
+						Query:     nil,
+					},
+				},
+			},
+		}
+	}
+	mockUpdateAlertDefinitionResult = func(id string, name string, description string) *AlertDefinitionUpdate {
+		return &AlertDefinitionUpdate{
+			Id:             id,
+			Name:           name,
+			Description:    &description,
+			Enabled:        true,
+			OrganizationId: "140638900734749696",
+			Severity:       "INFO",
+			Actions:        []UpdateAlertDefinitionAlertMutationsUpdateAlertDefinitionActionsAlertAction{},
+			FlatCondition: []UpdateAlertDefinitionAlertMutationsUpdateAlertDefinitionFlatConditionFlatAlertConditionExpression{
+				{
+					Id: "935b93f6-f94f-4b25-98a6-e66bbf80eaee",
+				},
+				{
+					Id: "0f9212ff-c437-4496-aabd-72a3d0c4dea0",
+				},
+				{
+					Id: "9b3f1343-4936-40d2-bb2c-7ee8a7612f46",
+				},
+				{
+					Id: "8fc84a11-dece-4561-9b36-573c4e38929f",
+				},
+				{
+					Id: "fa655d66-673c-444c-b368-4c173585699d",
+				},
+			},
+		}
+	}
 )
 
-func init() {
-	client := Client{
-		gql: graphql.NewClient("", &mocks.MockClient{}),
-	}
-
-	alertsService = NewAlertsService(&client)
-}
-
 func TestCreateAlert(t *testing.T) {
-	mocks.GetDoFunc = func(req *http.Request) (*http.Response, error) {
-		bodyData, err := io.ReadAll(req.Body)
+	ctx, client, server, _, teardown := setup()
+	defer teardown()
+
+	server.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		gqlInput, err := getGraphQLInput[__CreateAlertDefinitionInput](r)
 		if err != nil {
-			log.Fatalln(err)
+			t.Errorf("Swo.CreateAlert returned error: %v", err)
 		}
 
-		readCloser := io.NopCloser(strings.NewReader(createResponseJson))
-		//Checking the body length to confirm nothing changed when the gql request was created
-		assert.Equal(t, 1744, len(bodyData))
-		return &http.Response{
-			StatusCode: 200,
-			Body:       readCloser,
-		}, nil
-	}
+		sendGraphQLResponse(t, w, CreateAlertDefinitionResponse{
+			AlertMutations: CreateAlertDefinitionAlertMutations{
+				CreateAlertDefinition: mockCreateAlertDefinitionResult(mockAlertId, gqlInput.Definition.Name, *gqlInput.Definition.Description),
+			},
+		})
+	})
 
-	defaultAlertDefinition := DefaultAlertDefinition()
-	resp, err := alertsService.Create(defaultAlertDefinition)
+	got, err := client.AlertsService().Create(ctx, mockAlertDefinitionInput(mockAlertName, mockAlertDescription))
 	if err != nil {
-		log.Fatal(err)
+		t.Errorf("Swo.ReadAlert error: %v", err)
+		return
 	}
 
-	jsonResp, err := json.Marshal(resp)
-	if err != nil {
-		log.Fatal(err)
+	want := mockCreateAlertDefinitionResult(mockAlertId, mockAlertName, mockAlertDescription)
+
+	if !testObjects(t, got, want) {
+		t.Errorf("Swo.ReadAlert returned %+v, wanted %+v", got, want)
 	}
-
-	assert.Equal(t, 470, len(jsonResp))
-	assert.Equal(t, alertId, resp.Id)
-	assert.Equal(t, defaultAlertDefinition.Name, resp.Name)
-	assert.Equal(t, defaultAlertDefinition.Description, resp.Description)
-	assert.Equal(t, defaultAlertDefinition.Enabled, resp.Enabled)
-
 }
 
 func TestReadAlert(t *testing.T) {
-	addMockRequestBody(readResponseJson)
+	ctx, client, server, _, teardown := setup()
+	defer teardown()
 
-	resp, err := alertsService.Read(alertId)
+	server.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		gqlInput, err := getGraphQLInput[__GetAlertDefinitionsInput](r)
+		if err != nil {
+			t.Errorf("Swo.ReadAlert returned error: %v", err)
+		}
+
+		sendGraphQLResponse(t, w, GetAlertDefinitionsResponse{
+			AlertQueries: GetAlertDefinitionsAlertQueries{
+				AlertDefinitions: GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResult{
+					AlertDefinitions: []GetAlertDefinitionsAlertQueriesAlertDefinitionsAlertDefinitionsResultAlertDefinitionsAlertDefinition{
+						*mockReadAlertDefinitionResult(*gqlInput.Filter.Id, mockAlertDescription),
+					},
+				},
+			},
+		})
+	})
+
+	got, err := client.AlertsService().Read(ctx, mockAlertId)
 	if err != nil {
-		log.Fatal(err)
+		t.Errorf("Swo.ReadAlert error: %v", err)
+		return
 	}
 
-	defaultAlertDefinition := DefaultAlertDefinition()
-	jsonResp, err := json.Marshal(resp)
-	if err != nil {
-		log.Fatal(err)
-	}
+	want := mockReadAlertDefinitionResult(mockAlertId, mockAlertDescription)
 
-	assert.Equal(t, 1389, len(jsonResp))
-	assert.Equal(t, alertId, resp.Id)
-	assert.Equal(t, defaultAlertDefinition.Name, resp.Name)
-	assert.Equal(t, defaultAlertDefinition.Description, resp.Description)
-	assert.Equal(t, defaultAlertDefinition.Enabled, resp.Enabled)
+	if !testObjects(t, got, want) {
+		t.Errorf("Swo.ReadAlert returned %+v, wanted %+v", got, want)
+	}
 }
 
 func TestUpdateAlert(t *testing.T) {
-	addMockRequestBody(updateResponseJson)
-	alertDefinition := DefaultAlertDefinition()
+	ctx, client, server, _, teardown := setup()
+	defer teardown()
 
-	ninetyEight := "98"
-	alertDefinition.Condition[4].Value = &ninetyEight
+	input := mockAlertDefinitionInput(mockAlertName, mockAlertDescription)
 
-	err := alertsService.Update(alertId, alertDefinition)
+	server.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		gqlInput, err := getGraphQLInput[__UpdateAlertDefinitionInput](r)
+		if err != nil {
+			t.Errorf("Swo.ReadAlert returned error: %v", err)
+		}
+
+		got := gqlInput.Definition
+		want := input
+
+		if !testObjects(t, want, got) {
+			t.Errorf("Request input = %+v, want %+v", got, want)
+		}
+
+		sendGraphQLResponse(t, w, UpdateAlertDefinitionAlertMutations{
+			UpdateAlertDefinition: mockUpdateAlertDefinitionResult(gqlInput.UpdateAlertDefinitionId, got.Name, *got.Description),
+		})
+	})
+
+	err := client.AlertsService().Update(ctx, mockAlertId, input)
 	if err != nil {
-		log.Fatal(err)
+		t.Errorf("Swo.UpdateNotification returned error: %v", err)
 	}
-	assert.Equal(t, err, nil)
 }
 
 func TestDeleteAlert(t *testing.T) {
-	addMockRequestBody(deleteResponseJson)
-	err := alertsService.Delete(alertId)
+	ctx, client, server, _, teardown := setup()
+	defer teardown()
+
+	input := DeleteAlertDefinitionAlertMutations{
+		DeleteAlertDefinition: &mockAlertId,
+	}
+
+	server.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		gqlInput, err := getGraphQLInput[__DeleteAlertDefinitionInput](r)
+		if err != nil {
+			t.Errorf("Swo.DeleteAlert returned error: %v", err)
+		}
+
+		got := gqlInput.DeleteAlertDefinitionId
+		want := *input.DeleteAlertDefinition
+
+		if !testObjects(t, got, want) {
+			t.Errorf("Swo.DeleteAlert: got = %s, want %s", got, want)
+		}
+
+		sendGraphQLResponse(t, w, DeleteAlertDefinitionResponse{
+			AlertMutations: DeleteAlertDefinitionAlertMutations{
+				DeleteAlertDefinition: &mockAlertId,
+			},
+		})
+	})
+
+	err := client.AlertsService().Delete(ctx, *input.DeleteAlertDefinition)
 	if err != nil {
-		log.Fatal(err)
-	}
-	assert.Equal(t, err, nil)
-}
-
-func addMockRequestBody(responseJson string) {
-	mocks.GetDoFunc = func(req *http.Request) (*http.Response, error) {
-		readCloser := io.NopCloser(strings.NewReader(responseJson))
-		return &http.Response{
-			StatusCode: 200,
-			Body:       readCloser,
-		}, nil
+		t.Errorf("Swo.DeleteAlert returned error: %v", err)
 	}
 }
 
-func DefaultAlertDefinition() AlertDefinitionInput {
-	operatorGt := ">"
-	operatorMax := "MAX"
+func TestSwoService_AlertsServerErrors(t *testing.T) {
+	ctx, client, server, _, teardown := setup()
+	defer teardown()
 
-	alertExpression := AlertFilterExpressionInput{Operation: FilterOperationEq}
-	entityFilter := AlertConditionNodeEntityFilterInput{Type: "DeviceVolume"}
+	server.HandleFunc("/", httpErrorResponse)
 
-	dataTypeString := "string"
-	dataTypeNumber := "number"
-
-	oneDValue := "1d"
-	Ninety := "90"
-
-	fieldName := "Orion.NPM.InterfaceTraffic.InTotalBytes"
-
-	alertCondition := []AlertConditionNodeInput{
-		{Id: 1, Type: "binaryOperator", Operator: &operatorGt, OperandIds: []int{2, 5}},
-		{Id: 2, Type: "aggregationOperator", Operator: &operatorMax, OperandIds: []int{3, 4}, MetricFilter: &alertExpression},
-		{Id: 3, Type: "metricField", EntityFilter: &entityFilter, FieldName: &fieldName},
-		{Id: 4, Type: "constantValue", DataType: &dataTypeString, Value: &oneDValue},
-		{Id: 5, Type: "constantValue", DataType: &dataTypeNumber, Value: &Ninety},
+	_, err := client.AlertsService().Create(ctx, AlertDefinitionInput{})
+	if err == nil {
+		t.Error("Swo.AlertServerErrors expected an error response")
 	}
-
-	description := "this is an alert to test nothing"
-
-	return AlertDefinitionInput{
-		Name:        "terraform-provider-swo-test-alert",
-		Description: &description,
-		Enabled:     false,
-		Condition:   alertCondition,
-		Severity:    AlertSeverityInfo,
+	_, err = client.AlertsService().Read(ctx, "123")
+	if err == nil {
+		t.Error("Swo.AlertServerErrors expected an error response")
+	}
+	err = client.AlertsService().Update(ctx, "123", AlertDefinitionInput{})
+	if err == nil {
+		t.Error("Swo.AlertServerErrors expected an error response")
+	}
+	err = client.AlertsService().Delete(ctx, "123")
+	if err == nil {
+		t.Error("Swo.AlertServerErrors expected an error response")
 	}
 }

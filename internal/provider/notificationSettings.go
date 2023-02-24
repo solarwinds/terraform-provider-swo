@@ -3,6 +3,7 @@ package provider
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 )
 
 type NotificationSettings struct {
@@ -245,18 +246,29 @@ func toSettingsStruct[T any](settings any) (*T, error) {
 }
 
 func (m *NotificationResourceModel) SetSettings(settings any) error {
-	if accessor, found := settingsAccessors[m.Type]; found {
+	if accessor, found := settingsAccessors[m.Type.ValueString()]; found {
+		if m.Settings == nil {
+			m.Settings = &NotificationSettings{}
+		}
 		err := accessor.Set(m, settings)
 		if err != nil {
 			return err
 		}
 	} else {
-		return fmt.Errorf("unsupported notification type: %s", m.Type)
+		return fmt.Errorf("unsupported notification type: %s", m.Type.ValueString())
 	}
 
 	return nil
 }
 
 func (m *NotificationResourceModel) GetSettings() any {
-	return settingsAccessors[m.Type].Get(m)
+	if accessor, found := settingsAccessors[m.Type.ValueString()]; found {
+		if m.Settings == nil {
+			m.Settings = &NotificationSettings{}
+		}
+		return accessor.Get(m)
+	}
+
+	log.Printf("unsupported notification type. got %s", m.Type.ValueString())
+	return nil
 }

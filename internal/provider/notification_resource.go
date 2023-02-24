@@ -13,6 +13,7 @@ import (
 
 // Ensure provider defined types fully satisfy framework interfaces.
 var _ resource.Resource = &NotificationResource{}
+var _ resource.ResourceWithConfigure = &NotificationResource{}
 var _ resource.ResourceWithImportState = &NotificationResource{}
 
 func NewNotificationResource() resource.Resource {
@@ -53,19 +54,21 @@ func (r *NotificationResource) Create(ctx context.Context, req resource.CreateRe
 
 	var plan NotificationResourceModel
 
-	// Read the Terraform plan data into the model and log the results.
+	// Read the Terraform plan.
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// Create the notification from the provided Terraform model...
+	desc := plan.Description.ValueString()
+
+	// Create the notification...
 	newNotification, err := r.client.
 		NotificationsService().
-		Create(&swoClient.CreateNotificationInput{
-			Title:       plan.Title,
-			Description: plan.Description,
-			Type:        plan.Type,
+		Create(ctx, swoClient.CreateNotificationInput{
+			Title:       plan.Title.ValueString(),
+			Description: &desc,
+			Type:        plan.Type.ValueString(),
 			Settings:    plan.GetSettings(),
 		})
 
@@ -76,123 +79,141 @@ func (r *NotificationResource) Create(ctx context.Context, req resource.CreateRe
 		return
 	}
 
-	tflog.Trace(ctx, fmt.Sprintf("notification '%s' created successfully. id: %s", newNotification.Title, newNotification.Id))
+	tflog.Trace(ctx, fmt.Sprintf("notification %s created successfully. id: %s", newNotification.Title, newNotification.Id))
 
-	// Update the computed values from the response.
-	plan.Id = types.StringValue(newNotification.Id)
+	// Update the computed values from the response. We need to set the Id to a combination of the
+	// notification Id and the notification Type because the server requires both values when asking
+	// for the data. See link for more details on why this is necessary in Terraform.
+	// https://developer.hashicorp.com/terraform/plugin/framework/resources/import#multiple-attributes
+	plan.Id = types.StringValue(fmt.Sprintf("%s:%s", newNotification.Id, newNotification.Type))
 	plan.CreatedAt = types.StringValue(newNotification.CreatedAt.String())
 	plan.CreatedBy = types.StringValue(newNotification.CreatedBy)
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
 
 func (r *NotificationResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	tflog.Trace(ctx, "NotificationResource: Read")
 
-	var plan NotificationResourceModel
+	var state NotificationResourceModel
 
-	// Read any existing Terraform state into the model.
-	resp.Diagnostics.Append(req.State.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	tflog.Trace(ctx, fmt.Sprintf("Getting Notification with ID: %s", plan.Id))
-	notification, err := r.client.NotificationsService().Read(plan.Id.ValueString(), plan.Type)
-
+	nId, nType, err := state.ParseId()
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("error reading notification %s. error: %s",
-			plan.Id,
-			err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("error parsing notification id. got: %s. error: %s",
+			state.Id, err))
 		return
 	}
 
-	plan.Id = types.StringValue(notification.Id)
-	plan.Title = notification.Title
-	plan.Type = notification.Type
-	plan.Description = notification.Description
-	plan.CreatedAt = types.StringValue(notification.CreatedAt.String())
-	plan.CreatedBy = types.StringValue(notification.CreatedBy)
+	// Read the notification...
+	tflog.Trace(ctx, fmt.Sprintf("read notification with id: %s", nId))
+	notification, err := r.client.
+		NotificationsService().
+		Read(ctx, nId, nType)
 
-	err = plan.SetSettings(notification.Settings)
+	if err != nil {
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("error reading notification %s. error: %s",
+			nId, err))
+		return
+	}
+
+	state.Id = types.StringValue(fmt.Sprintf("%s:%s", notification.Id, notification.Type))
+	state.Title = types.StringValue(notification.Title)
+	state.Type = types.StringValue(notification.Type)
+	state.Description = types.StringValue(*notification.Description)
+	state.CreatedAt = types.StringValue(notification.CreatedAt.String())
+	state.CreatedBy = types.StringValue(notification.CreatedBy)
+
+	err = state.SetSettings(notification.Settings)
 	if err != nil {
 		resp.Diagnostics.AddError("Settings Error", err.Error())
 		return
 	}
 
-	tflog.Trace(ctx, fmt.Sprintf("notification received: %s", notification.Title))
+	tflog.Trace(ctx, fmt.Sprintf("read notification success: %s", notification.Id))
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
 func (r *NotificationResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	tflog.Trace(ctx, "NotificationResource: Update")
-
 	var plan, state NotificationResourceModel
 
-	// Read the Terraform plan data into the plan.
+	// Read the Terraform plan.
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	// The plan doesn't capture any existing computed values so we can take it from state.
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// The plan doesn't seem to capture the existing Id. We can take it from state here.
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-	if resp.Diagnostics.HasError() {
+	nId, _, err := state.ParseId()
+	if err != nil {
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("error parsing notification id. got %s. err: %s", state.Id, err))
 		return
 	}
+
+	title := plan.Title.ValueString()
+	desc := plan.Description.ValueString()
+	settings := plan.GetSettings()
+
+	// Update the notification...
+	tflog.Trace(ctx, fmt.Sprintf("updating notification with id: %s", nId))
+	err = r.client.
+		NotificationsService().
+		Update(ctx, swoClient.UpdateNotificationInput{
+			Id:          nId,
+			Title:       &title,
+			Description: &desc,
+			Settings:    &settings,
+		})
+
+	if err != nil {
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("error updating notification %s. err: %s", nId, err))
+		return
+	}
+
+	tflog.Trace(ctx, fmt.Sprintf("notification '%s' updated successfully.", nId))
+
 	plan.Id = state.Id
 	plan.CreatedAt = state.CreatedAt
 	plan.CreatedBy = state.CreatedBy
 
-	settings := plan.GetSettings()
-
-	update := &swoClient.UpdateNotificationInput{
-		Id:          plan.Id.ValueString(),
-		Title:       &plan.Title,
-		Description: plan.Description,
-		Settings:    &settings,
-	}
-
-	tflog.Trace(ctx, fmt.Sprintf("updating notification with id: %s", update.Id))
-
-	// Update the notification...
-	err := r.client.NotificationsService().Update(update)
-	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("error updating notification %s. err: %s", plan.Id, err))
-		return
-	}
-
-	tflog.Trace(ctx, fmt.Sprintf("notification '%s' updated successfully.", plan.Title))
-
-	// Save and log the model into Terraform state.
+	// Save to Terraform state.
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
 
 func (r *NotificationResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	tflog.Trace(ctx, "NotificationResource: Delete")
-	var plan NotificationResourceModel
+	var state NotificationResourceModel
 
-	// Read Terraform prior state data into the plan.
-	resp.Diagnostics.Append(req.State.Get(ctx, &plan)...)
+	// Read existing Terraform state.
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	planId := plan.Id.ValueString()
-	tflog.Trace(ctx, fmt.Sprintf("deleting notification. id: %s", planId))
-
-	// Delete the notification...
-	err := r.client.NotificationsService().Delete(planId)
+	nId, _, err := state.ParseId()
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("error deleting notification %s. err: %s", planId, err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("error deleting notification %s. err: %s", nId, err))
 		return
 	}
 
-	tflog.Trace(ctx, fmt.Sprintf("notification deleted. id: %s", planId))
+	// Delete the notification...
+	tflog.Trace(ctx, fmt.Sprintf("deleting notification. id: %s", nId))
+	err = r.client.
+		NotificationsService().
+		Delete(ctx, nId)
+	if err != nil {
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("error deleting notification %s. err: %s", nId, err))
+		return
+	}
+	tflog.Trace(ctx, fmt.Sprintf("notification deleted. id: %s", nId))
 }
 
 func (r *NotificationResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	tflog.Trace(ctx, "NotificationResource: ImportState")
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
