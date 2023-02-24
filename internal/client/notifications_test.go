@@ -10,24 +10,31 @@ import (
 )
 
 var (
-	fieldCreatedAt = func() time.Time {
-		t, _ := time.Parse(time.RFC3339, "2023-02-17T21:13:06.510Z")
-		return t
-	}
-	fieldEmailSettings = map[string]any{
-		"addresses": []any{
-			map[string]any{"email": string("test1@host.com")},
-			map[string]any{"email": string("test2@host.com")},
+	notificationsMockData = struct {
+		fieldTitle     string
+		fieldDesc      string
+		fieldCreatedAt time.Time
+		fieldCreatedBy string
+		emailSettings  map[string]any
+	}{
+		"swo-client-go - title",
+		"swo-client-go - description",
+		time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
+		"123456789",
+		map[string]any{
+			"addresses": []any{
+				map[string]any{"email": string("test1@host.com")},
+				map[string]any{"email": string("test2@host.com")},
+			},
 		},
 	}
-	fieldDesc = "testing..."
 )
 
 func TestSwoService_ReadNotification(t *testing.T) {
 	ctx, client, server, _, teardown := setup()
 	defer teardown()
 
-	var settings any = fieldEmailSettings
+	var settings any = notificationsMockData.emailSettings
 
 	server.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		gqlInput, err := getGraphQLInput[__GetNotificationInput](r)
@@ -41,11 +48,11 @@ func TestSwoService_ReadNotification(t *testing.T) {
 					NotificationServiceConfiguration: ReadNotificationResult{
 						Id:          gqlInput.ConfigurationId,
 						Type:        gqlInput.ConfigurationType,
-						Title:       "email test",
-						Description: &fieldDesc,
+						Title:       notificationsMockData.fieldTitle,
+						Description: &notificationsMockData.fieldDesc,
 						Settings:    &settings,
-						CreatedAt:   fieldCreatedAt(),
-						CreatedBy:   "140979956856880128",
+						CreatedAt:   notificationsMockData.fieldCreatedAt,
+						CreatedBy:   notificationsMockData.fieldCreatedBy,
 					},
 				},
 			},
@@ -59,12 +66,12 @@ func TestSwoService_ReadNotification(t *testing.T) {
 
 	want := &ReadNotificationResult{
 		Id:          "123",
-		Title:       "email test",
-		Description: &fieldDesc,
+		Title:       notificationsMockData.fieldTitle,
+		Description: &notificationsMockData.fieldDesc,
 		Type:        "email",
 		Settings:    &settings,
-		CreatedAt:   fieldCreatedAt(),
-		CreatedBy:   "140979956856880128",
+		CreatedAt:   notificationsMockData.fieldCreatedAt,
+		CreatedBy:   notificationsMockData.fieldCreatedBy,
 	}
 
 	if !testObjects(t, got, want) {
@@ -76,11 +83,11 @@ func TestSwoService_CreateNotification(t *testing.T) {
 	ctx, client, server, _, teardown := setup()
 	defer teardown()
 
-	var settings any = fieldEmailSettings
+	var settings any = notificationsMockData.emailSettings
 
 	requestInput := CreateNotificationInput{
-		Title:       "email test",
-		Description: &fieldDesc,
+		Title:       notificationsMockData.fieldTitle,
+		Description: &notificationsMockData.fieldDesc,
 		Type:        "email",
 		Settings:    settings,
 	}
@@ -109,8 +116,8 @@ func TestSwoService_CreateNotification(t *testing.T) {
 					Title:       got.Title,
 					Description: got.Description,
 					Settings:    &got.Settings,
-					CreatedAt:   fieldCreatedAt(),
-					CreatedBy:   "140979956856880128",
+					CreatedAt:   notificationsMockData.fieldCreatedAt,
+					CreatedBy:   notificationsMockData.fieldCreatedBy,
 				},
 			},
 		})
@@ -127,12 +134,12 @@ func TestSwoService_CreateNotification(t *testing.T) {
 
 	want := &CreateNotificationResult{
 		Id:          got.Id,
-		Title:       "email test",
-		Description: &fieldDesc,
-		Type:        "email",
-		Settings:    &settings,
-		CreatedAt:   got.CreatedAt,
-		CreatedBy:   got.CreatedBy,
+		Title:       requestInput.Title,
+		Description: requestInput.Description,
+		Type:        requestInput.Type,
+		Settings:    &requestInput.Settings,
+		CreatedAt:   notificationsMockData.fieldCreatedAt,
+		CreatedBy:   notificationsMockData.fieldCreatedBy,
 	}
 
 	if !testObjects(t, got, want) {
@@ -144,13 +151,12 @@ func TestSwoService_UpdateNotification(t *testing.T) {
 	ctx, client, server, _, teardown := setup()
 	defer teardown()
 
-	var settings any = fieldEmailSettings
-	nTitle := "email test"
+	var settings any = notificationsMockData.emailSettings
 
 	input := UpdateNotificationInput{
 		Id:          "123",
-		Title:       &nTitle,
-		Description: &fieldDesc,
+		Title:       &notificationsMockData.fieldTitle,
+		Description: &notificationsMockData.fieldDesc,
 		Settings:    &settings,
 	}
 
@@ -251,25 +257,25 @@ func TestSwoService_NotificationsServerErrors(t *testing.T) {
 func TestNotification_Marshal(t *testing.T) {
 	testJSONMarshal(t, &ReadNotificationResult{}, "{}")
 
-	var settings any = fieldEmailSettings
+	var settings any = notificationsMockData.emailSettings
 	id := uuid.NewString()
-	desc := "testing..."
-	created := fieldCreatedAt()
 
 	got := ReadNotificationResult{
 		Id:          id,
-		Title:       "email test",
-		Description: &desc,
+		Title:       notificationsMockData.fieldTitle,
+		Description: &notificationsMockData.fieldDesc,
 		Type:        "email",
 		Settings:    &settings,
-		CreatedAt:   created,
-		CreatedBy:   "140979956856880128",
+		CreatedAt:   notificationsMockData.fieldCreatedAt,
+		CreatedBy:   notificationsMockData.fieldCreatedBy,
 	}
 
-	want := fmt.Sprintf(`{
+	want := fmt.Sprintf(`
+	{
 		"id": "%s",
 		"type": "email",
-		"title": "email test",
+		"title": "%s",
+		"description": "%s",
 		"settings": {
 			"addresses": [
 				{
@@ -281,9 +287,13 @@ func TestNotification_Marshal(t *testing.T) {
 			]
 		},
 		"createdAt": "%s",
-		"createdBy": "140979956856880128",
-		"description": "testing..."
-	}`, id, "2023-02-17T21:13:06.510Z")
+		"createdBy": "%s"
+	}`,
+		id,
+		notificationsMockData.fieldTitle,
+		notificationsMockData.fieldDesc,
+		notificationsMockData.fieldCreatedAt.Format(time.RFC3339),
+		notificationsMockData.fieldCreatedBy)
 
 	testJSONMarshal(t, got, want)
 }
