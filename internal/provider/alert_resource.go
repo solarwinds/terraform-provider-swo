@@ -26,9 +26,9 @@ type AlertResource struct {
 }
 
 func (model *AlertResourceModel) ToAlertDefinitionInput() swoClient.AlertDefinitionInput {
-	description := Trim(model.Description.String())
-	severity := Trim(model.Severity.String())
-	name := Trim(model.Name.String())
+	description := model.Description.ValueString()
+	severity := model.Severity.ValueString()
+	name := model.Name.ValueString()
 
 	conditions := []swoClient.AlertConditionNodeInput{}
 
@@ -41,19 +41,19 @@ func (model *AlertResourceModel) ToAlertDefinitionInput() swoClient.AlertDefinit
 		Description: &description,
 		Enabled:     model.Enabled.ValueBool(),
 		Severity:    swoClient.AlertSeverity(severity),
-		Actions:     model.ToAlertActionInput(),
+		Actions:     model.toAlertActionInput(),
 		Condition:   conditions,
 	}
 }
 
-func (model *AlertResourceModel) ToAlertActionInput() []swoClient.AlertActionInput {
+func (model *AlertResourceModel) toAlertActionInput() []swoClient.AlertActionInput {
 	configurationIds := []string{}
 	for _, id := range model.Notifications {
 		configurationIds = append(configurationIds, strconv.Itoa(id))
 	}
 	return []swoClient.AlertActionInput{
 		{
-			Type:             Trim(model.NotificationType.String()),
+			Type:             model.NotificationType.ValueString(),
 			ConfigurationIds: configurationIds,
 		},
 	}
@@ -155,7 +155,7 @@ func (r *AlertResource) Update(ctx context.Context, req resource.UpdateRequest, 
 		return
 	}
 
-	alertId := Trim(tfState.ID.String())
+	alertId := tfState.ID.ValueString()
 	input := tfModel.ToAlertDefinitionInput()
 
 	tflog.Trace(ctx, fmt.Sprintf("Updating alert definition with ID: %s", alertId))
@@ -170,7 +170,7 @@ func (r *AlertResource) Update(ctx context.Context, req resource.UpdateRequest, 
 
 	tflog.Trace(ctx, fmt.Sprintf("Alert definition '%s' updated successfully.", input.Name))
 
-	//Because Id is computed it need to be set on the model before applying.
+	//Because Id is computed it needs to be set on the model before applying.
 	tfModel.ID = types.StringValue(alertId)
 
 	// Save and log the model into Terraform state.
@@ -188,7 +188,7 @@ func (r *AlertResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 		return
 	}
 
-	alertDefId := Trim(tfState.ID.String())
+	alertDefId := tfState.ID.ValueString()
 
 	tflog.Trace(ctx, fmt.Sprintf("Deleting alert definition with ID: %s", alertDefId))
 

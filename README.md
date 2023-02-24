@@ -113,12 +113,15 @@ For vscode setup a .vscode/launch.json file that looks like this
 }
 ```
 
-Run the new debugger. If everything was set up correctly, the plugin will output a message telling you to set the TF_REATTACH_PROVIDERS environment variable to the value shown.
+Run the new debugger. If everything was set up correctly, the plugin will output a message to the Debug Console telling you to set the TF_REATTACH_PROVIDERS environment variable. 
 
+Below you see an example of what should be displayed in your Debug Console if the provider stated up correctly. Copy the variable in your Debug Console and export it in your terminal. Don't export what is in the example below.
+
+### Example:
 ```
 Provider started. To attach Terraform CLI, set the TF_REATTACH_PROVIDERS environment variable with the following:
 
-	TF_REATTACH_PROVIDERS='{"github.com/solarwindscloud/swo":{"Protocol":"grpc","ProtocolVersion":6,"Pid":50111,"Test":true,"Addr":{"Network":"unix","String":"/var/folders/86/21z0bd_x39g177h5nfw2l8w80000gq/T/plugin710908482"}}}'
+	TF_REATTACH_PROVIDERS='{"github.com/solarwindscloud/swo":{"Protocol":"grpc","ProtocolVersion":6,"Pid":50111,"Test":true,"Addr":{"Network":"unix","String":"/var/folders/86/21z0bd_x39g177h5nfw2l8w80000gq/T/plugin1234"}}}'
   ```
 
   export the `TF_REATTACH_PROVIDERS` you get back. 
@@ -127,7 +130,6 @@ Provider started. To attach Terraform CLI, set the TF_REATTACH_PROVIDERS environ
 
   ```
   export GODEBUG=asyncpreemptoff=1
-
   terraform init -upgrade
   ```
  
