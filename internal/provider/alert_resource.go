@@ -33,7 +33,7 @@ func (model *AlertResourceModel) ToAlertDefinitionInput() swoClient.AlertDefinit
 	conditions := []swoClient.AlertConditionNodeInput{}
 
 	for _, condition := range model.Conditions {
-		conditions = condition.ToAlertConditionInputs(conditions)
+		conditions = condition.toAlertConditionInputs(conditions)
 	}
 
 	return swoClient.AlertDefinitionInput{

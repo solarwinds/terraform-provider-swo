@@ -24,7 +24,7 @@ type ConditionMap struct {
 	conditionType conditionType
 }
 
-func (model AlertConditionModel) ToAlertConditionInputs(conditions []swoClient.AlertConditionNodeInput) []swoClient.AlertConditionNodeInput {
+func (model AlertConditionModel) toAlertConditionInputs(conditions []swoClient.AlertConditionNodeInput) []swoClient.AlertConditionNodeInput {
 	thresholdOperatorCondition, thresholdDataCondition := model.toThresholdConditionInputs()
 
 	conditionMaps := []ConditionMap{
