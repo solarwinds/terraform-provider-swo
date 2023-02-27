@@ -50,3 +50,12 @@ func DumpRequest(req *http.Request) {
 
 	log.Printf("request body: %s\n\n", string(dump))
 }
+
+func SliceValueExists(s []string, str string) bool {
+	for _, v := range s {
+		if v == str {
+			return true
+		}
+	}
+	return false
+}

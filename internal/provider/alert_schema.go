@@ -18,26 +18,27 @@ type AlertResourceModel struct {
 	Description         types.String          `tfsdk:"description"`
 	Severity            types.String          `tfsdk:"severity"`
 	Type                types.String          `tfsdk:"type"`
-	TargetEntityTypes   []string              `tfsdk:"target_entity_types"`
 	Enabled             types.Bool            `tfsdk:"enabled"`
 	Conditions          []AlertConditionModel `tfsdk:"conditions"`
 	Notifications       []int                 `tfsdk:"notifications"`
+	NotificationType    types.String          `tfsdk:"notification_type"`
 	TriggerResetActions types.Bool            `tfsdk:"trigger_reset_actions"`
 }
 
 type AlertConditionModel struct {
-	MetricName      types.String      `tfsdk:"metric_name"`
-	Threshold       types.String      `tfsdk:"threshold"`
-	Duration        types.String      `tfsdk:"duration"`
-	AggregationType types.String      `tfsdk:"aggregation_type"`
-	EntityIds       []string          `tfsdk:"entity_ids"`
-	IncludeTags     *[]AlertTagsModel `tfsdk:"include_tags"`
-	ExcludeTags     *[]AlertTagsModel `tfsdk:"exclude_tags"`
+	MetricName        types.String      `tfsdk:"metric_name"`
+	Threshold         types.String      `tfsdk:"threshold"`
+	Duration          types.String      `tfsdk:"duration"`
+	AggregationType   types.String      `tfsdk:"aggregation_type"`
+	EntityIds         []string          `tfsdk:"entity_ids"`
+	TargetEntityTypes []string          `tfsdk:"target_entity_types"`
+	IncludeTags       *[]AlertTagsModel `tfsdk:"include_tags"`
+	ExcludeTags       *[]AlertTagsModel `tfsdk:"exclude_tags"`
 }
 
 type AlertTagsModel struct {
 	Name   types.String `tfsdk:"name"`
-	Values []string     `tfsdk:"values"`
+	Values []*string    `tfsdk:"values"`
 }
 
 func (r *AlertResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
@@ -49,6 +50,7 @@ func (r *AlertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 			"id": schema.StringAttribute{
 				Description: "The ID of the alert. This is a computed value provided by the backend.",
 				Computed:    true,
+				Optional:    true,
 			},
 			"name": schema.StringAttribute{
 				Description: "The name of the alert.",
@@ -65,11 +67,6 @@ func (r *AlertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 			"severity": schema.StringAttribute{
 				Description: "The severity of the alert (INFO|WARNING|CRITICAL).",
 				Required:    true,
-			},
-			"target_entity_types": schema.ListAttribute{
-				Description: "The entity types for scoping this alert (e.g. Website, Host, Database...).",
-				Required:    true,
-				ElementType: types.StringType,
 			},
 			"enabled": schema.BoolAttribute{
 				Description: "Is the alert enabled. Default is true.",
@@ -103,6 +100,11 @@ func (r *AlertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 						"entity_ids": schema.ListAttribute{
 							Description: "(Optional) A list of entity IDs that will be the scoped targets of the monitoring.",
 							Optional:    true,
+							ElementType: types.StringType,
+						},
+						"target_entity_types": schema.ListAttribute{
+							Description: "The entity types for scoping this alert (e.g. Website, Host, Database...).",
+							Required:    true,
 							ElementType: types.StringType,
 						},
 						"include_tags": schema.SetNestedAttribute{
@@ -141,6 +143,10 @@ func (r *AlertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 						},
 					},
 				},
+			},
+			"notification_type": schema.StringAttribute{
+				Description: "The type of notification service this alert will notify.",
+				Required:    true,
 			},
 			"notifications": schema.ListAttribute{
 				Description: "A list of notification configuration IDs to publish to when this alert is triggered.",

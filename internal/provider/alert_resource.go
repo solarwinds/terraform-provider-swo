@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -25,14 +26,36 @@ type AlertResource struct {
 }
 
 func (model *AlertResourceModel) ToAlertDefinitionInput() swoClient.AlertDefinitionInput {
-	description := model.Description.String()
+	description := model.Description.ValueString()
+	severity := model.Severity.ValueString()
+	name := model.Name.ValueString()
+
+	conditions := []swoClient.AlertConditionNodeInput{}
+
+	for _, condition := range model.Conditions {
+		conditions = condition.toAlertConditionInputs(conditions)
+	}
+
 	return swoClient.AlertDefinitionInput{
-		Name:        model.Name.String(),
+		Name:        name,
 		Description: &description,
 		Enabled:     model.Enabled.ValueBool(),
-		Severity:    swoClient.AlertSeverity(model.Severity.String()),
-		Actions:     []swoClient.AlertActionInput{},
-		Condition:   []swoClient.AlertConditionNodeInput{},
+		Severity:    swoClient.AlertSeverity(severity),
+		Actions:     model.toAlertActionInput(),
+		Condition:   conditions,
+	}
+}
+
+func (model *AlertResourceModel) toAlertActionInput() []swoClient.AlertActionInput {
+	configurationIds := []string{}
+	for _, id := range model.Notifications {
+		configurationIds = append(configurationIds, strconv.Itoa(id))
+	}
+	return []swoClient.AlertActionInput{
+		{
+			Type:             model.NotificationType.ValueString(),
+			ConfigurationIds: configurationIds,
+		},
 	}
 }
 
@@ -123,16 +146,16 @@ func (r *AlertResource) Read(ctx context.Context, req resource.ReadRequest, resp
 func (r *AlertResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	tflog.Trace(ctx, "AlertResource: Update")
 
-	var tfModel *AlertResourceModel
+	var tfModel, tfState *AlertResourceModel
 
-	// Read the Terraform plan data into the model.
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &tfModel)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &tfState)...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	alertId := tfModel.ID.String()
+	alertId := tfState.ID.ValueString()
 	input := tfModel.ToAlertDefinitionInput()
 
 	tflog.Trace(ctx, fmt.Sprintf("Updating alert definition with ID: %s", alertId))
@@ -147,22 +170,25 @@ func (r *AlertResource) Update(ctx context.Context, req resource.UpdateRequest, 
 
 	tflog.Trace(ctx, fmt.Sprintf("Alert definition '%s' updated successfully.", input.Name))
 
+	//Because Id is computed it needs to be set on the model before applying.
+	tfModel.ID = types.StringValue(alertId)
+
 	// Save and log the model into Terraform state.
 	resp.Diagnostics.Append(resp.State.Set(ctx, &tfModel)...)
 }
 
 func (r *AlertResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	tflog.Trace(ctx, "AlertResource: Delete")
-	var tfModel *AlertResourceModel
+	var tfState *AlertResourceModel
 
-	// Read Terraform prior state data into the model
-	resp.Diagnostics.Append(req.State.Get(ctx, &tfModel)...)
+	// Read from terraform state becasue Id is computed.
+	resp.Diagnostics.Append(req.State.Get(ctx, &tfState)...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	alertDefId := tfModel.ID.String()
+	alertDefId := tfState.ID.ValueString()
 
 	tflog.Trace(ctx, fmt.Sprintf("Deleting alert definition with ID: %s", alertDefId))
 

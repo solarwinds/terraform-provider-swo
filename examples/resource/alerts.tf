@@ -1,15 +1,18 @@
 resource "swo_alert" "https_response_time" {
-  name        = "High HTTPS Response Time"
-  description = ""
+  name        = "TF Test - High HTTPS Response Time"
+  description = "A high response time has been identified."
   severity    = "INFO"
-  type        = "metric"
-  entity_type = "Website"
+  type        = "ENTITY_METRIC"
+  enabled     = false
   conditions = [
     {
       metric_name      = "synthetics.https.response.time"
-      threshold        = ">=3000ms"
+      threshold        = ">=3000ms" 
       duration         = "5m"
       aggregation_type = "AVG"
+      target_entity_types = [
+        "Website"
+      ]
       entity_ids = [
         "e-1521946194448543744",
         "e-1521947552186691584"
@@ -19,12 +22,13 @@ resource "swo_alert" "https_response_time" {
           name = "probe.city"
           values : [
             "Tokyo",
-            "Sao Paulo"
+            "New York"
           ]
         }
       ],
       exclude_tags = []
     },
   ]
-  notifications = ["123", "456"]
+  notification_type = "email"
+  notifications = [123, 456]
 }
