@@ -108,11 +108,11 @@ func (r *AlertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 							NestedObject: schema.NestedAttributeObject{
 								Attributes: map[string]schema.Attribute{
 									"name": schema.StringAttribute{
-										Description: "Name of the metric values the metric field will be in.",
+										Description: "Name of the metric values the metric field will be in. (Optional)",
 										Optional:    true,
 									},
 									"values": schema.ListAttribute{
-										Description: "Metric values the metric field will be in.",
+										Description: "Metric values the metric field will be in. (Optional)",
 										Optional:    true,
 										ElementType: types.StringType,
 									},
@@ -125,11 +125,11 @@ func (r *AlertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 							NestedObject: schema.NestedAttributeObject{
 								Attributes: map[string]schema.Attribute{
 									"name": schema.StringAttribute{
-										Description: "Name of the metric values the metric field will not be in.",
+										Description: "Name of the metric values the metric field will not be in. (Optional)",
 										Optional:    true,
 									},
 									"values": schema.ListAttribute{
-										Description: "Metric values the metric field will not be in.",
+										Description: "Metric values the metric field will not be in. (Optional)",
 										Optional:    true,
 										ElementType: types.StringType,
 									},

@@ -57,27 +57,27 @@ func (r *NotificationResource) Schema(ctx context.Context, req resource.SchemaRe
 		Description: fmt.Sprintf("A terraform resource for managing %s notifications.", envvar.AppName),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Description: "The Id of the Notification. This is a computed value provided by the backend.",
+				Description: "Notification ID in UUID format. This is a computed value provided by the backend.",
 				Computed:    true,
 			},
 			"title": schema.StringAttribute{
-				Description: "The title of the notification.",
+				Description: "Notification title.",
 				Required:    true,
 			},
 			"description": schema.StringAttribute{
-				Description: "A short description of the Notification (optional).",
+				Description: "A short description of the Notification. (Optional)",
 				Optional:    true,
 			},
 			"type": schema.StringAttribute{
-				Description: "The type of notification (email, slack, etc).",
+				Description: "Notification type (email, slack, etc).",
 				Required:    true,
 			},
 			"created_by": schema.StringAttribute{
-				Description: "",
+				Description: "Who created this alert?",
 				Computed:    true,
 			},
 			"created_at": schema.StringAttribute{
-				Description: "",
+				Description: "When was this alert created?",
 				Computed:    true,
 			},
 			"settings": schema.SingleNestedAttribute{
@@ -85,7 +85,7 @@ func (r *NotificationResource) Schema(ctx context.Context, req resource.SchemaRe
 				Required:    true,
 				Attributes: map[string]schema.Attribute{
 					"email": schema.SingleNestedAttribute{
-						Description: "Email settings.",
+						Description: "Email settings. (Optional)",
 						Optional:    true,
 						Attributes: map[string]schema.Attribute{
 							"addresses": schema.SetNestedAttribute{
@@ -94,7 +94,7 @@ func (r *NotificationResource) Schema(ctx context.Context, req resource.SchemaRe
 								NestedObject: schema.NestedAttributeObject{
 									Attributes: map[string]schema.Attribute{
 										"id": schema.StringAttribute{
-											Description: "The user id associated to the email address (if available).",
+											Description: "The user id associated to the email address. (Optional)",
 											Optional:    true,
 										},
 										"email": schema.StringAttribute{
@@ -113,7 +113,7 @@ func (r *NotificationResource) Schema(ctx context.Context, req resource.SchemaRe
 						},
 					},
 					"slack": schema.SingleNestedAttribute{
-						Description: "Slack settings.",
+						Description: "Slack settings. (Optional)",
 						Optional:    true,
 						Attributes: map[string]schema.Attribute{
 							"url": schema.StringAttribute{
@@ -129,7 +129,7 @@ func (r *NotificationResource) Schema(ctx context.Context, req resource.SchemaRe
 						},
 					},
 					"pagerduty": schema.SingleNestedAttribute{
-						Description: "PagerDuty settings.",
+						Description: "PagerDuty settings. (Optional)",
 						Optional:    true,
 						Attributes: map[string]schema.Attribute{
 							"routing_key": schema.StringAttribute{
@@ -157,7 +157,7 @@ func (r *NotificationResource) Schema(ctx context.Context, req resource.SchemaRe
 						},
 					},
 					"webhook": schema.SingleNestedAttribute{
-						Description: "Webhook settings.",
+						Description: "Webhook settings. (Optional)",
 						Optional:    true,
 						Attributes: map[string]schema.Attribute{
 							"url": schema.StringAttribute{
@@ -173,7 +173,7 @@ func (r *NotificationResource) Schema(ctx context.Context, req resource.SchemaRe
 						},
 					},
 					"victorops": schema.SingleNestedAttribute{
-						Description: "VictorOps settings.",
+						Description: "VictorOps settings. (Optional)",
 						Optional:    true,
 						Attributes: map[string]schema.Attribute{
 							"api_key": schema.StringAttribute{
@@ -189,7 +189,7 @@ func (r *NotificationResource) Schema(ctx context.Context, req resource.SchemaRe
 						},
 					},
 					"opsgenie": schema.SingleNestedAttribute{
-						Description: "OpsGenie settings.",
+						Description: "OpsGenie settings. (Optional)",
 						Optional:    true,
 						Attributes: map[string]schema.Attribute{
 							"hostname": schema.StringAttribute{
@@ -216,7 +216,7 @@ func (r *NotificationResource) Schema(ctx context.Context, req resource.SchemaRe
 						},
 					},
 					"amazonsns": schema.SingleNestedAttribute{
-						Description: "Amazon SNS settings.",
+						Description: "Amazon SNS settings. (Optional)",
 						Optional:    true,
 						Attributes: map[string]schema.Attribute{
 							"topic_arn": schema.StringAttribute{
@@ -241,7 +241,7 @@ func (r *NotificationResource) Schema(ctx context.Context, req resource.SchemaRe
 						},
 					},
 					"zapier": schema.SingleNestedAttribute{
-						Description: "Zapier settings.",
+						Description: "Zapier settings. (Optional)",
 						Optional:    true,
 						Attributes: map[string]schema.Attribute{
 							"url": schema.StringAttribute{
@@ -257,7 +257,7 @@ func (r *NotificationResource) Schema(ctx context.Context, req resource.SchemaRe
 						},
 					},
 					"msteams": schema.SingleNestedAttribute{
-						Description: "Microsoft Teams settings.",
+						Description: "Microsoft Teams settings. (Optional)",
 						Optional:    true,
 						Attributes: map[string]schema.Attribute{
 							"url": schema.StringAttribute{
@@ -273,7 +273,7 @@ func (r *NotificationResource) Schema(ctx context.Context, req resource.SchemaRe
 						},
 					},
 					"pushover": schema.SingleNestedAttribute{
-						Description: "Pushover settings.",
+						Description: "Pushover settings. (Optional)",
 						Optional:    true,
 						Attributes: map[string]schema.Attribute{
 							"user_key": schema.StringAttribute{
@@ -288,7 +288,7 @@ func (r *NotificationResource) Schema(ctx context.Context, req resource.SchemaRe
 						},
 					},
 					"sms": schema.SingleNestedAttribute{
-						Description: "SMS settings.",
+						Description: "SMS settings. (Optional)",
 						Optional:    true,
 						Attributes: map[string]schema.Attribute{
 							"phone_numbers": schema.StringAttribute{
@@ -304,7 +304,7 @@ func (r *NotificationResource) Schema(ctx context.Context, req resource.SchemaRe
 						},
 					},
 					"swsd": schema.SingleNestedAttribute{
-						Description: "SolarWinds Service Desk settings.",
+						Description: "SolarWinds Service Desk settings. (Optional)",
 						Optional:    true,
 						Attributes: map[string]schema.Attribute{
 							"app_token": schema.StringAttribute{
@@ -319,7 +319,7 @@ func (r *NotificationResource) Schema(ctx context.Context, req resource.SchemaRe
 						},
 					},
 					"servicenow": schema.SingleNestedAttribute{
-						Description: "ServiceNow settings.",
+						Description: "ServiceNow settings. (Optional)",
 						Optional:    true,
 						Attributes: map[string]schema.Attribute{
 							"app_token": schema.StringAttribute{
