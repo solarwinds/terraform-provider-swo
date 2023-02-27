@@ -73,11 +73,11 @@ func (r *NotificationResource) Schema(ctx context.Context, req resource.SchemaRe
 				Required:    true,
 			},
 			"created_by": schema.StringAttribute{
-				Description: "Who created this alert?",
+				Description: "Who created this notification?",
 				Computed:    true,
 			},
 			"created_at": schema.StringAttribute{
-				Description: "When was this alert created?",
+				Description: "When was this notification created?",
 				Computed:    true,
 			},
 			"settings": schema.SingleNestedAttribute{
