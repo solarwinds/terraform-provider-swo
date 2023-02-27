@@ -94,7 +94,7 @@ func (model *AlertConditionModel) toThresholdConditionInputs() (swoClient.AlertC
 
 		regex := regexp.MustCompile(`[\W]+`)
 		operator := string(regex.FindString(threshold))
-		//Extract an operator:(>, <, = ...) from the threshold.
+		//Parses threshold into an operator:(>, <, = ...).
 
 		operatorType, err := swoClient.GetAlertConditionType(operator)
 		if err == nil {
@@ -103,7 +103,7 @@ func (model *AlertConditionModel) toThresholdConditionInputs() (swoClient.AlertC
 		}
 		regex = regexp.MustCompile("[0-9]+")
 		thresholdValue := string(regex.FindString(threshold))
-		//Extract numbers:(3000, 200, 10...) from the threshold.
+		//Parses threshold into numbers:(3000, 200, 10...).
 
 		if thresholdValue != "" {
 			dataType := GetStringDataType(thresholdValue)
