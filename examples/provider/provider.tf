@@ -161,4 +161,3 @@ provider "swo" {
 #   ]
 #   notifications = [123, 456]
 # }
->>>>>>> 4e685e6 (Nh 32994 notifications client and terraform resource (#6))
