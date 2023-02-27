@@ -11,6 +11,8 @@ type DashboardsService service
 type CreateDashboardResult = createDashboardCreateDashboardCreateDashboardResponseDashboard
 type ReadDashboardResult = getDashboardByIdDashboardsDashboardQueriesByIdDashboard
 
+type mutateHandler func() (any, error)
+
 type DashboardsCommunicator interface {
 	Create(context.Context, CreateDashboardInput) (*CreateDashboardResult, error)
 	Read(context.Context, string) (*ReadDashboardResult, error)
@@ -26,7 +28,9 @@ func NewDashboardsService(c *Client) *DashboardsService {
 func (service *DashboardsService) Create(ctx context.Context, input CreateDashboardInput) (*CreateDashboardResult, error) {
 	log.Printf("create dashboard request. name: %s", input.Name)
 
-	resp, err := checkResponse[createDashboardResponse](createDashboard(ctx, service.client.gql, input))
+	resp, err := doMutate[createDashboardResponse](func() (any, error) {
+		return createDashboard(ctx, service.client.gql, input)
+	})
 
 	if err != nil {
 		return nil, err
@@ -59,7 +63,9 @@ func (service *DashboardsService) Read(ctx context.Context, id string) (*ReadDas
 func (service *DashboardsService) Update(ctx context.Context, input UpdateDashboardInput) error {
 	log.Printf("update dashboard request. id: %s", input.Id)
 
-	_, err := checkResponse[updateDashboardResponse](updateDashboard(ctx, service.client.gql, input))
+	_, err := doMutate[updateDashboardResponse](func() (any, error) {
+		return updateDashboard(ctx, service.client.gql, input)
+	})
 
 	if err != nil {
 		return err
@@ -74,9 +80,11 @@ func (service *DashboardsService) Update(ctx context.Context, input UpdateDashbo
 func (service *DashboardsService) Delete(ctx context.Context, id string) error {
 	log.Printf("delete dashboard request. id: %s", id)
 
-	_, err := checkResponse[deleteDashboardResponse](deleteDashboard(ctx, service.client.gql, DeleteDashboardInput{
-		Id: id,
-	}))
+	_, err := doMutate[deleteDashboardResponse](func() (any, error) {
+		return deleteDashboard(ctx, service.client.gql, DeleteDashboardInput{
+			Id: id,
+		})
+	})
 
 	if err != nil {
 		return err
@@ -87,7 +95,9 @@ func (service *DashboardsService) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-func checkResponse[T any](resp any, err error) (*T, error) {
+func doMutate[T any](mutation mutateHandler) (*T, error) {
+	resp, err := mutation()
+
 	if err != nil {
 		return nil, err
 	}
