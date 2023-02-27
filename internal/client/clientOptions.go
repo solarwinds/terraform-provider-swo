@@ -20,7 +20,9 @@ func UserAgentOption(userAgent string) ClientOption {
 // Configuation function that allows setting of the http request timeout.
 func RequestTimeoutOption(duration time.Duration) ClientOption {
 	return func(c *Client) error {
-		c.requestTimeout = duration
+		if duration > 0 {
+			c.requestTimeout = duration
+		}
 		return nil
 	}
 }
