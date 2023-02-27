@@ -2,7 +2,6 @@ resource "swo_alert" "https_response_time" {
   name        = "TF Test - High HTTPS Response Time"
   description = "A high response time has been identified."
   severity    = "INFO"
-  type        = "ENTITY_METRIC"
   enabled     = false
   conditions = [
     {

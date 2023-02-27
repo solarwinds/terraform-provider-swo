@@ -17,7 +17,6 @@ type AlertResourceModel struct {
 	Name                types.String          `tfsdk:"name"`
 	Description         types.String          `tfsdk:"description"`
 	Severity            types.String          `tfsdk:"severity"`
-	Type                types.String          `tfsdk:"type"`
 	Enabled             types.Bool            `tfsdk:"enabled"`
 	Conditions          []AlertConditionModel `tfsdk:"conditions"`
 	Notifications       []int                 `tfsdk:"notifications"`
@@ -48,21 +47,17 @@ func (r *AlertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 		Description: fmt.Sprintf("A terraform resource for managing %s alerts.", envvar.AppName),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Description: "The ID of the alert. This is a computed value provided by the backend.",
+				Description: "Alert definition ID in UUID format. This is a computed value provided by the backend when an alert is created.",
 				Computed:    true,
 				Optional:    true,
 			},
 			"name": schema.StringAttribute{
-				Description: "The name of the alert.",
+				Description: "Alert definition name. (string)",
 				Required:    true,
 			},
 			"description": schema.StringAttribute{
-				Description: "A short description of the alert (optional).",
+				Description: "Alert definition description. (optional|string)",
 				Optional:    true,
-			},
-			"type": schema.StringAttribute{
-				Description: "The type of alert (ENTITY_METRICS|LOGS).",
-				Required:    true,
 			},
 			"severity": schema.StringAttribute{
 				Description: "The severity of the alert (INFO|WARNING|CRITICAL).",
