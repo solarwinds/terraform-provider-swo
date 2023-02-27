@@ -3,6 +3,7 @@
 schema: schema.graphql
 operations:
 - alerts.graphql
+- dashboards.graphql
 - notifications.graphql
 generated: ../internal/client/genqlient_generated.go
 optional: pointer

@@ -18,9 +18,16 @@ const (
 	requestIdentifier     = "X-Request-Id"
 )
 
+var (
+	serviceInitError = func(serviceName string) error {
+		return fmt.Errorf("could not instantiate service. name: %s", serviceName)
+	}
+)
+
 // ServiceAccessor defines an interface for talking to via domain-specific service constructs
 type ServiceAccessor interface {
 	AlertsService() AlertsCommunicator
+	DashboardsService() DashboardsCommunicator
 	NotificationsService() NotificationsCommunicator
 }
 
@@ -38,6 +45,7 @@ type Client struct {
 
 	// Service accessors
 	alertsService        AlertsCommunicator
+	dashboardsService    DashboardsCommunicator
 	notificationsService NotificationsCommunicator
 }
 
@@ -91,15 +99,35 @@ func NewClient(apiToken string, opts ...ClientOption) *Client {
 		Transport: swoClient.transport,
 	})
 
-	swoClient.alertsService = NewAlertsService(swoClient)
-	swoClient.notificationsService = NewNotificationsService(swoClient)
+	if err = initServices(swoClient); err != nil {
+		log.Fatal(err)
+	}
 
 	return swoClient
+}
+
+func initServices(c *Client) error {
+	if c.alertsService = NewAlertsService(c); c.alertsService == nil {
+		return serviceInitError("AlertsService")
+	}
+	if c.dashboardsService = NewDashboardsService(c); c.dashboardsService == nil {
+		return serviceInitError("DashboardsService")
+	}
+	if c.notificationsService = NewNotificationsService(c); c.notificationsService == nil {
+		return serviceInitError("NotificationsService")
+	}
+
+	return nil
 }
 
 // A subset of the API that deals with Alerts.
 func (c *Client) AlertsService() AlertsCommunicator {
 	return c.alertsService
+}
+
+// A subset of the API that deals with Dashboards.
+func (c *Client) DashboardsService() DashboardsCommunicator {
+	return c.dashboardsService
 }
 
 // A subset of the API that deals with Notifications.

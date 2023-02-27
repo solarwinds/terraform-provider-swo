@@ -1,0 +1,79 @@
+mutation createDashboard($input: CreateDashboardInput!) {
+  createDashboard(input: $input) {
+    code
+    success
+    message
+    dashboard {
+      id
+      systemReference
+      owner {
+        id
+        name
+      }
+      createdAt
+      updatedAt
+    }
+  }
+}
+
+query getDashboardById($id: ID!) {
+  dashboards {
+    byId(id: $id) {
+      id
+      name
+      description
+      isPrivate
+      systemReference
+      createdAt
+      updatedAt
+      category {
+        id
+        name
+        type
+        owner {
+          id
+          name
+        }
+        createdAt
+        updatedAt
+      }
+      owner {
+        id
+        name
+      }
+      layout {
+        id
+        x
+        y
+        height
+        width
+      }
+      widgets {
+        id
+        type
+        properties
+      }
+    }
+  }
+}
+
+mutation updateDashboard($input: UpdateDashboardInput!) {
+  updateDashboard(input: $input) {
+    code
+    success
+    message
+    dashboard {
+      id
+      ownerId
+      updatedAt
+    }
+  }
+}
+
+mutation deleteDashboard($input: DeleteDashboardInput!) {
+  deleteDashboard(input: $input) {
+    code
+    success
+    message
+  }
+}
