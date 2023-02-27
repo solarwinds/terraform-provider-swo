@@ -91,20 +91,19 @@ func (model *AlertConditionModel) toThresholdConditionInputs() (swoClient.AlertC
 	thresholdDataConditions := swoClient.AlertConditionNodeInput{}
 
 	if threshold != "" {
-		//Regex for extracting all non alphanumeric values i.e the operator:(>, <, = ...)
+
 		regex := regexp.MustCompile(`[\W]+`)
 		operator := string(regex.FindString(threshold))
+		//Extract an operator:(>, <, = ...) from the threshold.
 
 		operatorType, err := swoClient.GetAlertConditionType(operator)
 		if err == nil {
 			thresholdOperatorConditions.Type = operatorType
 			thresholdOperatorConditions.Operator = &operator
 		}
-
-		//Regex for extracting first sequential number
-		//for a constant value the operator will match against.
 		regex = regexp.MustCompile("[0-9]+")
 		thresholdValue := string(regex.FindString(threshold))
+		//Extract numbers:(3000, 200, 10...) from the threshold.
 
 		if thresholdValue != "" {
 			dataType := GetStringDataType(thresholdValue)
