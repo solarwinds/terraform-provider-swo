@@ -6,7 +6,7 @@ resource "swo_alert" "https_response_time" {
   conditions = [
     {
       metric_name      = "synthetics.https.response.time"
-      threshold        = ">=3000ms" 
+      threshold        = ">=3000" 
       duration         = "5m"
       aggregation_type = "AVG"
       target_entity_types = [
