@@ -17,7 +17,6 @@ type AlertResourceModel struct {
 	Name                types.String          `tfsdk:"name"`
 	Description         types.String          `tfsdk:"description"`
 	Severity            types.String          `tfsdk:"severity"`
-	Type                types.String          `tfsdk:"type"`
 	Enabled             types.Bool            `tfsdk:"enabled"`
 	Conditions          []AlertConditionModel `tfsdk:"conditions"`
 	Notifications       []int                 `tfsdk:"notifications"`
@@ -48,32 +47,28 @@ func (r *AlertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 		Description: fmt.Sprintf("A terraform resource for managing %s alerts.", envvar.AppName),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Description: "The ID of the alert. This is a computed value provided by the backend.",
+				Description: "Alert definition ID in UUID format. This is a computed value provided by the backend when an alert is created. (Optional)",
 				Computed:    true,
 				Optional:    true,
 			},
 			"name": schema.StringAttribute{
-				Description: "The name of the alert.",
+				Description: "Alert definition name.",
 				Required:    true,
 			},
 			"description": schema.StringAttribute{
-				Description: "A short description of the alert (optional).",
+				Description: "Alert definition description. (Optional)",
 				Optional:    true,
 			},
-			"type": schema.StringAttribute{
-				Description: "The type of alert (ENTITY_METRICS|LOGS).",
-				Required:    true,
-			},
 			"severity": schema.StringAttribute{
-				Description: "The severity of the alert (INFO|WARNING|CRITICAL).",
+				Description: "Alert definition severity (INFO|WARNING|CRITICAL).",
 				Required:    true,
 			},
 			"enabled": schema.BoolAttribute{
-				Description: "Is the alert enabled. Default is true.",
+				Description: "Enabled whether Alert definition shall be evaluated. Default is true. (Optional)",
 				Optional:    true,
 			},
 			"trigger_reset_actions": schema.BoolAttribute{
-				Description: "???",
+				Description: "A flag indicating whether to send a notification when active alert returns to normal. It will be set to false if not specified. (Optional)",
 				Optional:    true,
 			},
 			"conditions": schema.SetNestedAttribute{
@@ -82,23 +77,23 @@ func (r *AlertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"metric_name": schema.StringAttribute{
-							Description: "The name of the metric that is being monitored.",
+							Description: "The field name of the metric to be filtered on.",
 							Required:    true,
 						},
 						"threshold": schema.StringAttribute{
-							Description: "The threshold value that triggers the alert when breached.",
+							Description: "Operator and value that represents the threshold of an the alert. When the threshold is breached it triggers the alert. For Opertator - binaryOperator:(=|!=|>|<|>=|<=), logicalOperator:(AND|OR)",
 							Required:    true,
 						},
 						"duration": schema.StringAttribute{
-							Description: "The duration of the time that the ",
+							Description: "Duration of time that will be used to check if the threshold has been breached.",
 							Required:    true,
 						},
 						"aggregation_type": schema.StringAttribute{
-							Description: "The aggregation type (such as average, maximum or minimum) to apply to this metric.",
+							Description: "The aggregation type that will be applyed to the metric and duration. (MIN|MAX|AVG|SUM|LAST)",
 							Required:    true,
 						},
 						"entity_ids": schema.ListAttribute{
-							Description: "(Optional) A list of entity IDs that will be the scoped targets of the monitoring.",
+							Description: "A list of Entity IDs that will be used to filter on by the alert. (Optional)",
 							Optional:    true,
 							ElementType: types.StringType,
 						},
@@ -108,16 +103,16 @@ func (r *AlertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 							ElementType: types.StringType,
 						},
 						"include_tags": schema.SetNestedAttribute{
-							Description: "(Optional) Add metric tags to include as part of the scope.",
+							Description: "List of Metric values that the metric field will be in. (Optional)",
 							Optional:    true,
 							NestedObject: schema.NestedAttributeObject{
 								Attributes: map[string]schema.Attribute{
 									"name": schema.StringAttribute{
-										Description: "The tag name.",
+										Description: "Name of the metric values the metric field will be in. (Optional)",
 										Optional:    true,
 									},
 									"values": schema.ListAttribute{
-										Description: "One or more tag values.",
+										Description: "Metric values the metric field will be in. (Optional)",
 										Optional:    true,
 										ElementType: types.StringType,
 									},
@@ -125,16 +120,16 @@ func (r *AlertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 							},
 						},
 						"exclude_tags": schema.SetNestedAttribute{
-							Description: "(Optional) Add metric tags to exclude as part of the scope.",
+							Description: "List of Metric values that the metric field will not be in. (Optional)",
 							Optional:    true,
 							NestedObject: schema.NestedAttributeObject{
 								Attributes: map[string]schema.Attribute{
 									"name": schema.StringAttribute{
-										Description: "The tag name.",
+										Description: "Name of the metric values the metric field will not be in. (Optional)",
 										Optional:    true,
 									},
 									"values": schema.ListAttribute{
-										Description: "One or more tag values.",
+										Description: "Metric values the metric field will not be in. (Optional)",
 										Optional:    true,
 										ElementType: types.StringType,
 									},
@@ -145,7 +140,7 @@ func (r *AlertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 				},
 			},
 			"notification_type": schema.StringAttribute{
-				Description: "The type of notification service this alert will notify.",
+				Description: "The type of notification service this alert will notify. (e.g email, slack)",
 				Required:    true,
 			},
 			"notifications": schema.ListAttribute{
