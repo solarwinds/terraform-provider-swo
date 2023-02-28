@@ -113,11 +113,11 @@ func (r *NotificationResource) Schema(ctx context.Context, req resource.SchemaRe
 						},
 					},
 					"slack": schema.SingleNestedAttribute{
-						Description: "Slack settings. (Optional)",
+						Description: "Integration for sending static alerts to a Slack channel. (Optional)",
 						Optional:    true,
 						Attributes: map[string]schema.Attribute{
 							"url": schema.StringAttribute{
-								Description: "",
+								Description: "Slack Incoming Webhook URL. (https://api.slack.com/messaging/webhooks)",
 								Required:    true,
 								Validators: []validator.String{
 									stringvalidator.RegexMatches(
@@ -129,11 +129,11 @@ func (r *NotificationResource) Schema(ctx context.Context, req resource.SchemaRe
 						},
 					},
 					"pagerduty": schema.SingleNestedAttribute{
-						Description: "PagerDuty settings. (Optional)",
+						Description: "Integration for sending events to PagerDuty. (Optional)",
 						Optional:    true,
 						Attributes: map[string]schema.Attribute{
 							"routing_key": schema.StringAttribute{
-								Description: "",
+								Description: "Key for live call routing. (https://support.pagerduty.com/docs/live-call-routing)",
 								Required:    true,
 								Sensitive:   true,
 								Validators: []validator.String{
@@ -144,24 +144,24 @@ func (r *NotificationResource) Schema(ctx context.Context, req resource.SchemaRe
 								},
 							},
 							"summary": schema.StringAttribute{
-								Description: "",
+								Description: "A summary of the issue causing the alert to trigger.",
 								Required:    true,
 								Validators: []validator.String{
 									stringvalidator.LengthAtMost(1024),
 								},
 							},
 							"dedup_key": schema.StringAttribute{
-								Description: "",
+								Description: "deduplication key for correlating trigger conditions. (https://support.pagerduty.com/docs/event-management) ",
 								Required:    true,
 							},
 						},
 					},
 					"webhook": schema.SingleNestedAttribute{
-						Description: "Webhook settings. (Optional)",
+						Description: "Integration with an existing notification service. (Optional)",
 						Optional:    true,
 						Attributes: map[string]schema.Attribute{
 							"url": schema.StringAttribute{
-								Description: "",
+								Description: "Webhook URL to an existing notification service.",
 								Required:    true,
 								Validators: []validator.String{
 									stringvalidator.RegexMatches(
@@ -173,54 +173,54 @@ func (r *NotificationResource) Schema(ctx context.Context, req resource.SchemaRe
 						},
 					},
 					"victorops": schema.SingleNestedAttribute{
-						Description: "VictorOps settings. (Optional)",
+						Description: "Integration for sending events to VictorOps. (Optional)",
 						Optional:    true,
 						Attributes: map[string]schema.Attribute{
 							"api_key": schema.StringAttribute{
-								Description: "",
+								Description: "API Key for a VictorOps integration. (https://help.victorops.com/knowledge-base/api/)",
 								Required:    true,
 								Sensitive:   true,
 							},
 							"routing_key": schema.StringAttribute{
-								Description: "",
+								Description: "Key for live call routing. (https://help.victorops.com/knowledge-base/routing-keys/)",
 								Optional:    true,
 								Sensitive:   true,
 							},
 						},
 					},
 					"opsgenie": schema.SingleNestedAttribute{
-						Description: "OpsGenie settings. (Optional)",
+						Description: "Integration for sending alerts via email or using a Webhook to OpsGenie. (Optional)",
 						Optional:    true,
 						Attributes: map[string]schema.Attribute{
 							"hostname": schema.StringAttribute{
-								Description: "",
+								Description: "API Hostname",
 								Optional:    true,
 							},
 							"api_key": schema.StringAttribute{
-								Description: "",
+								Description: "API key from OpsGenie Integration. (https://support.atlassian.com/opsgenie/docs/api-key-management/)",
 								Required:    true,
 								Sensitive:   true,
 							},
 							"recipients": schema.StringAttribute{
-								Description: "",
+								Description: "Specifies who should be notified by email for the alert.",
 								Required:    true,
 							},
 							"teams": schema.StringAttribute{
-								Description: "",
+								Description: "Specifies who should be notified by email for the alert.",
 								Required:    true,
 							},
 							"tags": schema.StringAttribute{
-								Description: "",
+								Description: "Any possible tags.",
 								Required:    true,
 							},
 						},
 					},
 					"amazonsns": schema.SingleNestedAttribute{
-						Description: "Amazon SNS settings. (Optional)",
+						Description: "Integration for sending alerts to Amazon Simple Notification Service. Provides message delivery from publishers to subscribers. (Optional)",
 						Optional:    true,
 						Attributes: map[string]schema.Attribute{
 							"topic_arn": schema.StringAttribute{
-								Description: "",
+								Description: "Resource name that represents a logical access point that acts as a communication channel. (https://docs.aws.amazon.com/sns/latest/dg/sns-create-topic.html)",
 								Required:    true,
 								Validators: []validator.String{
 									stringvalidator.RegexMatches(
@@ -230,22 +230,22 @@ func (r *NotificationResource) Schema(ctx context.Context, req resource.SchemaRe
 								},
 							},
 							"access_key_id": schema.StringAttribute{
-								Description: "",
+								Description: "Access key ID for Amazon SNS.",
 								Required:    true,
 							},
 							"secret_access_key": schema.StringAttribute{
-								Description: "",
+								Description: "Secret access key for Amazon SNS.",
 								Required:    true,
 								Sensitive:   true,
 							},
 						},
 					},
 					"zapier": schema.SingleNestedAttribute{
-						Description: "Zapier settings. (Optional)",
+						Description: "Integration for sending alerts to Zapier. (Optional)",
 						Optional:    true,
 						Attributes: map[string]schema.Attribute{
 							"url": schema.StringAttribute{
-								Description: "",
+								Description: "Zapier Webhook URL.",
 								Required:    true,
 								Validators: []validator.String{
 									stringvalidator.RegexMatches(
@@ -257,11 +257,11 @@ func (r *NotificationResource) Schema(ctx context.Context, req resource.SchemaRe
 						},
 					},
 					"msteams": schema.SingleNestedAttribute{
-						Description: "Microsoft Teams settings. (Optional)",
+						Description: "Integration for sending static alerts to a Microsoft Teams channel. (Optional)",
 						Optional:    true,
 						Attributes: map[string]schema.Attribute{
 							"url": schema.StringAttribute{
-								Description: "",
+								Description: "Microsoft Teams Webhook URL. (https://docs.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook)",
 								Required:    true,
 								Validators: []validator.String{
 									stringvalidator.RegexMatches(
@@ -273,26 +273,26 @@ func (r *NotificationResource) Schema(ctx context.Context, req resource.SchemaRe
 						},
 					},
 					"pushover": schema.SingleNestedAttribute{
-						Description: "Pushover settings. (Optional)",
+						Description: "Integration for Sending alerts to Pushover. (Optional)",
 						Optional:    true,
 						Attributes: map[string]schema.Attribute{
 							"user_key": schema.StringAttribute{
-								Description: "",
+								Description: "User/Group key (or that of your target user), viewable when logged into the Pushover dashboard.",
 								Required:    true,
 							},
 							"app_token": schema.StringAttribute{
-								Description: "",
+								Description: "API token/APP token from registered Pushover application. (https://pushover.net/api)",
 								Required:    true,
 								Sensitive:   true,
 							},
 						},
 					},
 					"sms": schema.SingleNestedAttribute{
-						Description: "SMS settings. (Optional)",
+						Description: "For sending alerts Through SMS/Text. (Optional)",
 						Optional:    true,
 						Attributes: map[string]schema.Attribute{
 							"phone_numbers": schema.StringAttribute{
-								Description: "",
+								Description: "Phone number alerts will be texted to.",
 								Required:    true,
 								Validators: []validator.String{
 									stringvalidator.RegexMatches(
@@ -304,31 +304,31 @@ func (r *NotificationResource) Schema(ctx context.Context, req resource.SchemaRe
 						},
 					},
 					"swsd": schema.SingleNestedAttribute{
-						Description: "SolarWinds Service Desk settings. (Optional)",
+						Description: "Integration with SolarWinds Observability creates new incidents based on SolarWinds Observability alerts. (Optional)",
 						Optional:    true,
 						Attributes: map[string]schema.Attribute{
 							"app_token": schema.StringAttribute{
-								Description: "",
+								Description: "Token copied from SolarWinds Service Desk",
 								Required:    true,
 								Sensitive:   true,
 							},
 							"is_eu": schema.BoolAttribute{
-								Description: "",
+								Description: "Is in the EU.",
 								Required:    true,
 							},
 						},
 					},
 					"servicenow": schema.SingleNestedAttribute{
-						Description: "ServiceNow settings. (Optional)",
+						Description: "Integration with SolarWinds Observability creates new incidents based on SolarWinds Observability alerts. (Optional)",
 						Optional:    true,
 						Attributes: map[string]schema.Attribute{
 							"app_token": schema.StringAttribute{
-								Description: "",
+								Description: "ServiceNow access token",
 								Required:    true,
 								Sensitive:   true,
 							},
 							"instance": schema.StringAttribute{
-								Description: "",
+								Description: "Instance name for this integration",
 								Required:    true,
 							},
 						},
