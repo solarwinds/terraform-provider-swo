@@ -58,7 +58,13 @@ type NotificationSettingsPagerDuty struct {
 }
 
 type NotificationSettingsWebhook struct {
-	Url string `tfsdk:"url" json:"url"`
+	Url             string `tfsdk:"url" json:"url"`
+	Method          string `tfsdk:"method" json:"method"`
+	AuthType        string `tfsdk:"auth_type" json:"authType"`
+	AuthUsername    string `tfsdk:"auth_username" json:"authUsername"`
+	AuthPassword    string `tfsdk:"auth_password" json:"authPassword"`
+	AuthHeaderName  string `tfsdk:"auth_header_name" json:"authHeaderName"`
+	AuthHeaderValue string `tfsdk:"auth_header_value" json:"authHeaderValue"`
 }
 
 type NotificationSettingsVictorOps struct {
