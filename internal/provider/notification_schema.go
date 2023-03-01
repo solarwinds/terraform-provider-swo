@@ -170,6 +170,34 @@ func (r *NotificationResource) Schema(ctx context.Context, req resource.SchemaRe
 									),
 								},
 							},
+							"method": schema.StringAttribute{
+								Description: "HTTP Method for calling the webhook. (POST|GET)",
+								Required:    true,
+							},
+							"authType": schema.StringAttribute{
+								Description: "Token or username/password auth. (basic|token)",
+								Optional:    true,
+							},
+							"authUsername": schema.StringAttribute{
+								Description: "Username for basic auth type.",
+								Optional:    true,
+								Sensitive:   true,
+							},
+							"authPassword": schema.StringAttribute{
+								Description: "Password for basic auth type.",
+								Optional:    true,
+								Sensitive:   true,
+							},
+							"authHeaderName": schema.StringAttribute{
+								Description: "Header name for token auth.",
+								Optional:    true,
+								Sensitive:   true,
+							},
+							"authHeaderValue": schema.StringAttribute{
+								Description: "Header value for token auth.",
+								Optional:    true,
+								Sensitive:   true,
+							},
 						},
 					},
 					"victorops": schema.SingleNestedAttribute{
