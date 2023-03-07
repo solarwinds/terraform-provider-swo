@@ -63,9 +63,9 @@ func testAccDashboardResourceConfig(name string) string {
 				properties = <<EOF
 				{
 					"unit": "ms",
-					"title": "Widget Title",
+					"title": "Kpi Widget",
 					"linkUrl": "https://www.solarwinds.com",
-					"subtitle": "Widget Subtitle",
+					"subtitle": "Widget with a Kpi display.",
 					"linkLabel": "Linky",
 					"dataSource": {
 						"type": "kpi",
@@ -103,8 +103,8 @@ func testAccDashboardResourceConfig(name string) string {
 				height = 2
 				properties = <<EOF
 				{
-					"title": "Widget",
-					"subtitle": "",
+					"title": "TimeSeries Widget",
+					"subtitle": "Widget with a TimeSeries chart.",
 					"chart": {
 						"type": "LineChart",
 						"max": "auto",

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -158,7 +159,20 @@ func setDashboardValuesFromRead(dashboard *swoClient.ReadDashboardResult, state 
 				stateW.Y = types.Int64Value(int64(layout.Y))
 				stateW.Width = types.Int64Value(int64(layout.Width))
 				stateW.Height = types.Int64Value(int64(layout.Height))
-				stateW.Properties = types.StringValue(string(props))
+
+				var stateProps any
+				err = json.Unmarshal([]byte(stateW.Properties.ValueString()), &stateProps)
+				if err != nil {
+					return fmt.Errorf("widget properties error: %s, id: %s", err, w.Id)
+				}
+
+				// The json string gets marshalled differently than what is specified in the terraform
+				// file so we need to compare the marshalled values instead of the raw json.
+				if !cmp.Equal(&stateProps, w.Properties) {
+					fmt.Println(cmp.Diff(&stateProps, w.Properties))
+					stateW.Properties = types.StringValue(string(props))
+				}
+
 				break
 			}
 		}
