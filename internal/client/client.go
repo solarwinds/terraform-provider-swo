@@ -90,7 +90,7 @@ func NewClient(apiToken string, opts ...ClientOption) *Client {
 	}
 
 	if swoClient.debugMode {
-		log.SetLevel(log.DebugLevel)
+		log.SetLevel(log.TraceLevel)
 		log.Info("swoclient: debugMode set to true.")
 	}
 

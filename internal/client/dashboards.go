@@ -9,14 +9,23 @@ import (
 type DashboardsService service
 
 type CreateDashboardResult = createDashboardCreateDashboardCreateDashboardResponseDashboard
+type CreateDashboardLayout = createDashboardCreateDashboardCreateDashboardResponseDashboardLayout
+type CreateDashboardWidget = createDashboardCreateDashboardCreateDashboardResponseDashboardWidgetsWidget
+
 type ReadDashboardResult = getDashboardByIdDashboardsDashboardQueriesByIdDashboard
+type ReadDashboardLayout = getDashboardByIdDashboardsDashboardQueriesByIdDashboardLayout
+type ReadDashboardWidget = getDashboardByIdDashboardsDashboardQueriesByIdDashboardWidgetsWidget
+
+type UpdateDashboardResult = updateDashboardUpdateDashboardUpdateDashboardResponseDashboard
+type UpdateDashboardLayout = updateDashboardUpdateDashboardUpdateDashboardResponseDashboardLayout
+type UpdateDashboardWidget = updateDashboardUpdateDashboardUpdateDashboardResponseDashboardWidgetsWidget
 
 type mutateHandler func() (any, error)
 
 type DashboardsCommunicator interface {
 	Create(context.Context, CreateDashboardInput) (*CreateDashboardResult, error)
 	Read(context.Context, string) (*ReadDashboardResult, error)
-	Update(context.Context, UpdateDashboardInput) error
+	Update(context.Context, UpdateDashboardInput) (*UpdateDashboardResult, error)
 	Delete(context.Context, string) error
 }
 
@@ -60,20 +69,20 @@ func (service *DashboardsService) Read(ctx context.Context, id string) (*ReadDas
 }
 
 // Updates the dashboard.
-func (service *DashboardsService) Update(ctx context.Context, input UpdateDashboardInput) error {
+func (service *DashboardsService) Update(ctx context.Context, input UpdateDashboardInput) (*UpdateDashboardResult, error) {
 	log.Printf("update dashboard request. id: %s", input.Id)
 
-	_, err := doMutate[updateDashboardResponse](func() (any, error) {
+	resp, err := doMutate[updateDashboardResponse](func() (any, error) {
 		return updateDashboard(ctx, service.client.gql, input)
 	})
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	log.Printf("update dashboard success. id: %s", input.Id)
 
-	return nil
+	return resp.UpdateDashboard.Dashboard, nil
 }
 
 // Deletes the dashboard with the given id.
@@ -102,6 +111,11 @@ func doMutate[T any](mutation mutateHandler) (*T, error) {
 		return nil, err
 	}
 
+	mutateError := func(mutationType string, code string, message string) error {
+		return fmt.Errorf("%s dashboard returned a failure. code: %s message: %s",
+			mutationType, code, message)
+	}
+
 	switch resp := resp.(type) {
 	case *createDashboardResponse:
 		if !resp.CreateDashboard.Success {
@@ -120,9 +134,4 @@ func doMutate[T any](mutation mutateHandler) (*T, error) {
 	}
 
 	return resp.(*T), err
-}
-
-func mutateError(mutationType string, code string, message string) error {
-	return fmt.Errorf("%s dashboard returned a failure. code: %s message: %s",
-		mutationType, code, message)
 }
