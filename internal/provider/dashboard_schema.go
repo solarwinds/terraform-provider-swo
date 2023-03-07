@@ -6,6 +6,8 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/solarwindscloud/terraform-provider-swo/internal/envvar"
@@ -41,6 +43,9 @@ func (r *DashboardResource) Schema(ctx context.Context, req resource.SchemaReque
 			"id": schema.StringAttribute{
 				Description: "The Id of the dashboard. This is a computed value provided by the backend.",
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"name": schema.StringAttribute{
 				Description: "The name of the dashboard.",
@@ -57,10 +62,16 @@ func (r *DashboardResource) Schema(ctx context.Context, req resource.SchemaReque
 			"created_at": schema.StringAttribute{
 				Description: "The date and time the dashboard was created.",
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"updated_at": schema.StringAttribute{
 				Description: "The date and time the dashboard was last updated.",
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"widgets": schema.SetNestedAttribute{
 				Description: "The widgets that are placed on the dashboard.",
@@ -70,6 +81,9 @@ func (r *DashboardResource) Schema(ctx context.Context, req resource.SchemaReque
 						"id": schema.StringAttribute{
 							Description: "The computed id of the widget.",
 							Computed:    true,
+							PlanModifiers: []planmodifier.String{
+								stringplanmodifier.UseStateForUnknown(),
+							},
 						},
 						"type": schema.StringAttribute{
 							Description: "The type of the widget (e.g. Kpi, Proportional, TimeSeries)",
@@ -94,6 +108,9 @@ func (r *DashboardResource) Schema(ctx context.Context, req resource.SchemaReque
 						"properties": schema.StringAttribute{
 							Description: "A JSON encoded string that defines the widget configuration.",
 							Required:    true,
+							PlanModifiers: []planmodifier.String{
+								UseStandarizedJson(),
+							},
 						},
 					},
 				},
