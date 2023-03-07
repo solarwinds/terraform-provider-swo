@@ -41,7 +41,7 @@ func (r *DashboardResource) Schema(ctx context.Context, req resource.SchemaReque
 		Description: fmt.Sprintf("A terraform resource for managing %s dashboards.", envvar.AppName),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Description: "The Id of the dashboard. This is a computed value provided by the backend.",
+				Description: "The computed id of the dashboard.",
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -52,11 +52,11 @@ func (r *DashboardResource) Schema(ctx context.Context, req resource.SchemaReque
 				Required:    true,
 			},
 			"is_private": schema.BoolAttribute{
-				Description: "Is this dashboard restrictured to the owner?",
+				Description: "Is this dashboard restricted to the owner?",
 				Optional:    true,
 			},
 			"category_id": schema.StringAttribute{
-				Description: "The category that this dashboard is related to.",
+				Description: "The category that this dashboard is assigned to.",
 				Optional:    true,
 			},
 			"created_at": schema.StringAttribute{

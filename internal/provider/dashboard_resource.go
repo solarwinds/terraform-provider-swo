@@ -166,8 +166,8 @@ func setDashboardValuesFromRead(dashboard *swoClient.ReadDashboardResult, state 
 					return fmt.Errorf("widget properties error: %s, id: %s", err, w.Id)
 				}
 
-				// The json string gets marshalled differently than what is specified in the terraform
-				// file so we need to compare the marshalled values instead of the raw json.
+				// The json string can be marshalled differently than what is specified in the terraform
+				// file so we need to compare the marshalled values instead of the raw json string.
 				if !cmp.Equal(&stateProps, w.Properties) {
 					fmt.Println(cmp.Diff(&stateProps, w.Properties))
 					stateW.Properties = types.StringValue(string(props))
@@ -178,7 +178,7 @@ func setDashboardValuesFromRead(dashboard *swoClient.ReadDashboardResult, state 
 		}
 
 		// If the terraform state doesn't have a widget returned from a Read we need to add it to align the
-		// state with the server.
+		// state with the server. This can happen if a dashboard is modified outside of terraform (e.g. in the UI).
 		if !isInState {
 			state.Widgets = append(state.Widgets, DashboardWidgetModel{
 				Id:         types.StringValue(w.Id),
