@@ -99,6 +99,8 @@ func TestService_ReadDashboard(t *testing.T) {
 	ctx, client, server, _, teardown := setup()
 	defer teardown()
 
+	isPrivate := true
+
 	server.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		gqlInput, err := getGraphQLInput[__getDashboardByIdInput](r)
 		if err != nil {
@@ -110,7 +112,7 @@ func TestService_ReadDashboard(t *testing.T) {
 				ById: &getDashboardByIdDashboardsDashboardQueriesByIdDashboard{
 					Id:        gqlInput.Id,
 					Name:      dashboardsMockData.fieldName,
-					IsPrivate: boolPtr(true),
+					IsPrivate: &isPrivate,
 					UpdatedAt: dashboardsMockData.fieldUpdatedAt,
 					CreatedAt: dashboardsMockData.fieldUpdatedAt,
 					Category: &getDashboardByIdDashboardsDashboardQueriesByIdDashboardCategory{
