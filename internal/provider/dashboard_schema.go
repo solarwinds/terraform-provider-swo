@@ -62,16 +62,10 @@ func (r *DashboardResource) Schema(ctx context.Context, req resource.SchemaReque
 			"created_at": schema.StringAttribute{
 				Description: "The date and time the dashboard was created.",
 				Computed:    true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
 			},
 			"updated_at": schema.StringAttribute{
 				Description: "The date and time the dashboard was last updated.",
 				Computed:    true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
 			},
 			"widgets": schema.SetNestedAttribute{
 				Description: "The widgets that are placed on the dashboard.",
@@ -81,9 +75,6 @@ func (r *DashboardResource) Schema(ctx context.Context, req resource.SchemaReque
 						"id": schema.StringAttribute{
 							Description: "The computed id of the widget.",
 							Computed:    true,
-							PlanModifiers: []planmodifier.String{
-								stringplanmodifier.UseStateForUnknown(),
-							},
 						},
 						"type": schema.StringAttribute{
 							Description: "The type of the widget (e.g. Kpi, Proportional, TimeSeries)",
