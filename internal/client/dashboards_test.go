@@ -12,14 +12,12 @@ import (
 var (
 	dashboardsMockData = struct {
 		fieldName       string
-		fieldDesc       string
 		fieldUpdatedAt  time.Time
 		fieldOwnerId    string
 		fieldOwnerName  string
 		fieldCategoryId string
 	}{
 		"swo-client-go - title",
-		"swo-client-go - description",
 		time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
 		"123456789",
 		"owner name",
@@ -35,10 +33,9 @@ func TestService_CreateDashboard(t *testing.T) {
 	id := uuid.NewString()
 
 	input := CreateDashboardInput{
-		Name:        dashboardsMockData.fieldName,
-		Description: &dashboardsMockData.fieldDesc,
-		IsPrivate:   &isPrivate,
-		CategoryId:  &dashboardsMockData.fieldCategoryId,
+		Name:       dashboardsMockData.fieldName,
+		IsPrivate:  &isPrivate,
+		CategoryId: &dashboardsMockData.fieldCategoryId,
 		Layout: []LayoutInput{
 			{Id: "123", X: 0, Y: 0, Height: 2, Width: 2},
 		},
@@ -102,7 +99,7 @@ func TestService_ReadDashboard(t *testing.T) {
 	ctx, client, server, _, teardown := setup()
 	defer teardown()
 
-	isPrivate := false
+	isPrivate := true
 
 	server.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		gqlInput, err := getGraphQLInput[__getDashboardByIdInput](r)
@@ -113,12 +110,11 @@ func TestService_ReadDashboard(t *testing.T) {
 		sendGraphQLResponse(t, w, getDashboardByIdResponse{
 			Dashboards: &getDashboardByIdDashboardsDashboardQueries{
 				ById: &getDashboardByIdDashboardsDashboardQueriesByIdDashboard{
-					Id:          gqlInput.Id,
-					Name:        dashboardsMockData.fieldName,
-					Description: &dashboardsMockData.fieldDesc,
-					IsPrivate:   &isPrivate,
-					UpdatedAt:   dashboardsMockData.fieldUpdatedAt,
-					CreatedAt:   dashboardsMockData.fieldUpdatedAt,
+					Id:        gqlInput.Id,
+					Name:      dashboardsMockData.fieldName,
+					IsPrivate: &isPrivate,
+					UpdatedAt: dashboardsMockData.fieldUpdatedAt,
+					CreatedAt: dashboardsMockData.fieldUpdatedAt,
 					Category: &getDashboardByIdDashboardsDashboardQueriesByIdDashboardCategory{
 						Id: dashboardsMockData.fieldCategoryId,
 					},
@@ -144,12 +140,11 @@ func TestService_ReadDashboard(t *testing.T) {
 	}
 
 	want := &ReadDashboardResult{
-		Id:          id,
-		Name:        dashboardsMockData.fieldName,
-		Description: &dashboardsMockData.fieldDesc,
-		IsPrivate:   &isPrivate,
-		UpdatedAt:   dashboardsMockData.fieldUpdatedAt,
-		CreatedAt:   dashboardsMockData.fieldUpdatedAt,
+		Id:        id,
+		Name:      dashboardsMockData.fieldName,
+		IsPrivate: &isPrivate,
+		UpdatedAt: dashboardsMockData.fieldUpdatedAt,
+		CreatedAt: dashboardsMockData.fieldUpdatedAt,
 		Category: &getDashboardByIdDashboardsDashboardQueriesByIdDashboardCategory{
 			Id: dashboardsMockData.fieldCategoryId,
 		},
@@ -177,11 +172,10 @@ func TestService_UpdateDashboard(t *testing.T) {
 	isPrivate := false
 
 	input := UpdateDashboardInput{
-		Id:          "123",
-		Name:        dashboardsMockData.fieldName,
-		Description: &dashboardsMockData.fieldDesc,
-		IsPrivate:   &isPrivate,
-		CategoryId:  &dashboardsMockData.fieldCategoryId,
+		Id:         "123",
+		Name:       dashboardsMockData.fieldName,
+		IsPrivate:  &isPrivate,
+		CategoryId: &dashboardsMockData.fieldCategoryId,
 		Layout: []LayoutInput{
 			{Id: "123", X: 0, Y: 0, Height: 2, Width: 2},
 		},
@@ -215,7 +209,7 @@ func TestService_UpdateDashboard(t *testing.T) {
 		})
 	})
 
-	err := client.DashboardsService().Update(ctx, input)
+	_, err := client.DashboardsService().Update(ctx, input)
 	if err != nil {
 		t.Errorf("Swo.UpdateDashboard returned error: %v", err)
 	}
@@ -253,6 +247,26 @@ func TestService_DeleteDashboard(t *testing.T) {
 	}
 }
 
+func TestService_DashboardsMutateError(t *testing.T) {
+	ctx, client, server, _, teardown := setup()
+	defer teardown()
+
+	server.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		sendGraphQLResponse(t, w, createDashboardResponse{
+			CreateDashboard: createDashboardCreateDashboardCreateDashboardResponse{
+				Success: false,
+				Code:    "no-buzzing-the-tower",
+				Message: "negative ghost rider the pattern is full",
+			},
+		})
+	})
+
+	_, err := client.DashboardsService().Create(ctx, CreateDashboardInput{})
+	if err == nil {
+		t.Error("Swo.DashboardsMutateErrors expected an error response")
+	}
+}
+
 func TestService_DashboardsServerErrors(t *testing.T) {
 	ctx, client, server, _, teardown := setup()
 	defer teardown()
@@ -267,7 +281,7 @@ func TestService_DashboardsServerErrors(t *testing.T) {
 	if err == nil {
 		t.Error("Swo.DashboardsServerErrors expected an error response")
 	}
-	err = client.DashboardsService().Update(ctx, UpdateDashboardInput{})
+	_, err = client.DashboardsService().Update(ctx, UpdateDashboardInput{})
 	if err == nil {
 		t.Error("Swo.DashboardsServerErrors expected an error response")
 	}
@@ -285,12 +299,11 @@ func TestDashboard_Marshal(t *testing.T) {
 	var props any = struct{}{}
 
 	got := ReadDashboardResult{
-		Id:          id,
-		Name:        dashboardsMockData.fieldName,
-		Description: &dashboardsMockData.fieldDesc,
-		IsPrivate:   &isPrivate,
-		CreatedAt:   dashboardsMockData.fieldUpdatedAt,
-		UpdatedAt:   dashboardsMockData.fieldUpdatedAt,
+		Id:        id,
+		Name:      dashboardsMockData.fieldName,
+		IsPrivate: &isPrivate,
+		CreatedAt: dashboardsMockData.fieldUpdatedAt,
+		UpdatedAt: dashboardsMockData.fieldUpdatedAt,
 		Owner: &getDashboardByIdDashboardsDashboardQueriesByIdDashboardOwner{
 			Id:   dashboardsMockData.fieldOwnerId,
 			Name: dashboardsMockData.fieldOwnerName,
@@ -307,7 +320,6 @@ func TestDashboard_Marshal(t *testing.T) {
 	{
 		"id": "%s",
 		"name": "%s",
-		"description": "%s",
 		"isPrivate": false,
 		"createdAt": "%s",
 		"updatedAt": "%s",
@@ -324,7 +336,6 @@ func TestDashboard_Marshal(t *testing.T) {
 	}`,
 		id,
 		dashboardsMockData.fieldName,
-		dashboardsMockData.fieldDesc,
 		dashboardsMockData.fieldUpdatedAt.Format(time.RFC3339),
 		dashboardsMockData.fieldUpdatedAt.Format(time.RFC3339),
 		dashboardsMockData.fieldOwnerId,

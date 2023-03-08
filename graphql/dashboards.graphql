@@ -10,6 +10,17 @@ mutation createDashboard($input: CreateDashboardInput!) {
         id
         name
       }
+      widgets {
+        id
+        type
+      }
+      layout {
+        id
+        x
+        y
+        width
+        height
+      }
       createdAt
       updatedAt
     }
@@ -21,7 +32,6 @@ query getDashboardById($id: ID!) {
     byId(id: $id) {
       id
       name
-      description
       isPrivate
       systemReference
       createdAt
@@ -41,17 +51,17 @@ query getDashboardById($id: ID!) {
         id
         name
       }
+      widgets {
+        id
+        type
+        properties
+      }
       layout {
         id
         x
         y
         height
         width
-      }
-      widgets {
-        id
-        type
-        properties
       }
     }
   }
@@ -64,7 +74,22 @@ mutation updateDashboard($input: UpdateDashboardInput!) {
     message
     dashboard {
       id
-      ownerId
+      owner {
+        id
+        name
+      }
+      widgets {
+        id
+        type
+      }
+      layout {
+        id
+        x
+        y
+        width
+        height
+      }
+      createdAt
       updatedAt
     }
   }

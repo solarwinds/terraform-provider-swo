@@ -111,6 +111,7 @@ func (p *SwoProvider) Configure(ctx context.Context, req provider.ConfigureReque
 func (p *SwoProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		NewAlertResource,
+		NewDashboardResource,
 		NewNotificationResource,
 	}
 }

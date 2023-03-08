@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -60,14 +61,12 @@ func (r *NotificationResource) Create(ctx context.Context, req resource.CreateRe
 		return
 	}
 
-	desc := plan.Description.ValueString()
-
 	// Create the notification...
 	newNotification, err := r.client.
 		NotificationsService().
 		Create(ctx, swoClient.CreateNotificationInput{
 			Title:       plan.Title.ValueString(),
-			Description: &desc,
+			Description: stringPtr(plan.Description),
 			Type:        plan.Type.ValueString(),
 			Settings:    plan.GetSettings(),
 		})
@@ -86,7 +85,7 @@ func (r *NotificationResource) Create(ctx context.Context, req resource.CreateRe
 	// for the data. See link for more details on why this is necessary in Terraform.
 	// https://developer.hashicorp.com/terraform/plugin/framework/resources/import#multiple-attributes
 	plan.Id = types.StringValue(fmt.Sprintf("%s:%s", newNotification.Id, newNotification.Type))
-	plan.CreatedAt = types.StringValue(newNotification.CreatedAt.String())
+	plan.CreatedAt = types.StringValue(newNotification.CreatedAt.Format(time.RFC3339))
 	plan.CreatedBy = types.StringValue(newNotification.CreatedBy)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
@@ -124,7 +123,9 @@ func (r *NotificationResource) Read(ctx context.Context, req resource.ReadReques
 	state.Id = types.StringValue(fmt.Sprintf("%s:%s", notification.Id, notification.Type))
 	state.Title = types.StringValue(notification.Title)
 	state.Type = types.StringValue(notification.Type)
-	state.Description = types.StringValue(*notification.Description)
+	if notification.Description != nil {
+		state.Description = types.StringValue(*notification.Description)
+	}
 	state.CreatedAt = types.StringValue(notification.CreatedAt.String())
 	state.CreatedBy = types.StringValue(notification.CreatedBy)
 
@@ -157,8 +158,6 @@ func (r *NotificationResource) Update(ctx context.Context, req resource.UpdateRe
 		return
 	}
 
-	title := plan.Title.ValueString()
-	desc := plan.Description.ValueString()
 	settings := plan.GetSettings()
 
 	// Update the notification...
@@ -167,8 +166,8 @@ func (r *NotificationResource) Update(ctx context.Context, req resource.UpdateRe
 		NotificationsService().
 		Update(ctx, swoClient.UpdateNotificationInput{
 			Id:          nId,
-			Title:       &title,
-			Description: &desc,
+			Title:       stringPtr(plan.Title),
+			Description: stringPtr(plan.Description),
 			Settings:    &settings,
 		})
 
