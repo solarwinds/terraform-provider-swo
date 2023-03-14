@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	swoClient "github.com/solarwindscloud/terraform-provider-swo/internal/client"
+	swoClient "github.com/solarwindscloud/swo-client-go/pkg/client"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
@@ -162,7 +162,7 @@ func (r *NotificationResource) Update(ctx context.Context, req resource.UpdateRe
 
 	// Update the notification...
 	tflog.Trace(ctx, fmt.Sprintf("updating notification with id: %s", nId))
-	err = r.client.
+	_, err = r.client.
 		NotificationsService().
 		Update(ctx, swoClient.UpdateNotificationInput{
 			Id:          nId,

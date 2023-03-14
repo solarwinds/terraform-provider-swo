@@ -11,20 +11,183 @@ provider "swo" {
   api_token = "[UPDATE WITH SWO TOKEN]"
   request_timeout = 30
   debug_mode = true
+  # base_url = "https://my.na-01.cloud.solarwinds.com/common/graphql"
 }
 
+# resource "swo_dashboard" "metrics_dashboard" {
+#   name = "terraform-provider-swo [TEST]"
+#   is_private = true
+#   # category_id = 
+#   widgets = [
+#     {
+#       type = "Kpi"
+#       x = 0
+#       y = 0
+#       width = 3
+#       height = 2
+#       properties = <<EOF
+#       {
+#         "unit": "ms",
+#         "title": "Widget Title",
+#         "linkUrl": "https://www.solarwinds.com",
+#         "subtitle": "Widget Subtitle",
+#         "linkLabel": "Linky",
+#         "dataSource": {
+#           "type": "kpi",
+#           "properties": {
+#             "series": [
+#               {
+#                 "type": "metric",
+#                 "limit": {
+#                   "value": 50,
+#                   "isAscending": false
+#                 },
+#                 "metric": "synthetics.https.response.time",
+#                 "groupBy": [],
+#                 "formatOptions": {
+#                   "unit": "ms",
+#                   "precision": 3,
+#                   "minUnitSize": -2
+#                 },
+#                 "bucketGrouping": [],
+#                 "aggregationFunction": "AVG"
+#               }
+#             ],
+#             "isHigherBetter": false,
+#             "includePercentageChange": true
+#           }
+#         }
+#       }
+#       EOF
+#     },
+#     {
+#       type = "TimeSeries"
+#       x = 3
+#       y = 0
+#       width = 9
+#       height = 2
+#       properties = <<EOF
+#       {
+#         "title": "Widget",
+#         "subtitle": "",
+#         "chart": {
+#           "type": "LineChart",
+#           "max": "auto",
+#           "yAxisLabel": "",
+#           "showLegend": true,
+#           "yAxisFormatOverrides": {
+#             "conversionFactor": 1,
+#             "precision": 3
+#           },
+#           "formatOptions": {
+#             "unit": "ms",
+#             "minUnitSize": -2,
+#             "precision": 3
+#           }
+#         },
+#         "dataSource": {
+#           "type": "timeSeries",
+#           "properties": {
+#             "series": [
+#               {
+#                 "type": "metric",
+#                 "metric": "synthetics.https.response.time",
+#                 "aggregationFunction": "AVG",
+#                 "bucketGrouping": [],
+#                 "groupBy": [
+#                   "probe.region"
+#                 ],
+#                 "limit": {
+#                   "value": 50,
+#                   "isAscending": false
+#                 },
+#                 "formatOptions": {
+#                   "unit": "ms",
+#                   "minUnitSize": -2,
+#                   "precision": 3
+#                 }
+#               },
+#               {
+#                 "type": "metric",
+#                 "metric": "synthetics.error_rate",
+#                 "aggregationFunction": "AVG",
+#                 "bucketGrouping": [],
+#                 "groupBy": [
+#                   "probe.region"
+#                 ],
+#                 "limit": {
+#                   "value": 50,
+#                   "isAscending": false
+#                 },
+#                 "formatOptions": {
+#                   "unit": "%",
+#                   "precision": 3
+#                 }
+#               }
+#             ]
+#           }
+#         }
+#       }
+#       EOF
+#     },
+#     {
+#       type = "Proportional"
+#       x = 0
+#       y = 2
+#       width = 12
+#       height = 2
+#       properties = <<EOF
+#       {
+#           "title": "Widget",
+#           "subtitle": "",
+#           "type": "HorizontalBar",
+#           "showLegend": false,
+#           "formatOptions": {
+#               "unit": "ms"
+#           },
+#           "dataSource": {
+#               "type": "proportional",
+#               "properties": {
+#                   "series": [
+#                       {
+#                           "type": "metric",
+#                           "metric": "synthetics.http.response.time",
+#                           "aggregationFunction": "AVG",
+#                           "bucketGrouping": [],
+#                           "groupBy": [
+#                               "synthetics.target"
+#                           ],
+#                           "limit": {
+#                               "value": 10,
+#                               "isAscending": true
+#                           },
+#                           "formatOptions": {
+#                               "unit": "ms",
+#                               "minUnitSize": -2,
+#                               "precision": 3
+#                           }
+#                       }
+#                   ]
+#               }
+#           }
+#       }
+#       EOF
+#     }
+#   ]
+# }
+
 # resource "swo_notification" "test_email" {
-#   title = "RobS Email Test"
+#   title = "terraform-provider-swo [TEST]"
 #   description = "testing..."
 #   type = "email"
 #   settings = {
 #     email = {
 #       addresses = [
 #         {
-#           email = "r@t.gov"
+#           email = "user1@host.com"
 #         },
 #         {
-#           email = "rob.stovenour@noop.com"
+#           email = "user2@host.com"
 #         },
 #       ]
 #     }
@@ -32,7 +195,7 @@ provider "swo" {
 # }
 
 # resource "swo_notification" "test_msteams" {
-#   title = "RobS MS Teams Test"
+#   title = "terraform-provider-swo [TEST]"
 #   description = "testing..."
 #   type = "msTeams"
 #   settings = {
@@ -43,7 +206,7 @@ provider "swo" {
 # }
 
 # resource "swo_notification" "test_opsgenie" {
-#   title = "RobS OpsGenie Test"
+#   title = "terraform-provider-swo [TEST]"
 #   description = "testing..."
 #   type = "opsgenie"
 #   settings = {
@@ -58,7 +221,7 @@ provider "swo" {
 # }
 
 # resource "swo_notification" "test_slack" {
-#   title = "RobS Slack Test"
+#   title = "terraform-provider-swo [TEST]"
 #   description = "testing..."
 #   type = "slack"
 #   settings = {
@@ -69,7 +232,7 @@ provider "swo" {
 # }
 
 # resource "swo_notification" "test_pagerduty" {
-#   title = "RobS PagerDuty Test"
+#   title = "terraform-provider-swo [TEST]"
 #   description = "testing..."
 #   type = "pagerduty"
 #   settings = {
@@ -82,7 +245,7 @@ provider "swo" {
 # }
 
 # resource "swo_notification" "test_victorops" {
-#   title = "RobS VictorOps Test"
+#   title = "terraform-provider-swo [TEST]"
 #   description = "testing..."
 #   type = "victorops"
 #   settings = {
@@ -94,7 +257,7 @@ provider "swo" {
 # }
 
 # resource "swo_notification" "test_sms" {
-#   title = "RobS SMS Test"
+#   title = "terraform-provider-swo [TEST]"
 #   description = "testing..."
 #   type = "sms"
 #   settings = {
@@ -105,7 +268,7 @@ provider "swo" {
 # }
 
 # resource "swo_notification" "test_servicenow" {
-#   title = "RobS ServiceNow Test"
+#   title = "terraform-provider-swo [TEST]"
 #   description = "testing..."
 #   type = "servicenow"
 #   settings = {
@@ -117,7 +280,7 @@ provider "swo" {
 # }
 
 # resource "swo_notification" "test_swsd" {
-#   title = "RobS ServiceDesk Test"
+#   title = "terraform-provider-swo [TEST]"
 #   description = "testing..."
 #   type = "swsd"
 #   settings = {

@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	swoClient "github.com/solarwindscloud/terraform-provider-swo/internal/client"
+	swoClient "github.com/solarwindscloud/swo-client-go/pkg/client"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
@@ -161,7 +161,7 @@ func (r *AlertResource) Update(ctx context.Context, req resource.UpdateRequest, 
 	tflog.Trace(ctx, fmt.Sprintf("Updating alert definition with ID: %s", alertId))
 
 	// Update the alert definition...
-	err := r.client.AlertsService().Update(ctx, alertId, input)
+	_, err := r.client.AlertsService().Update(ctx, alertId, input)
 
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Error updating alert definition %s. Error: %s", alertId, err))
