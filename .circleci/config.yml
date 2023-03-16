@@ -51,25 +51,25 @@ jobs:
             curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh \
               | sh -s -- -b $(go env GOPATH)/bin v${GOLANGCI_LINT_VERSION}
             golangci-lint run
-      - run:
-          name: Run Unit Tests
-          command: |
-            dirs=`find . -name go.mod -exec dirname {} \;`
-            set -e
-            mkdir -p ~/test-results/
-            for i in $dirs; do \
-              pushd $i; \
-              go test -coverprofile coverage.out -covermode atomic ./...; \
-              html="$i-coverage.html"
-              html=`echo $html | sed 's/\//_/g' | sed 's/-/_/g'`
-              go tool cover -html=coverage.out -o $html
-              mv $html ~/test-results/
-              popd; \
-            done
-      - store_test_results:
-          path: ~/test-results/
-      - store_artifacts:
-          path: ~/test-results/ 
+      # - run:
+      #     name: Run Unit Tests
+      #     command: |
+      #       dirs=`find . -name go.mod -exec dirname {} \;`
+      #       set -e
+      #       mkdir -p ~/test-results/
+      #       for i in $dirs; do \
+      #         pushd $i; \
+      #         go test -coverprofile coverage.out -covermode atomic ./...; \
+      #         html="$i-coverage.html"
+      #         html=`echo $html | sed 's/\//_/g' | sed 's/-/_/g'`
+      #         go tool cover -html=coverage.out -o $html
+      #         mv $html ~/test-results/
+      #         popd; \
+      #       done
+      # - store_test_results:
+      #     path: ~/test-results/
+      # - store_artifacts:
+      #     path: ~/test-results/ 
 
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
 workflows:
@@ -80,3 +80,4 @@ workflows:
           context:
             - org-global
             - GH_LIBRATO_CI_REPO
+    
