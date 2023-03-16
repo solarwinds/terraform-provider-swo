@@ -12,7 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	swoClient "github.com/solarwindscloud/terraform-provider-swo/internal/client"
+	swoClient "github.com/solarwindscloud/swo-client-go/pkg/client"
 	"golang.org/x/exp/slices"
 )
 

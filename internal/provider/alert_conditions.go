@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strconv"
 
-	swoClient "github.com/solarwindscloud/terraform-provider-swo/internal/client"
+	swoClient "github.com/solarwindscloud/swo-client-go/pkg/client"
 )
 
 type conditionType string
