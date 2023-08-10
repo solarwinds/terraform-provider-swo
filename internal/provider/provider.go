@@ -37,6 +37,11 @@ type SwoProviderModel struct {
 	DebugMode      types.Bool   `tfsdk:"debug_mode"`
 }
 
+type NewUserSessionTransport struct {
+	cookie    string
+	csfrToken string
+}
+
 func (p *SwoProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
 	tflog.Trace(ctx, "SWO Provider: Metadata")
 
@@ -91,11 +96,19 @@ func (p *SwoProvider) Configure(ctx context.Context, req provider.ConfigureReque
 		return
 	}
 
+	cookie := `COOKIE`
+	csrfToken := "TOKEN"
+
+	transport := &NewUserSessionTransport{
+		cookie:    cookie,
+		csfrToken: csrfToken,
+	}
+
 	// Client configuration for data sources and resources.
 	client := swoClient.NewClient(config.ApiToken.ValueString(),
 		swoClient.RequestTimeoutOption(time.Duration(config.RequestTimeout.ValueInt64())*time.Second),
 		swoClient.BaseUrlOption(config.BaseURL.ValueString()),
-		swoClient.TransportOption(p.transport),
+		swoClient.TransportOption(transport),
 		swoClient.DebugOption(config.DebugMode.ValueBool()),
 	)
 
@@ -127,4 +140,19 @@ func New(version string, transport http.RoundTripper) func() provider.Provider {
 			transport: transport,
 		}
 	}
+}
+
+func (t *NewUserSessionTransport) RoundTrip(request *http.Request) (*http.Response, error) {
+	clone := request.Clone(context.Background())
+
+	clone.Header.Set("Cookie", t.cookie)
+	clone.Header.Set("x-csrf-token", t.csfrToken)
+
+	swoClient.DumpRequest(clone)
+
+	response, err := http.DefaultTransport.RoundTrip(clone)
+
+	swoClient.DumpResponse(response)
+
+	return response, err
 }
