@@ -35,6 +35,8 @@ type SwoProviderModel struct {
 	RequestTimeout types.Int64  `tfsdk:"request_timeout"`
 	BaseURL        types.String `tfsdk:"base_url"`
 	DebugMode      types.Bool   `tfsdk:"debug_mode"`
+	Cookie         types.String `tfsdk:"cookie"`
+	CSRF           types.String `tfsdk:"csrf"`
 }
 
 type NewUserSessionTransport struct {
@@ -96,12 +98,9 @@ func (p *SwoProvider) Configure(ctx context.Context, req provider.ConfigureReque
 		return
 	}
 
-	cookie := `COOKIE`
-	csrfToken := "TOKEN"
-
 	transport := &NewUserSessionTransport{
-		cookie:    cookie,
-		csfrToken: csrfToken,
+		cookie:    config.Cookie.ValueString(),
+		csfrToken: config.CSRF.ValueString(),
 	}
 
 	// Client configuration for data sources and resources.
