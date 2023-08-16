@@ -73,6 +73,14 @@ func (p *SwoProvider) Schema(ctx context.Context, req provider.SchemaRequest, re
 				Optional:    true,
 				Description: "Setting to true will provide additional logging details.",
 			},
+			"cookie": schema.StringAttribute{
+				Optional:    true,
+				Description: "Cookie",
+			},
+			"csrf": schema.StringAttribute{
+				Optional:    true,
+				Description: "CSRF token",
+			},
 		},
 	}
 }
