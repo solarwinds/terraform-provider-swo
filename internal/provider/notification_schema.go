@@ -20,7 +20,7 @@ const (
 	phoneNumberRegex         = `^\+(?:[0-9] ?){6,14}[0-9]$`
 	snsTopicArnRegex         = `^arn:aws:sns:[^:]+:[0-9]+:[a-zA-Z0-9\-_]+$`
 	zapierHooksRegex         = `^https:\/\/hooks\.zapier\.com\/hooks\/catch.*`
-	slackHooksRegex          = `^https:\/\/hooks\.slack.com.*`
+	slackHooksRegex          = `^https:\/\/hooks\.slack\.com.*`
 	pagerDutyRoutingKeyRegex = `^[a-zA-Z0-9]{32}$`
 	msTeamsRegex             = `^https:\/\/.*\.office\.com\/webhook.*`
 	httpSchemeRegex          = `^(http|https)`
