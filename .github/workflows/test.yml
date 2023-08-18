@@ -20,7 +20,8 @@ jobs:
           go-version: ${{ matrix.go }}
       - run: go mod verify
       - run: go vet ./...
-      - run: go test ./... -race -vet=off
+    #   tests are disabled in GHA for now since they are run within the corporate VPN
+    #   - run: go test ./... -race -vet=off
       - uses: dominikh/staticcheck-action@v1.3.0
         with:
           install-go: false
