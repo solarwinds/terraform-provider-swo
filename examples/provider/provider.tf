@@ -226,7 +226,7 @@ provider "swo" {
 #   type = "slack"
 #   settings = {
 #     slack = {
-#       url = "https://hooks.slack.com/services/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"
+#       url = "https://hooks.slack.com/services/XXX/YYY/ZZZ"
 #     }
 #   }
 # }
