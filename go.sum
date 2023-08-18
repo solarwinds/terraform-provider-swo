@@ -197,8 +197,6 @@ github.com/shopspring/decimal v1.3.1/go.mod h1:DKyhrW/HYNuLGql+MJL6WCR6knT2jwCFR
 github.com/sirupsen/logrus v1.4.1/go.mod h1:ni0Sbl8bgC9z8RoU9G6nDWqqs/fq4eDPysMBDgk/93Q=
 github.com/sirupsen/logrus v1.9.3 h1:dueUQJ1C2q9oE3F7wvmSGAaVtTmUizReu6fjN8uqzbQ=
 github.com/sirupsen/logrus v1.9.3/go.mod h1:naHLuLoDiP4jHNo9R0sCBMtWGeIprob74mVsIT4qYEQ=
-github.com/solarwindscloud/swo-client-go v0.0.2 h1:j3b/UbC9EpNhz/VKwsVoQKzsdaSSct0NXGHvNvBzp70=
-github.com/solarwindscloud/swo-client-go v0.0.2/go.mod h1:g2d4kuChmoLIw+X54/GhOVeKHPkgUrOQjwjrjbzR3AU=
 github.com/solarwindscloud/swo-client-go v0.0.3 h1:KuSpvnxL6Lf72SHLFsA1BSTxe4HeLwr9U6fT3pnHMDA=
 github.com/solarwindscloud/swo-client-go v0.0.3/go.mod h1:g2d4kuChmoLIw+X54/GhOVeKHPkgUrOQjwjrjbzR3AU=
 github.com/spf13/cast v1.3.1/go.mod h1:Qx5cxh0v+4UWYiBimWS+eyWzqEqokIECu5etghLkUJE=
