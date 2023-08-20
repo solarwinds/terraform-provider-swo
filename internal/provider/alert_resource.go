@@ -3,7 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
-	"strconv"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -47,16 +47,29 @@ func (model *AlertResourceModel) ToAlertDefinitionInput() swoClient.AlertDefinit
 }
 
 func (model *AlertResourceModel) toAlertActionInput() []swoClient.AlertActionInput {
-	configurationIds := []string{}
-	for _, id := range model.Notifications {
-		configurationIds = append(configurationIds, strconv.Itoa(id))
+	inputs := []swoClient.AlertActionInput{}
+	actionTypes := map[string][]string{}
+
+	for _, configId := range model.Notifications {
+		actionId, actionType, found := strings.Cut(configId, ":")
+
+		if found {
+			if actionTypes[actionType] == nil {
+				actionTypes[actionType] = []string{actionId}
+			} else {
+				actionTypes[actionType] = append(actionTypes[actionType], actionId)
+			}
+		}
 	}
-	return []swoClient.AlertActionInput{
-		{
-			Type:             model.NotificationType.ValueString(),
-			ConfigurationIds: configurationIds,
-		},
+
+	for actionType, actionIds := range actionTypes {
+		inputs = append(inputs, swoClient.AlertActionInput{
+			Type:             actionType,
+			ConfigurationIds: actionIds,
+		})
 	}
+
+	return inputs
 }
 
 func (r *AlertResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {

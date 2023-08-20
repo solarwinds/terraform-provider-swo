@@ -19,8 +19,7 @@ type AlertResourceModel struct {
 	Severity            types.String          `tfsdk:"severity"`
 	Enabled             types.Bool            `tfsdk:"enabled"`
 	Conditions          []AlertConditionModel `tfsdk:"conditions"`
-	Notifications       []int                 `tfsdk:"notifications"`
-	NotificationType    types.String          `tfsdk:"notification_type"`
+	Notifications       []string              `tfsdk:"notifications"`
 	TriggerResetActions types.Bool            `tfsdk:"trigger_reset_actions"`
 }
 
@@ -139,14 +138,10 @@ func (r *AlertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 					},
 				},
 			},
-			"notification_type": schema.StringAttribute{
-				Description: "The type of notification service this alert will notify. (e.g email, slack)",
-				Required:    true,
-			},
 			"notifications": schema.ListAttribute{
-				Description: "A list of notification configuration IDs to publish to when this alert is triggered.",
+				Description: "A list of notifications to assign to this alert.",
 				Required:    true,
-				ElementType: types.NumberType,
+				ElementType: types.StringType,
 			},
 		},
 	}
