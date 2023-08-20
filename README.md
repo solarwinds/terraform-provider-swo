@@ -27,8 +27,8 @@ In order for the provider to work in a module, you need to add a required_provid
 terraform {
   required_providers {
     swo = {
-      source  = "github.com/solarwindscloud/terraform-provider-swo"
-      version = ">= 0.1.0"
+      source  = "solarwindscloud/swo"
+      version = ">= 0.0.2"
     }
   }
 }
@@ -132,6 +132,3 @@ Provider started. To attach Terraform CLI, set the TF_REATTACH_PROVIDERS environ
   export GODEBUG=asyncpreemptoff=1
   terraform init -upgrade
   ```
- 
-
-
