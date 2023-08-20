@@ -16,50 +16,20 @@ description: |-
 terraform {
   required_providers {
     swo = {
-      version = "0.1.0"
-      source  = "github.com/solarwindscloud/swo"
+      version = "0.0.2"
+      source  = "solarwindscloud/swo"
     }
   }
 }
 
 provider "swo" {
-  api_token             = "[UPDATE WITH SWO TOKEN]"
-  request_retry_timeout = 10
-  debug_mode = true
-}
+  # API token. Tokens can be created in your SWO account settings under API tokens.
+  # The token type should be Full Access.
+  api_token = "[UPDATE WITH SWO FULL ACCESS TOKEN]"
 
-resource "swo_alert" "https_response_time" {
-  name        = "High HTTPS Response Time"
-  description = "A high response time has been identified."
-  severity    = "CRITICAL"
-  type        = "ENTITY_METRIC"
-  enabled     = true
-  target_entity_types = [
-    "Website"
-  ]
-  conditions = [
-    {
-      metric_name      = "synthetics.https.response.time"
-      threshold        = ">=3000ms"
-      duration         = "5m"
-      aggregation_type = "AVG"
-      entity_ids = [
-        "e-1521946194448543744",
-        "e-1521947552186691584"
-      ]
-      include_tags = [
-        {
-          name = "probe.city"
-          values : [
-            "Tokyo",
-            "Sao Paulo"
-          ]
-        }
-      ],
-      exclude_tags = []
-    },
-  ]
-  notifications = [123, 456]
+  # Base URL for your SWO instance. Be sure to include your specific datacenter.
+  # Datacenter options are one of [na-01, na-02, eu-01, apj-01].
+  base_url = "https://api.na-01.cloud.solarwinds.com/v1/tfproxy"
 }
 ```
 
@@ -72,5 +42,6 @@ resource "swo_alert" "https_response_time" {
 
 ### Optional
 
+- `base_url` (String) The base url to use for requests to the server.
 - `debug_mode` (Boolean) Setting to true will provide additional logging details.
-- `request_retry_timeout` (Number) The request retry timeout period. Specify 0 for no retries. Default is 30 seconds.
+- `request_timeout` (Number) The request timeout period in seconds. Default is 30 seconds.
