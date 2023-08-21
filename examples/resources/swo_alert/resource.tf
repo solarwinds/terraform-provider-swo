@@ -1,14 +1,15 @@
 resource "swo_alert" "https_response_time" {
-  name        = "TF Test - High HTTPS Response Time"
+  name        = "High HTTPS Response Time"
   description = "A high response time has been identified."
   severity    = "INFO"
-  enabled     = false
+  enabled     = true
   conditions = [
     {
       metric_name      = "synthetics.https.response.time"
-      threshold        = ">=3000" 
+      threshold        = ">=3000"
       duration         = "5m"
       aggregation_type = "AVG"
+      type             = "ENTITY_METRIC"
       target_entity_types = [
         "Website"
       ]
@@ -28,6 +29,5 @@ resource "swo_alert" "https_response_time" {
       exclude_tags = []
     },
   ]
-  notification_type = "email"
-  notifications = [123, 456]
+  notifications = [swo_notification.msteams.id, swo_notification.opsgenie.id]
 }
