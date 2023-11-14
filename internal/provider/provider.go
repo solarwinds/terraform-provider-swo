@@ -92,15 +92,14 @@ func (p *SwoProvider) Configure(ctx context.Context, req provider.ConfigureReque
 	}
 
 	// Client configuration for data sources and resources.
-	client := swoClient.NewClient(config.ApiToken.ValueString(),
+	client, err := swoClient.New(config.ApiToken.ValueString(),
 		swoClient.RequestTimeoutOption(time.Duration(config.RequestTimeout.ValueInt64())*time.Second),
 		swoClient.BaseUrlOption(config.BaseURL.ValueString()),
 		swoClient.TransportOption(p.transport),
 		swoClient.DebugOption(config.DebugMode.ValueBool()),
 	)
-
-	if client == nil {
-		resp.Diagnostics.AddError("Client Error", "Unable to create an instance of the SWO client.")
+	if err != nil {
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("error creating client: %s", err))
 		return
 	}
 
@@ -113,6 +112,7 @@ func (p *SwoProvider) Resources(ctx context.Context) []func() resource.Resource 
 		NewAlertResource,
 		NewDashboardResource,
 		NewNotificationResource,
+		NewWebsiteResource,
 	}
 }
 

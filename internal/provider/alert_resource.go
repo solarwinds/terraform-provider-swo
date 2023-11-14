@@ -26,10 +26,6 @@ type AlertResource struct {
 }
 
 func (model *AlertResourceModel) ToAlertDefinitionInput() swoClient.AlertDefinitionInput {
-	description := model.Description.ValueString()
-	severity := model.Severity.ValueString()
-	name := model.Name.ValueString()
-
 	conditions := []swoClient.AlertConditionNodeInput{}
 
 	for _, condition := range model.Conditions {
@@ -37,10 +33,10 @@ func (model *AlertResourceModel) ToAlertDefinitionInput() swoClient.AlertDefinit
 	}
 
 	return swoClient.AlertDefinitionInput{
-		Name:        name,
-		Description: &description,
+		Name:        model.Name.ValueString(),
+		Description: swoClient.Ptr(model.Description.ValueString()),
 		Enabled:     model.Enabled.ValueBool(),
-		Severity:    swoClient.AlertSeverity(severity),
+		Severity:    swoClient.AlertSeverity(model.Severity.ValueString()),
 		Actions:     model.toAlertActionInput(),
 		Condition:   conditions,
 	}
