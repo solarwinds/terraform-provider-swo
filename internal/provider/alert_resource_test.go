@@ -43,11 +43,6 @@ func TestAccAlertResource(t *testing.T) {
 				ResourceName:      "swo_alert.test",
 				ImportState:       true,
 				ImportStateVerify: true,
-				// This is not normally necessary, but is here because this
-				// example code does not have an actual upstream service.
-				// Once the Read method is able to refresh information from
-				// the upstream service, this can be removed.
-				ImportStateVerifyIgnore: []string{"id"},
 			},
 			// Update and Read testing
 			{

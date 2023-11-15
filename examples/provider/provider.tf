@@ -1,8 +1,11 @@
 terraform {
   required_providers {
     swo = {
-      version = "0.0.2"
+      version = "0.0.5"
       source  = "solarwindscloud/swo"
+      # Uncomment the following line to use the latest version of the
+      # provider from GitHub or when using a local build.
+      # source = "github.com/solarwindscloud/swo"
     }
   }
 }

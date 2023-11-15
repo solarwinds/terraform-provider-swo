@@ -33,7 +33,6 @@ func TestAccDashboardResource(t *testing.T) {
 				ResourceName:      "swo_dashboard.test",
 				ImportState:       true,
 				ImportStateVerify: false, // False because the server sends widget properties back in a different format.
-
 			},
 			// Update and Read testing
 			{
