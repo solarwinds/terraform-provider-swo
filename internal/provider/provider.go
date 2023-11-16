@@ -113,6 +113,7 @@ func (p *SwoProvider) Resources(ctx context.Context) []func() resource.Resource 
 		NewDashboardResource,
 		NewNotificationResource,
 		NewWebsiteResource,
+		NewUriResource,
 	}
 }
 
