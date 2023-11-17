@@ -109,7 +109,7 @@ func (r *UriResource) Schema(ctx context.Context, req resource.SchemaRequest, re
 					},
 					"is_http_enabled": schema.BoolAttribute{
 						Description: "Whether or not to enable http monitoring.",
-						Required:    true,
+						Optional:    true,
 					},
 					"is_tcp_enabled": schema.BoolAttribute{
 						Description: "Whether or not to enable tcp monitoring.",

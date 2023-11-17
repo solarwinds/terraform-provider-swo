@@ -37,16 +37,15 @@ func (r *UriResource) Configure(ctx context.Context, req resource.ConfigureReque
 		return
 	}
 
-	client, ok := req.ProviderData.(*swoClient.Client)
-	if !ok {
+	if client, ok := req.ProviderData.(*swoClient.Client); !ok {
 		resp.Diagnostics.AddError(
 			"Invalid Resource Client Type",
 			fmt.Sprintf("expected *swoClient.Client but received: %T.", req.ProviderData),
 		)
 		return
+	} else {
+		r.client = client
 	}
-
-	r.client = client
 }
 
 func (r *UriResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -76,7 +75,7 @@ func (r *UriResource) Create(ctx context.Context, req resource.CreateRequest, re
 		TestDefinitions: swoClient.UriTestDefinitionsInput{
 			PlatformOptions: &swoClient.ProbePlatformOptionsInput{
 				TestFromAll:    swoClient.Ptr(tfPlan.TestDefinitions.PlatformOptions.TestFromAll.ValueBool()),
-				ProbePlatforms: convertWebsiteProbePlatforms(tfPlan.TestDefinitions.PlatformOptions.Platforms),
+				ProbePlatforms: convertUriProbePlatforms(tfPlan.TestDefinitions.PlatformOptions.Platforms),
 			},
 			TestFrom: swoClient.ProbeLocationInput{
 				Type:   swoClient.ProbeLocationType(tfPlan.TestDefinitions.TestFromLocation.ValueString()),
@@ -134,9 +133,8 @@ func (r *UriResource) Update(ctx context.Context, req resource.UpdateRequest, re
 		return
 	}
 
-	// Update the Uri...
-	tflog.Trace(ctx, fmt.Sprintf("updating Uri with id: %s", tfState.Id))
-	err := r.client.UriService().Update(ctx, swoClient.UpdateUriInput{
+	// Create our input request.
+	updateInput := swoClient.UpdateUriInput{
 		Id:         tfState.Id.ValueString(),
 		Name:       tfPlan.Name.ValueString(),
 		IpOrDomain: tfPlan.Host.ValueString(),
@@ -152,7 +150,7 @@ func (r *UriResource) Update(ctx context.Context, req resource.UpdateRequest, re
 		TestDefinitions: swoClient.UriTestDefinitionsInput{
 			PlatformOptions: &swoClient.ProbePlatformOptionsInput{
 				TestFromAll:    swoClient.Ptr(tfPlan.TestDefinitions.PlatformOptions.TestFromAll.ValueBool()),
-				ProbePlatforms: convertWebsiteProbePlatforms(tfPlan.TestDefinitions.PlatformOptions.Platforms),
+				ProbePlatforms: convertUriProbePlatforms(tfPlan.TestDefinitions.PlatformOptions.Platforms),
 			},
 			TestFrom: swoClient.ProbeLocationInput{
 				Type:   swoClient.ProbeLocationType(tfPlan.TestDefinitions.TestFromLocation.ValueString()),
@@ -160,7 +158,11 @@ func (r *UriResource) Update(ctx context.Context, req resource.UpdateRequest, re
 			},
 			TestIntervalInSeconds: int(tfPlan.TestDefinitions.TestIntervalInSeconds.ValueInt64()),
 		},
-	})
+	}
+
+	// Update the Uri...
+	tflog.Trace(ctx, fmt.Sprintf("updating Uri with id: %s", tfState.Id))
+	err := r.client.UriService().Update(ctx, updateInput)
 
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("error updating uri %s. err: %s", tfState.Id, err))
@@ -185,8 +187,7 @@ func (r *UriResource) Delete(ctx context.Context, req resource.DeleteRequest, re
 
 	// // Delete the Uri...
 	tflog.Trace(ctx, fmt.Sprintf("deleting uri - id=%s", state.Id))
-	if err := r.client.UriService().
-		Delete(ctx, state.Id.ValueString()); err != nil {
+	if err := r.client.UriService().Delete(ctx, state.Id.ValueString()); err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("error deleting uri %s - %s", state.Id, err))
 		return
 	}
@@ -201,17 +202,6 @@ func convertUriProbePlatforms(in []string) []swoClient.ProbePlatform {
 	var out []swoClient.ProbePlatform
 	for _, p := range in {
 		out = append(out, swoClient.ProbePlatform(p))
-	}
-	return out
-}
-
-func convertUriCustomHeaders(in []CustomHeader) []swoClient.CustomHeaderInput {
-	var out []swoClient.CustomHeaderInput
-	for _, h := range in {
-		out = append(out, swoClient.CustomHeaderInput{
-			Name:  h.Name.ValueString(),
-			Value: h.Value.ValueString(),
-		})
 	}
 	return out
 }
