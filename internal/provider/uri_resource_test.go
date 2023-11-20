@@ -20,6 +20,8 @@ func TestAccUriResource(t *testing.T) {
 					resource.TestCheckResourceAttrSet("swo_uri.test", "id"),
 					resource.TestCheckResourceAttr("swo_uri.test", "name", "test one"),
 					resource.TestCheckResourceAttr("swo_uri.test", "host", "www.solarwinds.com"),
+					resource.TestCheckResourceAttr("swo_uri.test", "options.is_ping_enabled", "true"),
+					resource.TestCheckResourceAttr("swo_uri.test", "options.is_tcp_enabled", "false"),
 				),
 			},
 			// ImportState testing
