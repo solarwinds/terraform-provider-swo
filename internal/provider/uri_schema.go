@@ -14,34 +14,18 @@ import (
 
 // UriResourceModel is the main resource structure
 type UriResourceModel struct {
-	Id               types.String               `tfsdk:"id"`
-	Name             types.String               `tfsdk:"name"`
-	Host             types.String               `tfsdk:"host"`
-	HttpPathAndQuery types.String               `tfsdk:"http_path_and_query"`
-	Options          UriResourceOptions         `tfsdk:"options"`
-	HttpOptions      *UriResourceHttpOptions    `tfsdk:"http_options"`
-	TcpOptions       *UriResourceTcpOptions     `tfsdk:"tcp_options"`
-	TestDefinitions  UriResourceTestDefinitions `tfsdk:"test_definitions"`
+	Id              types.String               `tfsdk:"id"`
+	Name            types.String               `tfsdk:"name"`
+	Host            types.String               `tfsdk:"host"`
+	Options         UriResourceOptions         `tfsdk:"options"`
+	TcpOptions      *UriResourceTcpOptions     `tfsdk:"tcp_options"`
+	TestDefinitions UriResourceTestDefinitions `tfsdk:"test_definitions"`
 }
 
 // UriResourceOptions represents the options field in the main resource
 type UriResourceOptions struct {
 	IsPingEnabled types.Bool `tfsdk:"is_ping_enabled"`
-	IsHttpEnabled types.Bool `tfsdk:"is_http_enabled"`
 	IsTcpEnabled  types.Bool `tfsdk:"is_tcp_enabled"`
-}
-
-// UriResourceHttpOptions represents the http_options field in the main resource
-type UriResourceHttpOptions struct {
-	Protocols      []string                       `tfsdk:"protocols"`
-	CheckForString *UriResourceCheckForStringType `tfsdk:"check_for_string"`
-	CustomHeaders  []UriResourceCustomHeader      `tfsdk:"custom_headers"`
-}
-
-// UriResourceCustomHeader represents a custom header
-type UriResourceCustomHeader struct {
-	Name  types.String `tfsdk:"name"`
-	Value types.String `tfsdk:"value"`
 }
 
 // UriResourceTcpOptions represents the tcp_options field in the main resource
@@ -57,12 +41,6 @@ type UriResourceTestDefinitions struct {
 	LocationOptions       []UriResourceProbeLocation  `tfsdk:"location_options"`
 	TestIntervalInSeconds types.Int64                 `tfsdk:"test_interval_in_seconds"`
 	PlatformOptions       *UriResourcePlatformOptions `tfsdk:"platform_options"`
-}
-
-// UriResourceCheckForStringType represents check_for_string field in http_options
-type UriResourceCheckForStringType struct {
-	Operator types.String `tfsdk:"operator"`
-	Value    types.String `tfsdk:"value"`
 }
 
 // UriResourceProbeLocation represents location_options field in test_definitions
@@ -95,10 +73,6 @@ func (r *UriResource) Schema(ctx context.Context, req resource.SchemaRequest, re
 				Description: "The IP address or host name to monitor.",
 				Required:    true,
 			},
-			"http_path_and_query": schema.StringAttribute{
-				Description: "The path and query to monitor.",
-				Required:    true,
-			},
 			"options": schema.SingleNestedAttribute{
 				Description: "The options for this Uri check.",
 				Required:    true,
@@ -107,54 +81,9 @@ func (r *UriResource) Schema(ctx context.Context, req resource.SchemaRequest, re
 						Description: "Whether or not to enable ping monitoring.",
 						Required:    true,
 					},
-					"is_http_enabled": schema.BoolAttribute{
-						Description: "Whether or not to enable http monitoring.",
-						Optional:    true,
-					},
 					"is_tcp_enabled": schema.BoolAttribute{
 						Description: "Whether or not to enable tcp monitoring.",
 						Required:    true,
-					},
-				},
-			},
-			"http_options": schema.SingleNestedAttribute{
-				Description: "The http options for this Uri check.",
-				Optional:    true,
-				Attributes: map[string]schema.Attribute{
-					"protocols": schema.ListAttribute{
-						Description: "The protocols to use for http monitoring.",
-						Required:    true,
-						ElementType: types.StringType,
-					},
-					"check_for_string": schema.SingleNestedAttribute{
-						Description: "The string to check for in the response.",
-						Optional:    true,
-						Attributes: map[string]schema.Attribute{
-							"operator": schema.StringAttribute{
-								Description: "The operator to use for checking the response.",
-								Required:    true,
-							},
-							"value": schema.StringAttribute{
-								Description: "The string to check for in the response.",
-								Required:    true,
-							},
-						},
-					},
-					"custom_headers": schema.SetNestedAttribute{
-						Description: "One or more custom headers to send with the uptime check.",
-						Required:    true,
-						NestedObject: schema.NestedAttributeObject{
-							Attributes: map[string]schema.Attribute{
-								"name": schema.StringAttribute{
-									Description: "The Website custom header name.",
-									Required:    true,
-								},
-								"value": schema.StringAttribute{
-									Description: "The Website custom header value.",
-									Required:    true,
-								},
-							},
-						},
 					},
 				},
 			},

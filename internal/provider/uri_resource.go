@@ -94,7 +94,7 @@ func (r *UriResource) Create(ctx context.Context, req resource.CreateRequest, re
 		return
 	}
 
-	tflog.Trace(ctx, fmt.Sprintf("uri %s created successfully - id=%s", tfPlan.Name, newUri.Id))
+	tflog.Trace(ctx, fmt.Sprintf("uri %s created successfully: id=%s", tfPlan.Name, newUri.Id))
 	tfPlan.Id = types.StringValue(newUri.Id)
 	resp.Diagnostics.Append(resp.State.Set(ctx, tfPlan)...)
 }
@@ -110,16 +110,16 @@ func (r *UriResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 	}
 
 	// Read the Uri...
-	tflog.Trace(ctx, fmt.Sprintf("read uri with id: %s", tfState.Id))
+	tflog.Trace(ctx, fmt.Sprintf("read uri: id=%s", tfState.Id))
 	uri, err := r.client.UriService().Read(ctx, tfState.Id.ValueString())
 
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("error reading Uri %s. error: %s",
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("error reading uri %s. error: %s",
 			tfState.Id, err))
 		return
 	}
 
-	tflog.Trace(ctx, fmt.Sprintf("read Uri success: %s", *uri.Name))
+	tflog.Trace(ctx, fmt.Sprintf("read uri success: id=%s", uri.Id))
 	resp.Diagnostics.Append(resp.State.Set(ctx, tfState)...)
 }
 
@@ -161,7 +161,7 @@ func (r *UriResource) Update(ctx context.Context, req resource.UpdateRequest, re
 	}
 
 	// Update the Uri...
-	tflog.Trace(ctx, fmt.Sprintf("updating Uri with id: %s", tfState.Id))
+	tflog.Trace(ctx, fmt.Sprintf("updating uri with id: %s", tfState.Id))
 	err := r.client.UriService().Update(ctx, updateInput)
 
 	if err != nil {
@@ -186,7 +186,7 @@ func (r *UriResource) Delete(ctx context.Context, req resource.DeleteRequest, re
 	}
 
 	// // Delete the Uri...
-	tflog.Trace(ctx, fmt.Sprintf("deleting uri - id=%s", state.Id))
+	tflog.Trace(ctx, fmt.Sprintf("deleting uri: id=%s", state.Id))
 	if err := r.client.UriService().Delete(ctx, state.Id.ValueString()); err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("error deleting uri %s - %s", state.Id, err))
 		return

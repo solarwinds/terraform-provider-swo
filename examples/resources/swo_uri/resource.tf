@@ -1,32 +1,10 @@
 resource "swo_uri" "test" {
   name                = "terraform-provider-swo example"
   host                = "solarwinds.com"
-  http_path_and_query = "/example?test=1"
 
   options = {
     is_ping_enabled = true
-    is_http_enabled = true
     is_tcp_enabled  = false
-  }
-
-  http_options = {
-    protocols = ["HTTP", "HTTPS"]
-
-    check_for_string = {
-      operator = "CONTAINS"
-      value    = "example-string"
-    }
-
-    custom_headers = [
-      {
-        name  = "header1"
-        value = "value1"
-      },
-      {
-        name  = "header2"
-        value = "value2"
-      },
-    ]
   }
 
   tcp_options = {
