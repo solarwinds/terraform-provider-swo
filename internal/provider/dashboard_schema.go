@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"github.com/solarwindscloud/terraform-provider-swo/internal/envvar"
+	"github.com/solarwinds/terraform-provider-swo/internal/envvar"
 )
 
 // The main Dashboard Resource model that is derived from the schema.

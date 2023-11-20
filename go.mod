@@ -1,4 +1,4 @@
-module github.com/solarwindscloud/terraform-provider-swo
+module github.com/solarwinds/terraform-provider-swo
 
 go 1.18
 
@@ -11,7 +11,7 @@ require (
 	github.com/hashicorp/terraform-plugin-go v0.14.3
 	github.com/hashicorp/terraform-plugin-log v0.8.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.25.0
-	github.com/solarwindscloud/swo-client-go v0.0.5
+	github.com/solarwinds/swo-client-go v0.0.6
 	golang.org/x/exp v0.0.0-20230314191032-db074128a8ec
 )
 

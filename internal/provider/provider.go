@@ -13,8 +13,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	swoClient "github.com/solarwindscloud/swo-client-go/pkg/client"
-	"github.com/solarwindscloud/terraform-provider-swo/internal/envvar"
+	swoClient "github.com/solarwinds/swo-client-go/pkg/client"
+	"github.com/solarwinds/terraform-provider-swo/internal/envvar"
 )
 
 // Ensure SwoProvider satisfies various provider interfaces.

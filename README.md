@@ -10,14 +10,14 @@ The SWO terraform provider enables the automation of:
 * Notification Services
 
 ### Example usage
-See `example.tf` [in this repo](https://github.com/solarwindscloud/terraform-provider-swo/blob/master/examples/) to understand how to start using the provider.
+See `example.tf` [in this repo](https://github.com/solarwinds/terraform-provider-swo/blob/master/examples/) to understand how to start using the provider.
 
 ### Installing
-* Grab the latest release binary from the [Releases page](https://github.com/solarwindscloud/terraform-provider-swo/releases).
-* Extract and place the binary into `$HOME/.terraform.d/plugins/github.com/solarwindscloud/terraform-provider-swo/<VERSION>/<ARCH>/terraform-provider-swo` (Replace `<VERSION>` with the version downloaded and `<ARCH>` with the machine architecture (eg. `darwin_amd64` or `darwin_arm64`)
+* Grab the latest release binary from the [Releases page](https://github.com/solarwinds/terraform-provider-swo/releases).
+* Extract and place the binary into `$HOME/.terraform.d/plugins/github.com/solarwinds/terraform-provider-swo/<VERSION>/<ARCH>/terraform-provider-swo` (Replace `<VERSION>` with the version downloaded and `<ARCH>` with the machine architecture (eg. `darwin_amd64` or `darwin_arm64`)
 * Set the execute flag on the binary
 ```
-chmod 755 $HOME/.terraform.d/plugins/github.com/solarwindscloud/terraform-provider-swo/<VERSION>/<ARCH>/terraform-provider-swo
+chmod 755 $HOME/.terraform.d/plugins/github.com/solarwinds/terraform-provider-swo/<VERSION>/<ARCH>/terraform-provider-swo
 ```
 * You should now be able to write TF code for the Solarwinds Observability Platform with the rest of your infrastructure code.
 
@@ -27,7 +27,7 @@ In order for the provider to work in a module, you need to add a required_provid
 terraform {
   required_providers {
     swo = {
-      source  = "solarwindscloud/swo"
+      source  = "solarwinds/swo"
       version = ">= 0.0.2"
     }
   }
@@ -36,7 +36,7 @@ terraform {
 This needs to be done because this provider has not been published to the Terraform registry, which is the default location that Terraform will look in when searching for providers.
 
 ### Issues/Bugs
-Please report bugs and request enhancements in the [Issues area](https://github.com/solarwindscloud/terraform-provider-swo/issues) of this repo.
+Please report bugs and request enhancements in the [Issues area](https://github.com/solarwinds/terraform-provider-swo/issues) of this repo.
 
 ## Requirements
 
@@ -121,7 +121,7 @@ Below you see an example of what should be displayed in your Debug Console if th
 ```
 Provider started. To attach Terraform CLI, set the TF_REATTACH_PROVIDERS environment variable with the following:
 
-	TF_REATTACH_PROVIDERS='{"github.com/solarwindscloud/swo":{"Protocol":"grpc","ProtocolVersion":6,"Pid":50111,"Test":true,"Addr":{"Network":"unix","String":"/var/folders/86/21z0bd_x39g177h5nfw2l8w80000gq/T/plugin1234"}}}'
+	TF_REATTACH_PROVIDERS='{"github.com/solarwinds/swo":{"Protocol":"grpc","ProtocolVersion":6,"Pid":50111,"Test":true,"Addr":{"Network":"unix","String":"/var/folders/86/21z0bd_x39g177h5nfw2l8w80000gq/T/plugin1234"}}}'
   ```
 
   export the `TF_REATTACH_PROVIDERS` you get back. 
