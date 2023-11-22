@@ -55,8 +55,7 @@ resource "swo_alert" "https_response_time" {
 
 - `conditions` (Attributes Set) One or more conditions that must be met to tigger the alert. (see [below for nested schema](#nestedatt--conditions))
 - `name` (String) Alert definition name.
-- `notification_type` (String) The type of notification service this alert will notify. (e.g email, slack)
-- `notifications` (List of Number) A list of notification configuration IDs to publish to when this alert is triggered.
+- `notifications` (List of String) A list of notifications to assign to this alert.
 - `severity` (String) Alert definition severity (INFO|WARNING|CRITICAL).
 
 ### Optional

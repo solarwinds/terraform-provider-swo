@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	swoClient "github.com/solarwindscloud/swo-client-go/pkg/client"
+	swoClient "github.com/solarwinds/swo-client-go/pkg/client"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.

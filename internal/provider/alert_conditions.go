@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strconv"
 
-	swoClient "github.com/solarwindscloud/swo-client-go/pkg/client"
+	swoClient "github.com/solarwinds/swo-client-go/pkg/client"
 )
 
 type conditionType string
