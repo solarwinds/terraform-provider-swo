@@ -8,6 +8,9 @@ The SWO terraform provider enables the automation of:
 * Alerts
 * Dashboards
 * Notification Services
+* Uris (uptime checks)
+* Websites (uptime checks)
+
 
 ### Example usage
 See `example.tf` [in this repo](https://github.com/solarwinds/terraform-provider-swo/blob/master/examples/) to understand how to start using the provider.
@@ -28,7 +31,7 @@ terraform {
   required_providers {
     swo = {
       source  = "solarwinds/swo"
-      version = ">= 0.0.2"
+      version = ">= 0.0.7"
     }
   }
 }
@@ -68,8 +71,7 @@ go mod tidy
 Then commit the changes to `go.mod` and `go.sum`.
 
 ## Using the provider
-
-Fill this in for each provider
+Full documentation for using the provider can be found at the [Terraform Registry](https://registry.terraform.io/providers/solarwinds/swo/latest/docs) or in the `/docs` folder of this repo.
 
 ## Developing the Provider
 
@@ -86,8 +88,6 @@ In order to run the full suite of Acceptance tests, run `make testacc`.
 ```shell
 make testacc
 ```
-
-
 
 ## Terraform Debugging
 Mac Install Terraform:

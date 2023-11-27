@@ -1,3 +1,6 @@
+## 0.7.0
+Documentation updates.
+
 ## 0.6.0
 Add Website and Uri entity management.
 

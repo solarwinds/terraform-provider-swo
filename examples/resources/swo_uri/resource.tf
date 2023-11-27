@@ -1,6 +1,6 @@
 resource "swo_uri" "test" {
-  name                = "terraform-provider-swo example"
-  host                = "solarwinds.com"
+  name = "terraform-provider-swo example"
+  host = "solarwinds.com"
 
   options = {
     is_ping_enabled = true

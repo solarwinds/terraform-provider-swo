@@ -14,34 +14,12 @@ A terraform resource for managing SWO Uris.
 
 ```terraform
 resource "swo_uri" "test" {
-  name                = "terraform-provider-swo example"
-  host                = "solarwinds.com"
-  http_path_and_query = "/example?test=1"
+  name = "terraform-provider-swo example"
+  host = "solarwinds.com"
 
   options = {
     is_ping_enabled = true
-    is_http_enabled = true
     is_tcp_enabled  = false
-  }
-
-  http_options = {
-    protocols = ["HTTP", "HTTPS"]
-
-    check_for_string = {
-      operator = "CONTAINS"
-      value    = "example-string"
-    }
-
-    custom_headers = [
-      {
-        name  = "header1"
-        value = "value1"
-      },
-      {
-        name  = "header2"
-        value = "value2"
-      },
-    ]
   }
 
   tcp_options = {
@@ -88,14 +66,12 @@ resource "swo_uri" "test" {
 ### Required
 
 - `host` (String) The IP address or host name to monitor.
-- `http_path_and_query` (String) The path and query to monitor.
 - `name` (String) The name of this Uri check.
 - `options` (Attributes) The options for this Uri check. (see [below for nested schema](#nestedatt--options))
 - `test_definitions` (Attributes) The test definitions for this Uri check. (see [below for nested schema](#nestedatt--test_definitions))
 
 ### Optional
 
-- `http_options` (Attributes) The http options for this Uri check. (see [below for nested schema](#nestedatt--http_options))
 - `tcp_options` (Attributes) The tcp options for this Uri check. (see [below for nested schema](#nestedatt--tcp_options))
 
 ### Read-Only
@@ -107,7 +83,6 @@ resource "swo_uri" "test" {
 
 Required:
 
-- `is_http_enabled` (Boolean) Whether or not to enable http monitoring.
 - `is_ping_enabled` (Boolean) Whether or not to enable ping monitoring.
 - `is_tcp_enabled` (Boolean) Whether or not to enable tcp monitoring.
 
@@ -144,37 +119,6 @@ Required:
 Optional:
 
 - `platforms` (List of String) The platforms to test from [AWS|AZURE].
-
-
-
-<a id="nestedatt--http_options"></a>
-### Nested Schema for `http_options`
-
-Required:
-
-- `custom_headers` (Attributes Set) One or more custom headers to send with the uptime check. (see [below for nested schema](#nestedatt--http_options--custom_headers))
-- `protocols` (List of String) The protocols to use for http monitoring.
-
-Optional:
-
-- `check_for_string` (Attributes) The string to check for in the response. (see [below for nested schema](#nestedatt--http_options--check_for_string))
-
-<a id="nestedatt--http_options--custom_headers"></a>
-### Nested Schema for `http_options.custom_headers`
-
-Required:
-
-- `name` (String) The Website custom header name.
-- `value` (String) The Website custom header value.
-
-
-<a id="nestedatt--http_options--check_for_string"></a>
-### Nested Schema for `http_options.check_for_string`
-
-Required:
-
-- `operator` (String) The operator to use for checking the response.
-- `value` (String) The string to check for in the response.
 
 
 
