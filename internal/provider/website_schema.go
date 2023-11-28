@@ -212,8 +212,8 @@ func (r *WebsiteResource) Schema(ctx context.Context, req resource.SchemaRequest
 								Required:    true,
 							},
 							"snippet": schema.StringAttribute{
-								Description: "The Website RUM monitoring code snippet.",
-								Optional:    true,
+								Description: "The Website RUM monitoring code snippet (provided by the server).",
+								Computed:    true,
 							},
 							"spa": schema.BoolAttribute{
 								Description: "Is SPA monitoring enabled?",

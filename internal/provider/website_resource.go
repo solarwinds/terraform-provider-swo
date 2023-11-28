@@ -93,7 +93,7 @@ func (r *WebsiteResource) Create(ctx context.Context, req resource.CreateRequest
 	}
 
 	// Create the Website...
-	newWebsite, err := r.client.WebsiteService().Create(ctx, createInput)
+	result, err := r.client.WebsiteService().Create(ctx, createInput)
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("error creating website '%s' - error: %s",
 			tfPlan.Name,
@@ -101,8 +101,17 @@ func (r *WebsiteResource) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
-	tflog.Trace(ctx, fmt.Sprintf("website %s created successfully - id=%s", tfPlan.Name, newWebsite.Id))
-	tfPlan.Id = types.StringValue(newWebsite.Id)
+	// Get the latest Website state from the server so we can get the 'snippet' field.
+	if website, err := r.client.WebsiteService().Read(ctx, result.Id); err != nil {
+		resp.Diagnostics.AddWarning("Client Error", fmt.Sprintf("error capturing RUM snippit for Website '%s' - error: %s",
+			tfPlan.Name,
+			err))
+	} else {
+		tfPlan.Monitoring.Rum.Snippet = types.StringValue(*website.Monitoring.Rum.Snippet)
+	}
+
+	tflog.Trace(ctx, fmt.Sprintf("website %s created successfully - id=%s", tfPlan.Name, result.Id))
+	tfPlan.Id = types.StringValue(result.Id)
 	resp.Diagnostics.Append(resp.State.Set(ctx, tfPlan)...)
 }
 
