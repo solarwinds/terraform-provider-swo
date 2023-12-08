@@ -1,10 +1,10 @@
 resource "swo_logfilter" "test" {
-  name = "terraform-provider-swo example"
-  description = "test log filter"
+  name            = "terraform-provider-swo example"
+  description     = "test log filter"
   token_signature = null
   expressions = [
     {
-      kind = "STRING"
+      kind       = "STRING"
       expression = "test filter"
     }
   ]
