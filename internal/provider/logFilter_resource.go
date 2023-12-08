@@ -179,7 +179,7 @@ func (r *LogFilterResource) Delete(ctx context.Context, req resource.DeleteReque
 		return
 	}
 
-	// // Delete the LogFilter...
+	// Delete the LogFilter...
 	tflog.Trace(ctx, fmt.Sprintf("deleting logFilter: id=%s", tfState.Id))
 	if err := r.client.LogFilterService().
 		Delete(ctx, tfState.Id.ValueString()); err != nil {
