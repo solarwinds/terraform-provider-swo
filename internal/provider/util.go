@@ -6,6 +6,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+func convertArray[A, B any](source []A, accumulator func(A) B) []B {
+	var result = []B{}
+	for _, x := range source {
+		result = append(result, accumulator(x))
+	}
+	return result
+}
+
 func stringPtr(val types.String) *string {
 	if val.IsNull() {
 		return nil

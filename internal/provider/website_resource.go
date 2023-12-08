@@ -70,21 +70,32 @@ func (r *WebsiteResource) Create(ctx context.Context, req resource.CreateRequest
 				Value:    tfPlan.Monitoring.Availability.CheckForString.Value.ValueString(),
 			},
 			TestIntervalInSeconds: int(tfPlan.Monitoring.Availability.TestIntervalInSeconds.ValueInt64()),
-			Protocols:             convertWebsiteProtocols(tfPlan.Monitoring.Availability.Protocols),
+			Protocols: convertArray(tfPlan.Monitoring.Availability.Protocols, func(s string) swoClient.WebsiteProtocol {
+				return swoClient.WebsiteProtocol(s)
+			}),
 			PlatformOptions: &swoClient.ProbePlatformOptionsInput{
-				TestFromAll:    swoClient.Ptr(tfPlan.Monitoring.Availability.PlatformOptions.TestFromAll.ValueBool()),
-				ProbePlatforms: convertWebsiteProbePlatforms(tfPlan.Monitoring.Availability.PlatformOptions.Platforms),
+				TestFromAll: swoClient.Ptr(tfPlan.Monitoring.Availability.PlatformOptions.TestFromAll.ValueBool()),
+				ProbePlatforms: convertArray(tfPlan.Monitoring.Availability.PlatformOptions.Platforms, func(s string) swoClient.ProbePlatform {
+					return swoClient.ProbePlatform(s)
+				}),
 			},
 			TestFrom: swoClient.ProbeLocationInput{
-				Type:   swoClient.ProbeLocationType(tfPlan.Monitoring.Availability.TestFromLocation.ValueString()),
-				Values: convertWebsiteProbeLocations(tfPlan.Monitoring.Availability.LocationOptions),
+				Type: swoClient.ProbeLocationType(tfPlan.Monitoring.Availability.TestFromLocation.ValueString()),
+				Values: convertArray(tfPlan.Monitoring.Availability.LocationOptions, func(p ProbeLocation) string {
+					return p.Value.ValueString()
+				}),
 			},
 			Ssl: &swoClient.SslMonitoringInput{
 				Enabled:                        swoClient.Ptr(tfPlan.Monitoring.Availability.SSL.Enabled.ValueBool()),
 				DaysPriorToExpiration:          swoClient.Ptr(int(tfPlan.Monitoring.Availability.SSL.DaysPriorToExpiration.ValueInt64())),
 				IgnoreIntermediateCertificates: swoClient.Ptr(tfPlan.Monitoring.Availability.SSL.IgnoreIntermediateCertificates.ValueBool()),
 			},
-			CustomHeaders: convertWebsiteCustomHeaders(tfPlan.Monitoring.CustomHeaders),
+			CustomHeaders: convertArray(tfPlan.Monitoring.CustomHeaders, func(h CustomHeader) swoClient.CustomHeaderInput {
+				return swoClient.CustomHeaderInput{
+					Name:  h.Name.ValueString(),
+					Value: h.Value.ValueString(),
+				}
+			}),
 		},
 		Rum: &swoClient.RumMonitoringInput{
 			ApdexTimeInSeconds: swoClient.Ptr(int(tfPlan.Monitoring.Rum.ApdexTimeInSeconds.ValueInt64())),
@@ -101,7 +112,8 @@ func (r *WebsiteResource) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
-	// Get the latest Website state from the server so we can get the 'snippet' field.
+	// Get the latest Website state from the server so we can get the 'snippet' field. Ideally we need to update
+	// the API to return the 'snippet' field in the create response.
 	if website, err := r.client.WebsiteService().Read(ctx, result.Id); err != nil {
 		resp.Diagnostics.AddWarning("Client Error", fmt.Sprintf("error capturing RUM snippit for Website '%s' - error: %s",
 			tfPlan.Name,
@@ -130,9 +142,89 @@ func (r *WebsiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 	website, err := r.client.WebsiteService().Read(ctx, tfState.Id.ValueString())
 
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("error reading Website %s. error: %s",
-			tfState.Id, err))
+		resp.Diagnostics.AddError("Client Error",
+			fmt.Sprintf("error reading Website %s. error: %s", tfState.Id, err))
 		return
+	}
+
+	// Update the Terraform state with latest values from the server.
+	tfState.Name = types.StringValue(*website.Name)
+	tfState.Url = types.StringValue(website.Url)
+
+	if website.Monitoring != nil {
+		monitoring := website.Monitoring
+		tfState.Monitoring = &WebsiteMonitoring{}
+
+		if monitoring.Availability != nil {
+			tfState.Monitoring.Availability = AvailabilityMonitoring{}
+			availability := monitoring.Availability
+
+			if availability.CheckForString != nil {
+				tfState.Monitoring.Availability.CheckForString = CheckForStringType{
+					Operator: types.StringValue(string(availability.CheckForString.Operator)),
+					Value:    types.StringValue(availability.CheckForString.Value),
+				}
+			}
+
+			tfState.Monitoring.Availability.TestIntervalInSeconds = types.Int64Value(int64(*availability.TestIntervalInSeconds))
+			tfState.Monitoring.Availability.Protocols = convertArray(availability.Protocols, func(s swoClient.WebsiteProtocol) string {
+				return string(s)
+			})
+
+			if availability.PlatformOptions != nil {
+				tfState.Monitoring.Availability.PlatformOptions = PlatformOptions{
+					TestFromAll: types.BoolValue(availability.PlatformOptions.TestFromAll),
+					Platforms:   availability.PlatformOptions.Platforms,
+				}
+			}
+
+			if availability.TestFromLocation != nil {
+				tfState.Monitoring.Availability.TestFromLocation = types.StringValue(string(*availability.TestFromLocation))
+			}
+
+			if availability.LocationOptions != nil {
+				var locOpts []ProbeLocation
+				for _, p := range availability.LocationOptions {
+					locOpts = append(locOpts, ProbeLocation{
+						Type:  types.StringValue(string(p.Type)),
+						Value: types.StringValue(string(p.Value)),
+					})
+				}
+				tfState.Monitoring.Availability.LocationOptions = locOpts
+			}
+
+			if availability.Ssl != nil {
+				tfState.Monitoring.Availability.SSL = SslMonitoring{
+					Enabled:                        types.BoolValue(availability.Ssl.Enabled),
+					IgnoreIntermediateCertificates: types.BoolValue(availability.Ssl.IgnoreIntermediateCertificates),
+				}
+				if availability.Ssl.DaysPriorToExpiration != nil {
+					tfState.Monitoring.Availability.SSL.DaysPriorToExpiration = types.Int64Value(int64(*availability.Ssl.DaysPriorToExpiration))
+				}
+			}
+		}
+
+		if monitoring.CustomHeaders != nil {
+			var customHeaders []CustomHeader
+			for _, h := range monitoring.CustomHeaders {
+				customHeaders = append(customHeaders, CustomHeader{
+					Name:  types.StringValue(h.Name),
+					Value: types.StringValue(h.Value),
+				})
+			}
+			tfState.Monitoring.CustomHeaders = customHeaders
+		}
+
+		if monitoring.Rum != nil {
+			tfState.Monitoring.Rum = RumMonitoring{
+				ApdexTimeInSeconds: types.Int64Value(int64(*monitoring.Rum.ApdexTimeInSeconds)),
+				Spa:                types.BoolValue(monitoring.Rum.Spa),
+			}
+
+			if monitoring.Rum.Snippet != nil {
+				tfState.Monitoring.Rum.Snippet = types.StringValue(*monitoring.Rum.Snippet)
+			}
+		}
 	}
 
 	tflog.Trace(ctx, fmt.Sprintf("read Website success: %s", *website.Name))
@@ -165,21 +257,32 @@ func (r *WebsiteResource) Update(ctx context.Context, req resource.UpdateRequest
 				Value:    tfPlan.Monitoring.Availability.CheckForString.Value.ValueString(),
 			},
 			TestIntervalInSeconds: int(tfPlan.Monitoring.Availability.TestIntervalInSeconds.ValueInt64()),
-			Protocols:             convertWebsiteProtocols(tfPlan.Monitoring.Availability.Protocols),
+			Protocols: convertArray(tfPlan.Monitoring.Availability.Protocols, func(s string) swoClient.WebsiteProtocol {
+				return swoClient.WebsiteProtocol(s)
+			}),
 			PlatformOptions: &swoClient.ProbePlatformOptionsInput{
-				TestFromAll:    swoClient.Ptr(tfPlan.Monitoring.Availability.PlatformOptions.TestFromAll.ValueBool()),
-				ProbePlatforms: convertWebsiteProbePlatforms(tfPlan.Monitoring.Availability.PlatformOptions.Platforms),
+				TestFromAll: swoClient.Ptr(tfPlan.Monitoring.Availability.PlatformOptions.TestFromAll.ValueBool()),
+				ProbePlatforms: convertArray(tfPlan.Monitoring.Availability.PlatformOptions.Platforms, func(s string) swoClient.ProbePlatform {
+					return swoClient.ProbePlatform(s)
+				}),
 			},
 			TestFrom: swoClient.ProbeLocationInput{
-				Type:   swoClient.ProbeLocationType(tfPlan.Monitoring.Availability.TestFromLocation.ValueString()),
-				Values: convertWebsiteProbeLocations(tfPlan.Monitoring.Availability.LocationOptions),
+				Type: swoClient.ProbeLocationType(tfPlan.Monitoring.Availability.TestFromLocation.ValueString()),
+				Values: convertArray(tfPlan.Monitoring.Availability.LocationOptions, func(p ProbeLocation) string {
+					return p.Value.ValueString()
+				}),
 			},
 			Ssl: &swoClient.SslMonitoringInput{
 				Enabled:                        swoClient.Ptr(tfPlan.Monitoring.Availability.SSL.Enabled.ValueBool()),
 				DaysPriorToExpiration:          swoClient.Ptr(int(tfPlan.Monitoring.Availability.SSL.DaysPriorToExpiration.ValueInt64())),
 				IgnoreIntermediateCertificates: swoClient.Ptr(tfPlan.Monitoring.Availability.SSL.IgnoreIntermediateCertificates.ValueBool()),
 			},
-			CustomHeaders: convertWebsiteCustomHeaders(tfPlan.Monitoring.CustomHeaders),
+			CustomHeaders: convertArray(tfPlan.Monitoring.CustomHeaders, func(h CustomHeader) swoClient.CustomHeaderInput {
+				return swoClient.CustomHeaderInput{
+					Name:  h.Name.ValueString(),
+					Value: h.Value.ValueString(),
+				}
+			}),
 		},
 		Rum: &swoClient.RumMonitoringInput{
 			ApdexTimeInSeconds: swoClient.Ptr(int(tfPlan.Monitoring.Rum.ApdexTimeInSeconds.ValueInt64())),
@@ -196,6 +299,11 @@ func (r *WebsiteResource) Update(ctx context.Context, req resource.UpdateRequest
 
 	// Save to Terraform state.
 	tfPlan.Id = tfState.Id
+
+	if tfPlan.Monitoring != nil {
+		tfPlan.Monitoring.Rum.Snippet = tfState.Monitoring.Rum.Snippet
+	}
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, &tfPlan)...)
 }
 
@@ -208,7 +316,7 @@ func (r *WebsiteResource) Delete(ctx context.Context, req resource.DeleteRequest
 		return
 	}
 
-	// // Delete the Website...
+	// Delete the Website...
 	tflog.Trace(ctx, fmt.Sprintf("deleting website - id=%s", tfState.Id))
 	if err := r.client.WebsiteService().
 		Delete(ctx, tfState.Id.ValueString()); err != nil {
@@ -220,39 +328,4 @@ func (r *WebsiteResource) Delete(ctx context.Context, req resource.DeleteRequest
 
 func (r *WebsiteResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
-}
-
-func convertWebsiteProbePlatforms(in []string) []swoClient.ProbePlatform {
-	var out []swoClient.ProbePlatform
-	for _, p := range in {
-		out = append(out, swoClient.ProbePlatform(p))
-	}
-	return out
-}
-
-func convertWebsiteCustomHeaders(in []CustomHeader) []swoClient.CustomHeaderInput {
-	var out []swoClient.CustomHeaderInput
-	for _, h := range in {
-		out = append(out, swoClient.CustomHeaderInput{
-			Name:  h.Name.ValueString(),
-			Value: h.Value.ValueString(),
-		})
-	}
-	return out
-}
-
-func convertWebsiteProbeLocations(in []ProbeLocation) []string {
-	var out []string
-	for _, p := range in {
-		out = append(out, p.Value.ValueString())
-	}
-	return out
-}
-
-func convertWebsiteProtocols(in []string) []swoClient.WebsiteProtocol {
-	var out []swoClient.WebsiteProtocol
-	for _, p := range in {
-		out = append(out, swoClient.WebsiteProtocol(p))
-	}
-	return out
 }

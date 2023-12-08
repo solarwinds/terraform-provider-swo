@@ -183,8 +183,8 @@ Required:
 - `apdex_time_in_seconds` (Number) The Website RUM monitoring apdex time in seconds.
 - `spa` (Boolean) Is SPA monitoring enabled?
 
-Optional:
+Read-Only:
 
-- `snippet` (String) The Website RUM monitoring code snippet.
+- `snippet` (String) The Website RUM monitoring code snippet (provided by the server).
 
 
