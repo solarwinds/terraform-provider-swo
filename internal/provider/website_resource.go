@@ -148,8 +148,10 @@ func (r *WebsiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 	}
 
 	// Update the Terraform state with latest values from the server.
-	tfState.Name = types.StringValue(*website.Name)
 	tfState.Url = types.StringValue(website.Url)
+	if website.Name != nil {
+		tfState.Name = types.StringValue(*website.Name)
+	}
 
 	if website.Monitoring != nil {
 		monitoring := website.Monitoring
@@ -166,7 +168,10 @@ func (r *WebsiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 				}
 			}
 
-			tfState.Monitoring.Availability.TestIntervalInSeconds = types.Int64Value(int64(*availability.TestIntervalInSeconds))
+			if availability.TestIntervalInSeconds != nil {
+				tfState.Monitoring.Availability.TestIntervalInSeconds = types.Int64Value(int64(*availability.TestIntervalInSeconds))
+			}
+
 			tfState.Monitoring.Availability.Protocols = convertArray(availability.Protocols, func(s swoClient.WebsiteProtocol) string {
 				return string(s)
 			})
@@ -217,8 +222,11 @@ func (r *WebsiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 
 		if monitoring.Rum != nil {
 			tfState.Monitoring.Rum = RumMonitoring{
-				ApdexTimeInSeconds: types.Int64Value(int64(*monitoring.Rum.ApdexTimeInSeconds)),
-				Spa:                types.BoolValue(monitoring.Rum.Spa),
+				Spa: types.BoolValue(monitoring.Rum.Spa),
+			}
+
+			if monitoring.Rum.ApdexTimeInSeconds != nil {
+				tfState.Monitoring.Rum.ApdexTimeInSeconds = types.Int64Value(int64(*monitoring.Rum.ApdexTimeInSeconds))
 			}
 
 			if monitoring.Rum.Snippet != nil {
