@@ -74,12 +74,14 @@ func (r *UriResource) Create(ctx context.Context, req resource.CreateRequest, re
 		},
 		TestDefinitions: swoClient.UriTestDefinitionsInput{
 			PlatformOptions: &swoClient.ProbePlatformOptionsInput{
-				TestFromAll:    swoClient.Ptr(tfPlan.TestDefinitions.PlatformOptions.TestFromAll.ValueBool()),
-				ProbePlatforms: convertUriProbePlatforms(tfPlan.TestDefinitions.PlatformOptions.Platforms),
+				TestFromAll: swoClient.Ptr(tfPlan.TestDefinitions.PlatformOptions.TestFromAll.ValueBool()),
+				ProbePlatforms: convertArray(tfPlan.TestDefinitions.PlatformOptions.Platforms,
+					func(v string) swoClient.ProbePlatform { return swoClient.ProbePlatform(v) }),
 			},
 			TestFrom: swoClient.ProbeLocationInput{
-				Type:   swoClient.ProbeLocationType(tfPlan.TestDefinitions.TestFromLocation.ValueString()),
-				Values: convertUriProbeLocations(tfPlan.TestDefinitions.LocationOptions),
+				Type: swoClient.ProbeLocationType(tfPlan.TestDefinitions.TestFromLocation.ValueString()),
+				Values: convertArray(tfPlan.TestDefinitions.LocationOptions,
+					func(v UriResourceProbeLocation) string { return v.Value.ValueString() }),
 			},
 			TestIntervalInSeconds: int(tfPlan.TestDefinitions.TestIntervalInSeconds.ValueInt64()),
 		},
@@ -119,6 +121,63 @@ func (r *UriResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 		return
 	}
 
+	// Update the Terraform state.
+	tfState.Host = types.StringValue(uri.Host)
+
+	if uri.Name != nil {
+		tfState.Name = types.StringValue(*uri.Name)
+	}
+
+	// Options
+	options := uri.Options
+	tfState.Options = &UriResourceOptions{
+		IsPingEnabled: types.BoolValue(options.IsPingEnabled),
+		IsTcpEnabled:  types.BoolValue(options.IsTcpEnabled),
+	}
+
+	// TcpOptions
+	if uri.TcpOptions != nil {
+		tcpOptions := uri.TcpOptions
+		tfState.TcpOptions = &UriResourceTcpOptions{
+			Port: types.Int64Value(int64(tcpOptions.Port)),
+		}
+		if tcpOptions.StringToSend != nil {
+			tfState.TcpOptions.StringToSend = types.StringValue(*tcpOptions.StringToSend)
+		}
+		if tcpOptions.StringToExpect != nil {
+			tfState.TcpOptions.StringToExpect = types.StringValue(*tcpOptions.StringToExpect)
+		}
+	} else {
+		tfState.TcpOptions = nil
+	}
+
+	// TestDefinitions
+	testDefs := uri.TestDefinitions
+	tfState.TestDefinitions = &UriResourceTestDefinitions{}
+
+	if testDefs.PlatformOptions != nil {
+		tfState.TestDefinitions.PlatformOptions = &UriResourcePlatformOptions{
+			TestFromAll: types.BoolValue(testDefs.PlatformOptions.TestFromAll),
+			Platforms:   testDefs.PlatformOptions.Platforms,
+		}
+	} else {
+		tfState.TestDefinitions.PlatformOptions = nil
+	}
+	if testDefs.TestFromLocation != nil {
+		tfState.TestDefinitions.TestFromLocation = types.StringValue(string(*testDefs.TestFromLocation))
+	}
+	if testDefs.TestIntervalInSeconds != nil {
+		tfState.TestDefinitions.TestIntervalInSeconds = types.Int64Value(int64(*testDefs.TestIntervalInSeconds))
+	}
+	var locOpts = []UriResourceProbeLocation{}
+	for _, x := range testDefs.LocationOptions {
+		locOpts = append(locOpts, UriResourceProbeLocation{
+			Type:  types.StringValue(string(x.Type)),
+			Value: types.StringValue(x.Value),
+		})
+	}
+	tfState.TestDefinitions.LocationOptions = locOpts
+
 	tflog.Trace(ctx, fmt.Sprintf("read uri success: id=%s", uri.Id))
 	resp.Diagnostics.Append(resp.State.Set(ctx, tfState)...)
 }
@@ -149,12 +208,14 @@ func (r *UriResource) Update(ctx context.Context, req resource.UpdateRequest, re
 		},
 		TestDefinitions: swoClient.UriTestDefinitionsInput{
 			PlatformOptions: &swoClient.ProbePlatformOptionsInput{
-				TestFromAll:    swoClient.Ptr(tfPlan.TestDefinitions.PlatformOptions.TestFromAll.ValueBool()),
-				ProbePlatforms: convertUriProbePlatforms(tfPlan.TestDefinitions.PlatformOptions.Platforms),
+				TestFromAll: swoClient.Ptr(tfPlan.TestDefinitions.PlatformOptions.TestFromAll.ValueBool()),
+				ProbePlatforms: convertArray(tfPlan.TestDefinitions.PlatformOptions.Platforms,
+					func(v string) swoClient.ProbePlatform { return swoClient.ProbePlatform(v) }),
 			},
 			TestFrom: swoClient.ProbeLocationInput{
-				Type:   swoClient.ProbeLocationType(tfPlan.TestDefinitions.TestFromLocation.ValueString()),
-				Values: convertUriProbeLocations(tfPlan.TestDefinitions.LocationOptions),
+				Type: swoClient.ProbeLocationType(tfPlan.TestDefinitions.TestFromLocation.ValueString()),
+				Values: convertArray(tfPlan.TestDefinitions.LocationOptions,
+					func(v UriResourceProbeLocation) string { return v.Value.ValueString() }),
 			},
 			TestIntervalInSeconds: int(tfPlan.TestDefinitions.TestIntervalInSeconds.ValueInt64()),
 		},
@@ -196,20 +257,4 @@ func (r *UriResource) Delete(ctx context.Context, req resource.DeleteRequest, re
 
 func (r *UriResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
-}
-
-func convertUriProbePlatforms(in []string) []swoClient.ProbePlatform {
-	var out []swoClient.ProbePlatform
-	for _, p := range in {
-		out = append(out, swoClient.ProbePlatform(p))
-	}
-	return out
-}
-
-func convertUriProbeLocations(in []UriResourceProbeLocation) []string {
-	var out []string
-	for _, p := range in {
-		out = append(out, p.Value.ValueString())
-	}
-	return out
 }

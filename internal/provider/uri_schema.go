@@ -14,12 +14,12 @@ import (
 
 // UriResourceModel is the main resource structure
 type UriResourceModel struct {
-	Id              types.String               `tfsdk:"id"`
-	Name            types.String               `tfsdk:"name"`
-	Host            types.String               `tfsdk:"host"`
-	Options         UriResourceOptions         `tfsdk:"options"`
-	TcpOptions      *UriResourceTcpOptions     `tfsdk:"tcp_options"`
-	TestDefinitions UriResourceTestDefinitions `tfsdk:"test_definitions"`
+	Id              types.String                `tfsdk:"id"`
+	Name            types.String                `tfsdk:"name"`
+	Host            types.String                `tfsdk:"host"`
+	Options         *UriResourceOptions         `tfsdk:"options"`
+	TcpOptions      *UriResourceTcpOptions      `tfsdk:"tcp_options"`
+	TestDefinitions *UriResourceTestDefinitions `tfsdk:"test_definitions"`
 }
 
 // UriResourceOptions represents the options field in the main resource

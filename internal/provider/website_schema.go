@@ -127,7 +127,7 @@ func (r *WebsiteResource) Schema(ctx context.Context, req resource.SchemaRequest
 						Attributes: map[string]schema.Attribute{
 							"check_for_string": schema.SingleNestedAttribute{
 								Description: "The Website availability monitoring check for string settings.",
-								Required:    true,
+								Optional:    true,
 								Attributes: map[string]schema.Attribute{
 									"operator": schema.StringAttribute{
 										Description: "The Website availability monitoring check for string operator.",
