@@ -147,6 +147,8 @@ func (r *UriResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 		if tcpOptions.StringToExpect != nil {
 			tfState.TcpOptions.StringToExpect = types.StringValue(*tcpOptions.StringToExpect)
 		}
+	} else {
+		tfState.TcpOptions = nil
 	}
 
 	// TestDefinitions
@@ -158,6 +160,8 @@ func (r *UriResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 			TestFromAll: types.BoolValue(testDefs.PlatformOptions.TestFromAll),
 			Platforms:   testDefs.PlatformOptions.Platforms,
 		}
+	} else {
+		tfState.TestDefinitions.PlatformOptions = nil
 	}
 	if testDefs.TestFromLocation != nil {
 		tfState.TestDefinitions.TestFromLocation = types.StringValue(string(*testDefs.TestFromLocation))
