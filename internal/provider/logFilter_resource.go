@@ -111,9 +111,17 @@ func (r *LogFilterResource) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 
+	tflog.Trace(ctx, fmt.Sprintf("read logFilter success: %s", logFilter.Name))
+
 	// Update the Terraform state with latest values from the server.
 	tfState.Name = types.StringValue(logFilter.Name)
-	tfState.Description = types.StringValue(*logFilter.Description)
+
+	if logFilter.Description != nil {
+		tfState.Description = types.StringValue(*logFilter.Description)
+	} else {
+		tfState.Description = types.StringNull()
+	}
+
 	tfState.TokenSignature = logFilter.TokenSignature
 
 	var lfe []LogFilterExpression
@@ -126,7 +134,6 @@ func (r *LogFilterResource) Read(ctx context.Context, req resource.ReadRequest, 
 	tfState.Expressions = lfe
 
 	// Save to Terraform state.
-	tflog.Trace(ctx, fmt.Sprintf("read logFilter success: %s", logFilter.Name))
 	resp.Diagnostics.Append(resp.State.Set(ctx, tfState)...)
 }
 

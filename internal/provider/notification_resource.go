@@ -94,17 +94,17 @@ func (r *NotificationResource) Create(ctx context.Context, req resource.CreateRe
 func (r *NotificationResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	tflog.Trace(ctx, "NotificationResource: Read")
 
-	var state NotificationResourceModel
+	var tfState NotificationResourceModel
 
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &tfState)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	nId, nType, err := state.ParseId()
+	nId, nType, err := tfState.ParseId()
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("error parsing notification id. got: %s. error: %s",
-			state.Id, err))
+			tfState.Id, err))
 		return
 	}
 
@@ -120,16 +120,16 @@ func (r *NotificationResource) Read(ctx context.Context, req resource.ReadReques
 		return
 	}
 
-	state.Id = types.StringValue(fmt.Sprintf("%s:%s", notification.Id, notification.Type))
-	state.Title = types.StringValue(notification.Title)
-	state.Type = types.StringValue(notification.Type)
+	tfState.Id = types.StringValue(fmt.Sprintf("%s:%s", notification.Id, notification.Type))
+	tfState.Title = types.StringValue(notification.Title)
+	tfState.Type = types.StringValue(notification.Type)
 	if notification.Description != nil {
-		state.Description = types.StringValue(*notification.Description)
+		tfState.Description = types.StringValue(*notification.Description)
 	}
-	state.CreatedAt = types.StringValue(notification.CreatedAt.String())
-	state.CreatedBy = types.StringValue(notification.CreatedBy)
+	tfState.CreatedAt = types.StringValue(notification.CreatedAt.String())
+	tfState.CreatedBy = types.StringValue(notification.CreatedBy)
 
-	err = state.SetSettings(notification.Settings)
+	err = tfState.SetSettings(notification.Settings)
 	if err != nil {
 		resp.Diagnostics.AddError("Settings Error", err.Error())
 		return
@@ -137,7 +137,7 @@ func (r *NotificationResource) Read(ctx context.Context, req resource.ReadReques
 
 	tflog.Trace(ctx, fmt.Sprintf("read notification success: %s", notification.Id))
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, tfState)...)
 }
 
 func (r *NotificationResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
