@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	swoClient "github.com/solarwinds/swo-client-go/pkg/client"
 	"github.com/solarwinds/terraform-provider-swo/internal/envvar"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -18,14 +17,14 @@ type LogFilterResourceModel struct {
 	Id             types.String          `tfsdk:"id"`
 	Name           types.String          `tfsdk:"name"`
 	Description    types.String          `tfsdk:"description"`
-	TokenSignature *string               `tfsdk:"token_signature"`
+	TokenSignature types.String          `tfsdk:"token_signature"`
 	Expressions    []LogFilterExpression `tfsdk:"expressions"`
 }
 
 // LogFilterResourceOptions represents the options field in the main resource
 type LogFilterExpression struct {
-	Kind       swoClient.ExclusionFilterExpressionKind `tfsdk:"kind"`
-	Expression string                                  `tfsdk:"expression"`
+	Kind       types.String `tfsdk:"kind"`
+	Expression types.String `tfsdk:"expression"`
 }
 
 func (r *LogFilterResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {

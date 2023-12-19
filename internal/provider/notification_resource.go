@@ -66,7 +66,7 @@ func (r *NotificationResource) Create(ctx context.Context, req resource.CreateRe
 		NotificationsService().
 		Create(ctx, swoClient.CreateNotificationInput{
 			Title:       plan.Title.ValueString(),
-			Description: stringPtr(plan.Description),
+			Description: plan.Description.ValueStringPointer(),
 			Type:        plan.Type.ValueString(),
 			Settings:    plan.GetSettings(),
 		})
@@ -166,8 +166,8 @@ func (r *NotificationResource) Update(ctx context.Context, req resource.UpdateRe
 		NotificationsService().
 		Update(ctx, swoClient.UpdateNotificationInput{
 			Id:          nId,
-			Title:       stringPtr(plan.Title),
-			Description: stringPtr(plan.Description),
+			Title:       plan.Title.ValueStringPointer(),
+			Description: plan.Description.ValueStringPointer(),
 			Settings:    &settings,
 		})
 

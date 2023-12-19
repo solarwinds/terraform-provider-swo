@@ -216,8 +216,8 @@ func (r *DashboardResource) Create(ctx context.Context, req resource.CreateReque
 		DashboardsService().
 		Create(ctx, swoClient.CreateDashboardInput{
 			Name:       plan.Name.ValueString(),
-			CategoryId: stringPtr(plan.CategoryId),
-			IsPrivate:  boolPtr(plan.IsPrivate),
+			CategoryId: plan.CategoryId.ValueStringPointer(),
+			IsPrivate:  plan.IsPrivate.ValueBoolPointer(),
 			Widgets:    widgets,
 			Layout:     layouts,
 		})
@@ -302,8 +302,8 @@ func (r *DashboardResource) Update(ctx context.Context, req resource.UpdateReque
 		Update(ctx, swoClient.UpdateDashboardInput{
 			Id:         id,
 			Name:       plan.Name.ValueString(),
-			CategoryId: stringPtr(plan.CategoryId),
-			IsPrivate:  boolPtr(plan.IsPrivate),
+			CategoryId: plan.CategoryId.ValueStringPointer(),
+			IsPrivate:  plan.IsPrivate.ValueBoolPointer(),
 			Widgets:    widgets,
 			Layout:     layouts,
 		})

@@ -64,11 +64,11 @@ func (r *LogFilterResource) Create(ctx context.Context, req resource.CreateReque
 	createInput := swoClient.CreateExclusionFilterInput{
 		Name:           tfPlan.Name.ValueString(),
 		Description:    tfPlan.Description.ValueString(),
-		TokenSignature: tfPlan.TokenSignature,
+		TokenSignature: tfPlan.TokenSignature.ValueStringPointer(),
 		Expressions: convertArray(tfPlan.Expressions, func(e LogFilterExpression) swoClient.CreateExclusionFilterExpressionInput {
 			return swoClient.CreateExclusionFilterExpressionInput{
-				Kind:       swoClient.ExclusionFilterExpressionKind(e.Kind),
-				Expression: e.Expression,
+				Kind:       swoClient.ExclusionFilterExpressionKind(e.Kind.ValueString()),
+				Expression: e.Expression.ValueString(),
 			}
 		}),
 	}
@@ -115,20 +115,14 @@ func (r *LogFilterResource) Read(ctx context.Context, req resource.ReadRequest, 
 
 	// Update the Terraform state with latest values from the server.
 	tfState.Name = types.StringValue(logFilter.Name)
-
-	if logFilter.Description != nil {
-		tfState.Description = types.StringValue(*logFilter.Description)
-	} else {
-		tfState.Description = types.StringNull()
-	}
-
-	tfState.TokenSignature = logFilter.TokenSignature
+	tfState.Description = types.StringPointerValue(logFilter.Description)
+	tfState.TokenSignature = types.StringPointerValue(logFilter.TokenSignature)
 
 	var lfe []LogFilterExpression
 	for _, p := range logFilter.Expressions {
 		lfe = append(lfe, LogFilterExpression{
-			Kind:       swoClient.ExclusionFilterExpressionKind(p.Kind),
-			Expression: p.Expression,
+			Kind:       types.StringValue(string(p.Kind)),
+			Expression: types.StringValue(p.Expression),
 		})
 	}
 	tfState.Expressions = lfe
@@ -159,8 +153,8 @@ func (r *LogFilterResource) Update(ctx context.Context, req resource.UpdateReque
 		Description: tfPlan.Description.ValueString(),
 		Expressions: convertArray(tfPlan.Expressions, func(e LogFilterExpression) swoClient.UpdateExclusionFilterExpressionInput {
 			return swoClient.UpdateExclusionFilterExpressionInput{
-				Kind:       swoClient.ExclusionFilterExpressionKind(e.Kind),
-				Expression: e.Expression,
+				Kind:       swoClient.ExclusionFilterExpressionKind(e.Kind.ValueString()),
+				Expression: e.Expression.ValueString(),
 			}
 		}),
 	})

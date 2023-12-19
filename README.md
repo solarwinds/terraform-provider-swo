@@ -7,6 +7,7 @@ The SWO terraform provider enables the automation of:
 
 * Alerts
 * Dashboards
+* Log Exclusion Filters
 * Notification Services
 * Uris (uptime checks)
 * Websites (uptime checks)
