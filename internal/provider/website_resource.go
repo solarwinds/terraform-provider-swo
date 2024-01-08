@@ -74,7 +74,7 @@ func (r *WebsiteResource) Create(ctx context.Context, req resource.CreateRequest
 				return swoClient.WebsiteProtocol(s)
 			}),
 			PlatformOptions: &swoClient.ProbePlatformOptionsInput{
-				TestFromAll: swoClient.Ptr(tfPlan.Monitoring.Availability.PlatformOptions.TestFromAll.ValueBool()),
+				TestFromAll: tfPlan.Monitoring.Availability.PlatformOptions.TestFromAll.ValueBoolPointer(),
 				ProbePlatforms: convertArray(tfPlan.Monitoring.Availability.PlatformOptions.Platforms, func(s string) swoClient.ProbePlatform {
 					return swoClient.ProbePlatform(s)
 				}),
@@ -86,9 +86,9 @@ func (r *WebsiteResource) Create(ctx context.Context, req resource.CreateRequest
 				}),
 			},
 			Ssl: &swoClient.SslMonitoringInput{
-				Enabled:                        swoClient.Ptr(tfPlan.Monitoring.Availability.SSL.Enabled.ValueBool()),
+				Enabled:                        tfPlan.Monitoring.Availability.SSL.Enabled.ValueBoolPointer(),
 				DaysPriorToExpiration:          swoClient.Ptr(int(tfPlan.Monitoring.Availability.SSL.DaysPriorToExpiration.ValueInt64())),
-				IgnoreIntermediateCertificates: swoClient.Ptr(tfPlan.Monitoring.Availability.SSL.IgnoreIntermediateCertificates.ValueBool()),
+				IgnoreIntermediateCertificates: tfPlan.Monitoring.Availability.SSL.IgnoreIntermediateCertificates.ValueBoolPointer(),
 			},
 			CustomHeaders: convertArray(tfPlan.Monitoring.CustomHeaders, func(h CustomHeader) swoClient.CustomHeaderInput {
 				return swoClient.CustomHeaderInput{
@@ -281,9 +281,9 @@ func (r *WebsiteResource) Update(ctx context.Context, req resource.UpdateRequest
 				}),
 			},
 			Ssl: &swoClient.SslMonitoringInput{
-				Enabled:                        swoClient.Ptr(tfPlan.Monitoring.Availability.SSL.Enabled.ValueBool()),
+				Enabled:                        tfPlan.Monitoring.Availability.SSL.Enabled.ValueBoolPointer(),
 				DaysPriorToExpiration:          swoClient.Ptr(int(tfPlan.Monitoring.Availability.SSL.DaysPriorToExpiration.ValueInt64())),
-				IgnoreIntermediateCertificates: swoClient.Ptr(tfPlan.Monitoring.Availability.SSL.IgnoreIntermediateCertificates.ValueBool()),
+				IgnoreIntermediateCertificates: tfPlan.Monitoring.Availability.SSL.IgnoreIntermediateCertificates.ValueBoolPointer(),
 			},
 			CustomHeaders: convertArray(tfPlan.Monitoring.CustomHeaders, func(h CustomHeader) swoClient.CustomHeaderInput {
 				return swoClient.CustomHeaderInput{
@@ -294,7 +294,7 @@ func (r *WebsiteResource) Update(ctx context.Context, req resource.UpdateRequest
 		},
 		Rum: &swoClient.RumMonitoringInput{
 			ApdexTimeInSeconds: swoClient.Ptr(int(tfPlan.Monitoring.Rum.ApdexTimeInSeconds.ValueInt64())),
-			Spa:                swoClient.Ptr(tfPlan.Monitoring.Rum.Spa.ValueBool()),
+			Spa:                tfPlan.Monitoring.Rum.Spa.ValueBoolPointer(),
 		},
 	})
 

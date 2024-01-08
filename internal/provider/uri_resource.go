@@ -69,12 +69,12 @@ func (r *UriResource) Create(ctx context.Context, req resource.CreateRequest, re
 		TcpOptions: &swoClient.UriTcpOptionsInput{
 			Enabled:        tfPlan.Options.IsTcpEnabled.ValueBool(),
 			Port:           int(tfPlan.TcpOptions.Port.ValueInt64()),
-			StringToExpect: swoClient.Ptr(tfPlan.TcpOptions.StringToExpect.ValueString()),
-			StringToSend:   swoClient.Ptr(tfPlan.TcpOptions.StringToSend.ValueString()),
+			StringToExpect: tfPlan.TcpOptions.StringToExpect.ValueStringPointer(),
+			StringToSend:   tfPlan.TcpOptions.StringToSend.ValueStringPointer(),
 		},
 		TestDefinitions: swoClient.UriTestDefinitionsInput{
 			PlatformOptions: &swoClient.ProbePlatformOptionsInput{
-				TestFromAll: swoClient.Ptr(tfPlan.TestDefinitions.PlatformOptions.TestFromAll.ValueBool()),
+				TestFromAll: tfPlan.TestDefinitions.PlatformOptions.TestFromAll.ValueBoolPointer(),
 				ProbePlatforms: convertArray(tfPlan.TestDefinitions.PlatformOptions.Platforms,
 					func(v string) swoClient.ProbePlatform { return swoClient.ProbePlatform(v) }),
 			},
@@ -203,12 +203,12 @@ func (r *UriResource) Update(ctx context.Context, req resource.UpdateRequest, re
 		TcpOptions: &swoClient.UriTcpOptionsInput{
 			Enabled:        tfPlan.Options.IsTcpEnabled.ValueBool(),
 			Port:           int(tfPlan.TcpOptions.Port.ValueInt64()),
-			StringToExpect: swoClient.Ptr(tfPlan.TcpOptions.StringToExpect.ValueString()),
-			StringToSend:   swoClient.Ptr(tfPlan.TcpOptions.StringToSend.ValueString()),
+			StringToExpect: tfPlan.TcpOptions.StringToExpect.ValueStringPointer(),
+			StringToSend:   tfPlan.TcpOptions.StringToSend.ValueStringPointer(),
 		},
 		TestDefinitions: swoClient.UriTestDefinitionsInput{
 			PlatformOptions: &swoClient.ProbePlatformOptionsInput{
-				TestFromAll: swoClient.Ptr(tfPlan.TestDefinitions.PlatformOptions.TestFromAll.ValueBool()),
+				TestFromAll: tfPlan.TestDefinitions.PlatformOptions.TestFromAll.ValueBoolPointer(),
 				ProbePlatforms: convertArray(tfPlan.TestDefinitions.PlatformOptions.Platforms,
 					func(v string) swoClient.ProbePlatform { return swoClient.ProbePlatform(v) }),
 			},

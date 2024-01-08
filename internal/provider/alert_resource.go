@@ -34,7 +34,7 @@ func (model *AlertResourceModel) ToAlertDefinitionInput() swoClient.AlertDefinit
 
 	return swoClient.AlertDefinitionInput{
 		Name:        model.Name.ValueString(),
-		Description: swoClient.Ptr(model.Description.ValueString()),
+		Description: model.Description.ValueStringPointer(),
 		Enabled:     model.Enabled.ValueBool(),
 		Severity:    swoClient.AlertSeverity(model.Severity.ValueString()),
 		Actions:     model.toAlertActionInput(),
