@@ -210,5 +210,3 @@ Required:
 Read-Only:
 
 - `id` (String) The computed id of the widget.
-
-

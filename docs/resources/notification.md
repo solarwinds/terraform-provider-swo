@@ -298,5 +298,3 @@ Optional:
 Required:
 
 - `url` (String) Zapier Webhook URL.
-
-

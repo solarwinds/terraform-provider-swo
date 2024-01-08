@@ -50,5 +50,3 @@ Required:
 
 - `expression` (String) The expression of the log exclusion filter.
 - `kind` (String) The kind of the log exclusion filter [STRING|REGEX].
-
-

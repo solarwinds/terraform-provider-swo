@@ -111,7 +111,6 @@ Required:
 
 Required:
 
-- `check_for_string` (Attributes) The Website availability monitoring check for string settings. (see [below for nested schema](#nestedatt--monitoring--availability--check_for_string))
 - `location_options` (Attributes Set) The Website availability monitoring location options. (see [below for nested schema](#nestedatt--monitoring--availability--location_options))
 - `platform_options` (Attributes) The Website availability monitoring platform options. (see [below for nested schema](#nestedatt--monitoring--availability--platform_options))
 - `protocols` (List of String) The Website availability monitoring protocols.
@@ -119,14 +118,9 @@ Required:
 - `test_from_location` (String) The Website availability monitoring test from location.
 - `test_interval_in_seconds` (Number) The Website availability monitoring test interval in seconds.
 
-<a id="nestedatt--monitoring--availability--check_for_string"></a>
-### Nested Schema for `monitoring.availability.check_for_string`
+Optional:
 
-Required:
-
-- `operator` (String) The Website availability monitoring check for string operator.
-- `value` (String) The Website availability monitoring check for string value.
-
+- `check_for_string` (Attributes) The Website availability monitoring check for string settings. (see [below for nested schema](#nestedatt--monitoring--availability--check_for_string))
 
 <a id="nestedatt--monitoring--availability--location_options"></a>
 ### Nested Schema for `monitoring.availability.location_options`
@@ -154,6 +148,15 @@ Required:
 - `days_prior_to_expiration` (Number) The Website availability monitoring SSL days prior to expiration.
 - `enabled` (Boolean) Is SSL monitoring enabled?
 - `ignore_intermediate_certificates` (Boolean) Ignore intermediate certificates?
+
+
+<a id="nestedatt--monitoring--availability--check_for_string"></a>
+### Nested Schema for `monitoring.availability.check_for_string`
+
+Required:
+
+- `operator` (String) The Website availability monitoring check for string operator.
+- `value` (String) The Website availability monitoring check for string value.
 
 
 
@@ -186,5 +189,3 @@ Required:
 Read-Only:
 
 - `snippet` (String) The Website RUM monitoring code snippet (provided by the server).
-
-

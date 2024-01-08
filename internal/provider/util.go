@@ -2,34 +2,25 @@ package provider
 
 import (
 	"encoding/json"
-
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+func IIf[T any](condition bool, trueValue T, falseValue T) T {
+	if condition {
+		return trueValue
+	}
+	return falseValue
+}
+
 func convertArray[A, B any](source []A, accumulator func(A) B) []B {
+	if source == nil {
+		return nil
+	}
+
 	var result = []B{}
 	for _, x := range source {
 		result = append(result, accumulator(x))
 	}
 	return result
-}
-
-func stringPtr(val types.String) *string {
-	if val.IsNull() {
-		return nil
-	}
-
-	result := val.ValueString()
-	return &result
-}
-
-func boolPtr(val types.Bool) *bool {
-	if val.IsNull() {
-		return nil
-	}
-
-	result := val.ValueBool()
-	return &result
 }
 
 func convertObject[T any](from any) (*T, error) {

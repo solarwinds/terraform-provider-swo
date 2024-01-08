@@ -66,7 +66,7 @@ func (r *NotificationResource) Create(ctx context.Context, req resource.CreateRe
 		NotificationsService().
 		Create(ctx, swoClient.CreateNotificationInput{
 			Title:       plan.Title.ValueString(),
-			Description: stringPtr(plan.Description),
+			Description: plan.Description.ValueStringPointer(),
 			Type:        plan.Type.ValueString(),
 			Settings:    plan.GetSettings(),
 		})
@@ -123,9 +123,7 @@ func (r *NotificationResource) Read(ctx context.Context, req resource.ReadReques
 	state.Id = types.StringValue(fmt.Sprintf("%s:%s", notification.Id, notification.Type))
 	state.Title = types.StringValue(notification.Title)
 	state.Type = types.StringValue(notification.Type)
-	if notification.Description != nil {
-		state.Description = types.StringValue(*notification.Description)
-	}
+	state.Description = types.StringPointerValue(notification.Description)
 	state.CreatedAt = types.StringValue(notification.CreatedAt.String())
 	state.CreatedBy = types.StringValue(notification.CreatedBy)
 
@@ -166,8 +164,8 @@ func (r *NotificationResource) Update(ctx context.Context, req resource.UpdateRe
 		NotificationsService().
 		Update(ctx, swoClient.UpdateNotificationInput{
 			Id:          nId,
-			Title:       stringPtr(plan.Title),
-			Description: stringPtr(plan.Description),
+			Title:       plan.Title.ValueStringPointer(),
+			Description: plan.Description.ValueStringPointer(),
 			Settings:    &settings,
 		})
 
