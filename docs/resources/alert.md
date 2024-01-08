@@ -98,5 +98,3 @@ Optional:
 
 - `name` (String) Name of the metric values the metric field will be in. (Optional)
 - `values` (List of String) Metric values the metric field will be in. (Optional)
-
-

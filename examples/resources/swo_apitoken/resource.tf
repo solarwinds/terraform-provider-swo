@@ -1,8 +1,8 @@
 resource "swo_apitoken" "test" {
-  name      = "terraform-provider-swo example"
-  access_level = "READ"
-  type = "public-api"
-  enabled = true
+  name         = "terraform-provider-swo example"
+  access_level = "FULL"
+  type         = "public-api"
+  enabled      = true
   attributes = [
     {
       key   = "attribute-key"
