@@ -133,5 +133,3 @@ Optional:
 
 - `string_to_expect` (String) The string to expect in the response.
 - `string_to_send` (String) The string to send in the request.
-
-

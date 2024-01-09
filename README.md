@@ -6,11 +6,12 @@ This provider lets you save clicking in the Solarwinds Observability Platform us
 The SWO terraform provider enables the automation of:
 
 * Alerts
+* Api Tokens
 * Dashboards
+* Log Exclusion Filters
 * Notification Services
 * Uris (uptime checks)
 * Websites (uptime checks)
-
 
 ### Example usage
 See `example.tf` [in this repo](https://github.com/solarwinds/terraform-provider-swo/blob/master/examples/) to understand how to start using the provider.
@@ -31,7 +32,7 @@ terraform {
   required_providers {
     swo = {
       source  = "solarwinds/swo"
-      version = ">= 0.0.7"
+      version = ">= 0.0.11"
     }
   }
 }
@@ -44,7 +45,7 @@ Please report bugs and request enhancements in the [Issues area](https://github.
 ## Requirements
 
 - [Terraform](https://www.terraform.io/downloads.html) >= 1.0
-- [Go](https://golang.org/doc/install) >= 1.18
+- [Go](https://golang.org/doc/install) >= 1.20
 
 ## Building The Provider
 
