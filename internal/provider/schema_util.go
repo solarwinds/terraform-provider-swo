@@ -72,7 +72,6 @@ func buildEnrichedSchemaDescription(rv reflect.Value) {
 		for i := 0; i < validators.Len(); i++ {
 			validator := validators.Index(i)
 			name := validator.Elem().Type().Name()
-			fmt.Printf("Validator name: %s\n", name)
 
 			if strings.HasPrefix(name, "singleOptionValidator") {
 				values := validator.Elem().FieldByName("ValidValues")
