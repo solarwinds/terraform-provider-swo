@@ -5,27 +5,131 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 	swoClient "github.com/solarwinds/swo-client-go/pkg/client"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
-var _ resource.Resource = &AlertResource{}
-var _ resource.ResourceWithImportState = &AlertResource{}
+var (
+	_ resource.Resource              = &alertResource{}
+	_ resource.ResourceWithConfigure = &alertResource{}
+	// TODO: Uncomment this once ImportState is implemented.
+	// _ resource.ResourceWithImportState = &alertResource{}
+)
 
 func NewAlertResource() resource.Resource {
-	return &AlertResource{}
+	return &alertResource{}
 }
 
-// ExampleResource defines the resource implementation.
-type AlertResource struct {
+type alertResource struct {
 	client *swoClient.Client
 }
 
-func (model *AlertResourceModel) ToAlertDefinitionInput() swoClient.AlertDefinitionInput {
+func (r *alertResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = "alert"
+}
+
+func (r *alertResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+	client, _ := req.ProviderData.(*swoClient.Client)
+	r.client = client
+}
+
+func (r *alertResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var tfPlan *alertResourceModel
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &tfPlan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Create the alert from the provided Terraform model...
+	input := tfPlan.toAlertDefinitionInput()
+	newAlertDef, err := r.client.AlertsService().Create(ctx, input)
+
+	if err != nil {
+		resp.Diagnostics.AddError("Client Error",
+			fmt.Sprintf("error creating alert definition '%s'. error: %s", input.Name, err))
+		return
+	}
+
+	tfPlan.Id = types.StringValue(newAlertDef.Id)
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &tfPlan)...)
+}
+
+func (r *alertResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var tfState *alertResourceModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &tfState)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	alertDef, err := r.client.AlertsService().Read(ctx, tfState.Id.String())
+
+	if err != nil {
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("error getting alert %s. error: %s",
+			alertDef.Id,
+			err))
+		return
+	}
+
+	// r.updataState(tfState, alertDef)
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &tfState)...)
+}
+
+func (r *alertResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var tfPlan, tfState *alertResourceModel
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &tfPlan)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &tfState)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	alertId := tfState.Id.ValueString()
+	input := tfPlan.toAlertDefinitionInput()
+
+	// Update the alert definition...
+	_, err := r.client.AlertsService().Update(ctx, alertId, input)
+
+	if err != nil {
+		resp.Diagnostics.AddError("Client Error",
+			fmt.Sprintf("error updating alert definition %s. error: %s", alertId, err))
+		return
+	}
+
+	// Save and log the model into Terraform state.
+	resp.Diagnostics.Append(resp.State.Set(ctx, &tfPlan)...)
+}
+
+func (r *alertResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var tfState *alertResourceModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &tfState)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	alertDefId := tfState.Id.ValueString()
+
+	// Delete the alert definition...
+	err := r.client.AlertsService().Delete(ctx, alertDefId)
+
+	if err != nil {
+		resp.Diagnostics.AddError("Client Error",
+			fmt.Sprintf("error deleting alert definition %s. error: %s", alertDefId, err))
+	}
+}
+
+// TODO: Implement ImportState by handling the Read request with latest data from the server.
+// func (r *alertResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+// 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+// }
+
+// TODO: Update the state model with the latest data from the server.
+// func (r *alertResource) updateState(state *alertResourceModel, data *swoClient.ReadAlertDefinitionResult) {
+// }
+
+func (model *alertResourceModel) toAlertDefinitionInput() swoClient.AlertDefinitionInput {
 	conditions := []swoClient.AlertConditionNodeInput{}
 
 	for _, condition := range model.Conditions {
@@ -42,7 +146,7 @@ func (model *AlertResourceModel) ToAlertDefinitionInput() swoClient.AlertDefinit
 	}
 }
 
-func (model *AlertResourceModel) toAlertActionInput() []swoClient.AlertActionInput {
+func (model *alertResourceModel) toAlertActionInput() []swoClient.AlertActionInput {
 	inputs := []swoClient.AlertActionInput{}
 	actionTypes := map[string][]string{}
 
@@ -66,153 +170,4 @@ func (model *AlertResourceModel) toAlertActionInput() []swoClient.AlertActionInp
 	}
 
 	return inputs
-}
-
-func (r *AlertResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_alert"
-}
-
-func (r *AlertResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	tflog.Trace(ctx, "AlertResource: Configure")
-
-	// Prevent panic if the provider has not been configured.
-	if req.ProviderData == nil {
-		return
-	}
-
-	client, ok := req.ProviderData.(*swoClient.Client)
-
-	if !ok {
-		resp.Diagnostics.AddError(
-			"Invalid Resource Client Type",
-			fmt.Sprintf("Expected *swoClient.Client but received: %T. Please report this issue to the provider developers.", req.ProviderData),
-		)
-
-		return
-	}
-
-	r.client = client
-}
-
-func (r *AlertResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	tflog.Trace(ctx, "AlertResource: Create")
-
-	var tfModel *AlertResourceModel
-
-	// Read the Terraform plan data into the model and log the results.
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &tfModel)...)
-
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Create the alert from the provided Terraform model...
-	input := tfModel.ToAlertDefinitionInput()
-	newAlertDef, err := r.client.AlertsService().Create(ctx, input)
-
-	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Error creating alert definition '%s'. Error: %s",
-			input.Name,
-			err))
-		return
-	}
-
-	tflog.Trace(ctx, fmt.Sprintf("Alert definition '%s' created successfully. ID: %s", newAlertDef.Name, newAlertDef.Id))
-
-	tfModel.ID = types.StringValue(newAlertDef.Id)
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &tfModel)...)
-}
-
-func (r *AlertResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	tflog.Trace(ctx, "AlertResource: Read")
-
-	var tfModel *AlertResourceModel
-
-	// Read any existing Terraform state into the model.
-	resp.Diagnostics.Append(req.State.Get(ctx, &tfModel)...)
-
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	tflog.Trace(ctx, fmt.Sprintf("Getting alert with ID: %s", tfModel.ID))
-
-	alertDef, err := r.client.AlertsService().Read(ctx, tfModel.ID.String())
-
-	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Error getting alert %s. Error: %s",
-			alertDef.Id,
-			err))
-		return
-	}
-
-	tflog.Trace(ctx, fmt.Sprintf("Alert received: %s", alertDef.Name))
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &tfModel)...)
-}
-
-func (r *AlertResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	tflog.Trace(ctx, "AlertResource: Update")
-
-	var tfModel, tfState *AlertResourceModel
-
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &tfModel)...)
-	resp.Diagnostics.Append(req.State.Get(ctx, &tfState)...)
-
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	alertId := tfState.ID.ValueString()
-	input := tfModel.ToAlertDefinitionInput()
-
-	tflog.Trace(ctx, fmt.Sprintf("Updating alert definition with ID: %s", alertId))
-
-	// Update the alert definition...
-	_, err := r.client.AlertsService().Update(ctx, alertId, input)
-
-	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Error updating alert definition %s. Error: %s", alertId, err))
-		return
-	}
-
-	tflog.Trace(ctx, fmt.Sprintf("Alert definition '%s' updated successfully.", input.Name))
-
-	//Because Id is computed it needs to be set on the model before applying.
-	tfModel.ID = types.StringValue(alertId)
-
-	// Save and log the model into Terraform state.
-	resp.Diagnostics.Append(resp.State.Set(ctx, &tfModel)...)
-}
-
-func (r *AlertResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	tflog.Trace(ctx, "AlertResource: Delete")
-	var tfState *AlertResourceModel
-
-	// Read from terraform state becasue Id is computed.
-	resp.Diagnostics.Append(req.State.Get(ctx, &tfState)...)
-
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	alertDefId := tfState.ID.ValueString()
-
-	tflog.Trace(ctx, fmt.Sprintf("Deleting alert definition with ID: %s", alertDefId))
-
-	// Delete the alert definition...
-	err := r.client.AlertsService().Delete(ctx, alertDefId)
-
-	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Error deleting alert definition %s. Error: %s", alertDefId, err))
-		return
-	}
-
-	tflog.Trace(ctx, fmt.Sprintf("Alert definition deleted: %s", alertDefId))
-}
-
-func (r *AlertResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	tflog.Trace(ctx, "AlertResource: ImportState")
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }

@@ -2,99 +2,85 @@ package provider
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"github.com/solarwinds/terraform-provider-swo/internal/envvar"
+	swoClient "github.com/solarwinds/swo-client-go/pkg/client"
+	"github.com/solarwinds/terraform-provider-swo/internal/validators"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // The main Website Resource model that is derived from the schema.
-type WebsiteResourceModel struct {
+type websiteResourceModel struct {
 	Id         types.String       `tfsdk:"id"`
 	Name       types.String       `tfsdk:"name"`
 	Url        types.String       `tfsdk:"url"`
-	Monitoring *WebsiteMonitoring `tfsdk:"monitoring"`
+	Monitoring *websiteMonitoring `tfsdk:"monitoring"`
 }
 
-type ProbeLocation struct {
+type probeLocation struct {
 	Type  types.String `tfsdk:"type"`
 	Value types.String `tfsdk:"value"`
 }
 
-type PlatformOptions struct {
+type platformOptions struct {
 	TestFromAll types.Bool `tfsdk:"test_from_all"`
 	Platforms   []string   `tfsdk:"platforms"`
 }
 
-type SslMonitoring struct {
+type sslMonitoring struct {
 	DaysPriorToExpiration          types.Int64 `tfsdk:"days_prior_to_expiration"`
 	Enabled                        types.Bool  `tfsdk:"enabled"`
 	IgnoreIntermediateCertificates types.Bool  `tfsdk:"ignore_intermediate_certificates"`
 }
 
-type WebsiteMonitoring struct {
-	Options       MonitoringOptions      `tfsdk:"options"`
-	Availability  AvailabilityMonitoring `tfsdk:"availability"`
-	Rum           RumMonitoring          `tfsdk:"rum"`
-	CustomHeaders []CustomHeader         `tfsdk:"custom_headers"`
+type websiteMonitoring struct {
+	Options       monitoringOptions      `tfsdk:"options"`
+	Availability  availabilityMonitoring `tfsdk:"availability"`
+	Rum           rumMonitoring          `tfsdk:"rum"`
+	CustomHeaders []customHeader         `tfsdk:"custom_headers"`
 }
 
-type MonitoringOptions struct {
+type monitoringOptions struct {
 	IsAvailabilityActive types.Bool `tfsdk:"is_availability_active"`
 	IsRumActive          types.Bool `tfsdk:"is_rum_active"`
 }
 
-type AvailabilityMonitoring struct {
-	CheckForString        CheckForStringType `tfsdk:"check_for_string"`
-	SSL                   SslMonitoring      `tfsdk:"ssl"`
-	Protocols             []string           `tfsdk:"protocols"`
-	TestFromLocation      types.String       `tfsdk:"test_from_location"`
-	TestIntervalInSeconds types.Int64        `tfsdk:"test_interval_in_seconds"`
-	LocationOptions       []ProbeLocation    `tfsdk:"location_options"`
-	PlatformOptions       PlatformOptions    `tfsdk:"platform_options"`
+type availabilityMonitoring struct {
+	CheckForString        *checkForStringType `tfsdk:"check_for_string"`
+	SSL                   *sslMonitoring      `tfsdk:"ssl"`
+	Protocols             []string            `tfsdk:"protocols"`
+	TestFromLocation      types.String        `tfsdk:"test_from_location"`
+	TestIntervalInSeconds types.Int64         `tfsdk:"test_interval_in_seconds"`
+	LocationOptions       []probeLocation     `tfsdk:"location_options"`
+	PlatformOptions       platformOptions     `tfsdk:"platform_options"`
 }
 
-type RumMonitoring struct {
+type rumMonitoring struct {
 	ApdexTimeInSeconds types.Int64  `tfsdk:"apdex_time_in_seconds"`
 	Snippet            types.String `tfsdk:"snippet"`
 	Spa                types.Bool   `tfsdk:"spa"`
 }
 
-type CustomHeader struct {
+type customHeader struct {
 	Name  types.String `tfsdk:"name"`
 	Value types.String `tfsdk:"value"`
 }
 
-type AvailabilityTestValidations struct {
-	SSLCertificates SslCertificates    `tfsdk:"ssl_certificates"`
-	CheckForString  CheckForStringType `tfsdk:"check_for_string"`
-}
-
-type SslCertificates struct {
-	Name        types.String `tfsdk:"name"`
-	ValidTo     types.String `tfsdk:"valid_to"`
-	Certificate types.String `tfsdk:"certificate"`
-}
-
-type CheckForStringType struct {
+type checkForStringType struct {
 	Operator types.String `tfsdk:"operator"`
 	Value    types.String `tfsdk:"value"`
 }
 
-func (r *WebsiteResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
-	tflog.Trace(ctx, "WebsiteResource: Schema")
-
+func (r *websiteResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: fmt.Sprintf("A terraform resource for managing %s Websites.", envvar.AppName),
+		Description: "A terraform resource for managing website uptime checks.",
 		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				Description: "Website Id. This is a computed value provided by the backend.",
-				Computed:    true,
-			},
+			"id": resourceIdAttribute(),
 			"name": schema.StringAttribute{
 				Description: "Website name.",
 				Required:    true,
@@ -141,7 +127,7 @@ func (r *WebsiteResource) Schema(ctx context.Context, req resource.SchemaRequest
 							},
 							"ssl": schema.SingleNestedAttribute{
 								Description: "The Website availability monitoring SSL settings.",
-								Required:    true,
+								Optional:    true,
 								Attributes: map[string]schema.Attribute{
 									"days_prior_to_expiration": schema.Int64Attribute{
 										Description: "The Website availability monitoring SSL days prior to expiration.",
@@ -165,6 +151,12 @@ func (r *WebsiteResource) Schema(ctx context.Context, req resource.SchemaRequest
 							"test_from_location": schema.StringAttribute{
 								Description: "The Website availability monitoring test from location.",
 								Required:    true,
+								Validators: []validator.String{
+									validators.SingleOption(
+										swoClient.ProbeLocationTypeRegion,
+										swoClient.ProbeLocationTypeCountry,
+										swoClient.ProbeLocationTypeCity),
+								},
 							},
 							"test_interval_in_seconds": schema.Int64Attribute{
 								Description: "The Website availability monitoring test interval in seconds.",
@@ -178,6 +170,12 @@ func (r *WebsiteResource) Schema(ctx context.Context, req resource.SchemaRequest
 										"type": schema.StringAttribute{
 											Description: "The Website availability monitoring location option type.",
 											Required:    true,
+											Validators: []validator.String{
+												validators.SingleOption(
+													swoClient.ProbeLocationTypeRegion,
+													swoClient.ProbeLocationTypeCountry,
+													swoClient.ProbeLocationTypeCity),
+											},
 										},
 										"value": schema.StringAttribute{
 											Description: "The Website availability monitoring location option value.",
@@ -195,7 +193,7 @@ func (r *WebsiteResource) Schema(ctx context.Context, req resource.SchemaRequest
 										Required:    true,
 									},
 									"platforms": schema.ListAttribute{
-										Description: "The Website availability monitoring platform options.",
+										Description: "The Website availability monitoring platform options. Valid values are [AWS, AZURE].",
 										Required:    true,
 										ElementType: types.StringType,
 									},
@@ -214,6 +212,9 @@ func (r *WebsiteResource) Schema(ctx context.Context, req resource.SchemaRequest
 							"snippet": schema.StringAttribute{
 								Description: "The Website RUM monitoring code snippet (provided by the server).",
 								Computed:    true,
+								PlanModifiers: []planmodifier.String{
+									stringplanmodifier.UseStateForUnknown(),
+								},
 							},
 							"spa": schema.BoolAttribute{
 								Description: "Is SPA monitoring enabled?",

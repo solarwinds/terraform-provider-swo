@@ -24,7 +24,7 @@ type ConditionMap struct {
 	conditionType conditionType
 }
 
-func (model AlertConditionModel) toAlertConditionInputs(conditions []swoClient.AlertConditionNodeInput) []swoClient.AlertConditionNodeInput {
+func (model alertConditionModel) toAlertConditionInputs(conditions []swoClient.AlertConditionNodeInput) []swoClient.AlertConditionNodeInput {
 	thresholdOperatorCondition, thresholdDataCondition := model.toThresholdConditionInputs()
 
 	conditionMaps := []ConditionMap{
@@ -85,7 +85,7 @@ func (model AlertConditionModel) toAlertConditionInputs(conditions []swoClient.A
 	return append(conditions, conditionsOrderd...)
 }
 
-func (model *AlertConditionModel) toThresholdConditionInputs() (swoClient.AlertConditionNodeInput, swoClient.AlertConditionNodeInput) {
+func (model *alertConditionModel) toThresholdConditionInputs() (swoClient.AlertConditionNodeInput, swoClient.AlertConditionNodeInput) {
 	threshold := model.Threshold.ValueString()
 	thresholdOperatorConditions := swoClient.AlertConditionNodeInput{}
 	thresholdDataConditions := swoClient.AlertConditionNodeInput{}
@@ -117,7 +117,7 @@ func (model *AlertConditionModel) toThresholdConditionInputs() (swoClient.AlertC
 	return thresholdOperatorConditions, thresholdDataConditions
 }
 
-func (model *AlertConditionModel) toDurationConditionInput() swoClient.AlertConditionNodeInput {
+func (model *alertConditionModel) toDurationConditionInput() swoClient.AlertConditionNodeInput {
 	durationCondition := swoClient.AlertConditionNodeInput{}
 
 	duration := model.Duration.ValueString()
@@ -132,7 +132,7 @@ func (model *AlertConditionModel) toDurationConditionInput() swoClient.AlertCond
 	return durationCondition
 }
 
-func (model *AlertConditionModel) toAggregationConditionInput() swoClient.AlertConditionNodeInput {
+func (model *alertConditionModel) toAggregationConditionInput() swoClient.AlertConditionNodeInput {
 	aggragationCondition := swoClient.AlertConditionNodeInput{}
 
 	operator := model.AggregationType.ValueString()
@@ -149,7 +149,7 @@ func (model *AlertConditionModel) toAggregationConditionInput() swoClient.AlertC
 	return aggragationCondition
 }
 
-func (model *AlertConditionModel) toMetricFieldConditionInput() swoClient.AlertConditionNodeInput {
+func (model *alertConditionModel) toMetricFieldConditionInput() swoClient.AlertConditionNodeInput {
 	metricFieldCondition := swoClient.AlertConditionNodeInput{}
 	metricName := model.MetricName.ValueString()
 

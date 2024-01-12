@@ -6,32 +6,32 @@ import (
 	"log"
 )
 
-type NotificationSettings struct {
-	Email                 *NotificationSettingsEmail                 `tfsdk:"email"`
-	Slack                 *NotificationSettingsSlack                 `tfsdk:"slack"`
-	PagerDuty             *NotificationSettingsPagerDuty             `tfsdk:"pagerduty"`
-	MsTeams               *NotificationSettingsMsTeams               `tfsdk:"msteams"`
-	Webhook               *NotificationSettingsWebhook               `tfsdk:"webhook"`
-	VictorOps             *NotificationSettingsVictorOps             `tfsdk:"victorops"`
-	OpsGenie              *NotificationSettingsOpsGenie              `tfsdk:"opsgenie"`
-	AmazonSNS             *NotificationSettingsAmazonSNS             `tfsdk:"amazonsns"`
-	Zapier                *NotificationSettingsZapier                `tfsdk:"zapier"`
-	Pushover              *NotificationSettingsPushover              `tfsdk:"pushover"`
-	Sms                   *NotificationSettingsSms                   `tfsdk:"sms"`
-	SolarWindsServiceDesk *NotificationSettingsSolarWindsServiceDesk `tfsdk:"swsd"`
-	ServiceNow            *NotificationSettingsServiceNow            `tfsdk:"servicenow"`
+type notificationSettings struct {
+	Email                 *notificationSettingsEmail                 `tfsdk:"email"`
+	Slack                 *notificationSettingsSlack                 `tfsdk:"slack"`
+	PagerDuty             *notificationSettingsPagerDuty             `tfsdk:"pagerduty"`
+	MsTeams               *notificationSettingsMsTeams               `tfsdk:"msteams"`
+	Webhook               *notificationSettingsWebhook               `tfsdk:"webhook"`
+	VictorOps             *notificationSettingsVictorOps             `tfsdk:"victorops"`
+	OpsGenie              *notificationSettingsOpsGenie              `tfsdk:"opsgenie"`
+	AmazonSNS             *notificationSettingsAmazonSNS             `tfsdk:"amazonsns"`
+	Zapier                *notificationSettingsZapier                `tfsdk:"zapier"`
+	Pushover              *notificationSettingsPushover              `tfsdk:"pushover"`
+	Sms                   *notificationSettingsSms                   `tfsdk:"sms"`
+	SolarWindsServiceDesk *notificationSettingsSolarWindsServiceDesk `tfsdk:"swsd"`
+	ServiceNow            *notificationSettingsServiceNow            `tfsdk:"servicenow"`
 }
 
-type NotificationSettingsEmail struct {
-	Addresses []NotificationSettingsEmailAddress `tfsdk:"addresses" json:"addresses"`
+type notificationSettingsEmail struct {
+	Addresses []notificationSettingsEmailAddress `tfsdk:"addresses" json:"addresses"`
 }
 
-type NotificationSettingsEmailAddress struct {
+type notificationSettingsEmailAddress struct {
 	Id    *string `tfsdk:"id" json:"id"`
 	Email string  `tfsdk:"email" json:"email"`
 }
 
-type NotificationSettingsOpsGenie struct {
+type notificationSettingsOpsGenie struct {
 	HostName   string `tfsdk:"hostname" json:"hostname"`
 	ApiKey     string `tfsdk:"api_key" json:"apiKey"`
 	Recipients string `tfsdk:"recipients" json:"recipients"`
@@ -39,25 +39,25 @@ type NotificationSettingsOpsGenie struct {
 	Tags       string `tfsdk:"tags" json:"tags"`
 }
 
-type NotificationSettingsSms struct {
+type notificationSettingsSms struct {
 	PhoneNumbers string `tfsdk:"phone_numbers" json:"phoneNumbers"`
 }
 
-type NotificationSettingsSlack struct {
+type notificationSettingsSlack struct {
 	Url string `tfsdk:"url" json:"url"`
 }
 
-type NotificationSettingsMsTeams struct {
+type notificationSettingsMsTeams struct {
 	Url string `tfsdk:"url" json:"url"`
 }
 
-type NotificationSettingsPagerDuty struct {
+type notificationSettingsPagerDuty struct {
 	RoutingKey string `tfsdk:"routing_key" json:"routingKey"`
 	Summary    string `tfsdk:"summary" json:"summary"`
 	DedupKey   string `tfsdk:"dedup_key" json:"dedupKey"`
 }
 
-type NotificationSettingsWebhook struct {
+type notificationSettingsWebhook struct {
 	Url             string `tfsdk:"url" json:"url"`
 	Method          string `tfsdk:"method" json:"method"`
 	AuthType        string `tfsdk:"auth_type" json:"authType"`
@@ -67,168 +67,168 @@ type NotificationSettingsWebhook struct {
 	AuthHeaderValue string `tfsdk:"auth_header_value" json:"authHeaderValue"`
 }
 
-type NotificationSettingsVictorOps struct {
+type notificationSettingsVictorOps struct {
 	ApiKey     string `tfsdk:"api_key" json:"apiKey"`
 	RoutingKey string `tfsdk:"routing_key" json:"routingKey"`
 }
 
-type NotificationSettingsAmazonSNS struct {
+type notificationSettingsAmazonSNS struct {
 	TopicARN        string `tfsdk:"topic_arn" json:"topicARN"`
 	AccessKeyID     string `tfsdk:"access_key_id" json:"accessKeyID"`
 	SecretAccessKey string `tfsdk:"secret_access_key" json:"secretAccessKey"`
 }
 
-type NotificationSettingsZapier struct {
+type notificationSettingsZapier struct {
 	Url string `tfsdk:"url" json:"url"`
 }
 
-type NotificationSettingsPushover struct {
+type notificationSettingsPushover struct {
 	UserKey  string `tfsdk:"user_key" json:"userKey"`
 	AppToken string `tfsdk:"app_token" json:"appToken"`
 }
 
-type NotificationSettingsSolarWindsServiceDesk struct {
+type notificationSettingsSolarWindsServiceDesk struct {
 	AppToken string `tfsdk:"app_token" json:"appToken"`
 	IsEU     bool   `tfsdk:"is_eu" json:"isEu"`
 }
 
-type NotificationSettingsServiceNow struct {
+type notificationSettingsServiceNow struct {
 	AppToken string `tfsdk:"app_token" json:"appToken"`
 	Instance string `tfsdk:"instance" json:"instance"`
 }
 
-type NotificationSettingsAccessor struct {
-	Get func(m *NotificationResourceModel) any
-	Set func(m *NotificationResourceModel, settings any) error
+type notificationSettingsAccessor struct {
+	Get func(m *notificationResourceModel) any
+	Set func(m *notificationResourceModel, settings any) error
 }
 
-var settingsAccessors = map[string]NotificationSettingsAccessor{
+var settingsAccessors = map[string]notificationSettingsAccessor{
 	"email": {
-		Get: func(m *NotificationResourceModel) any {
+		Get: func(m *notificationResourceModel) any {
 			return m.Settings.Email
 		},
-		Set: func(m *NotificationResourceModel, settings any) error {
-			s, err := toSettingsStruct[NotificationSettingsEmail](settings)
+		Set: func(m *notificationResourceModel, settings any) error {
+			s, err := toSettingsStruct[notificationSettingsEmail](settings)
 			m.Settings.Email = s
 			return err
 		},
 	},
 	"slack": {
-		Get: func(m *NotificationResourceModel) any {
+		Get: func(m *notificationResourceModel) any {
 			return m.Settings.Slack
 		},
-		Set: func(m *NotificationResourceModel, settings any) error {
-			s, err := toSettingsStruct[NotificationSettingsSlack](settings)
+		Set: func(m *notificationResourceModel, settings any) error {
+			s, err := toSettingsStruct[notificationSettingsSlack](settings)
 			m.Settings.Slack = s
 			return err
 		},
 	},
 	"pagerduty": {
-		Get: func(m *NotificationResourceModel) any {
+		Get: func(m *notificationResourceModel) any {
 			return m.Settings.PagerDuty
 		},
-		Set: func(m *NotificationResourceModel, settings any) error {
-			s, err := toSettingsStruct[NotificationSettingsPagerDuty](settings)
+		Set: func(m *notificationResourceModel, settings any) error {
+			s, err := toSettingsStruct[notificationSettingsPagerDuty](settings)
 			m.Settings.PagerDuty = s
 			return err
 		},
 	},
 	"webhook": {
-		Get: func(m *NotificationResourceModel) any {
+		Get: func(m *notificationResourceModel) any {
 			return m.Settings.Webhook
 		},
-		Set: func(m *NotificationResourceModel, settings any) error {
-			s, err := toSettingsStruct[NotificationSettingsWebhook](settings)
+		Set: func(m *notificationResourceModel, settings any) error {
+			s, err := toSettingsStruct[notificationSettingsWebhook](settings)
 			m.Settings.Webhook = s
 			return err
 		},
 	},
 	"victorops": {
-		Get: func(m *NotificationResourceModel) any {
+		Get: func(m *notificationResourceModel) any {
 			return m.Settings.VictorOps
 		},
-		Set: func(m *NotificationResourceModel, settings any) error {
-			s, err := toSettingsStruct[NotificationSettingsVictorOps](settings)
+		Set: func(m *notificationResourceModel, settings any) error {
+			s, err := toSettingsStruct[notificationSettingsVictorOps](settings)
 			m.Settings.VictorOps = s
 			return err
 		},
 	},
 	"opsgenie": {
-		Get: func(m *NotificationResourceModel) any {
+		Get: func(m *notificationResourceModel) any {
 			return m.Settings.OpsGenie
 		},
-		Set: func(m *NotificationResourceModel, settings any) error {
-			s, err := toSettingsStruct[NotificationSettingsOpsGenie](settings)
+		Set: func(m *notificationResourceModel, settings any) error {
+			s, err := toSettingsStruct[notificationSettingsOpsGenie](settings)
 			m.Settings.OpsGenie = s
 			return err
 		},
 	},
 	"amazonsns": {
-		Get: func(m *NotificationResourceModel) any {
+		Get: func(m *notificationResourceModel) any {
 			return m.Settings.AmazonSNS
 		},
-		Set: func(m *NotificationResourceModel, settings any) error {
-			s, err := toSettingsStruct[NotificationSettingsAmazonSNS](settings)
+		Set: func(m *notificationResourceModel, settings any) error {
+			s, err := toSettingsStruct[notificationSettingsAmazonSNS](settings)
 			m.Settings.AmazonSNS = s
 			return err
 		},
 	},
 	"zapier": {
-		Get: func(m *NotificationResourceModel) any {
+		Get: func(m *notificationResourceModel) any {
 			return m.Settings.Zapier
 		},
-		Set: func(m *NotificationResourceModel, settings any) error {
-			s, err := toSettingsStruct[NotificationSettingsZapier](settings)
+		Set: func(m *notificationResourceModel, settings any) error {
+			s, err := toSettingsStruct[notificationSettingsZapier](settings)
 			m.Settings.Zapier = s
 			return err
 		},
 	},
 	"msTeams": {
-		Get: func(m *NotificationResourceModel) any {
+		Get: func(m *notificationResourceModel) any {
 			return m.Settings.MsTeams
 		},
-		Set: func(m *NotificationResourceModel, settings any) error {
-			s, err := toSettingsStruct[NotificationSettingsMsTeams](settings)
+		Set: func(m *notificationResourceModel, settings any) error {
+			s, err := toSettingsStruct[notificationSettingsMsTeams](settings)
 			m.Settings.MsTeams = s
 			return err
 		},
 	},
 	"pushover": {
-		Get: func(m *NotificationResourceModel) any {
+		Get: func(m *notificationResourceModel) any {
 			return m.Settings.Pushover
 		},
-		Set: func(m *NotificationResourceModel, settings any) error {
-			s, err := toSettingsStruct[NotificationSettingsPushover](settings)
+		Set: func(m *notificationResourceModel, settings any) error {
+			s, err := toSettingsStruct[notificationSettingsPushover](settings)
 			m.Settings.Pushover = s
 			return err
 		},
 	},
 	"sms": {
-		Get: func(m *NotificationResourceModel) any {
+		Get: func(m *notificationResourceModel) any {
 			return m.Settings.Sms
 		},
-		Set: func(m *NotificationResourceModel, settings any) error {
-			s, err := toSettingsStruct[NotificationSettingsSms](settings)
+		Set: func(m *notificationResourceModel, settings any) error {
+			s, err := toSettingsStruct[notificationSettingsSms](settings)
 			m.Settings.Sms = s
 			return err
 		},
 	},
 	"swsd": {
-		Get: func(m *NotificationResourceModel) any {
+		Get: func(m *notificationResourceModel) any {
 			return m.Settings.SolarWindsServiceDesk
 		},
-		Set: func(m *NotificationResourceModel, settings any) error {
-			s, err := toSettingsStruct[NotificationSettingsSolarWindsServiceDesk](settings)
+		Set: func(m *notificationResourceModel, settings any) error {
+			s, err := toSettingsStruct[notificationSettingsSolarWindsServiceDesk](settings)
 			m.Settings.SolarWindsServiceDesk = s
 			return err
 		},
 	},
 	"servicenow": {
-		Get: func(m *NotificationResourceModel) any {
+		Get: func(m *notificationResourceModel) any {
 			return m.Settings.ServiceNow
 		},
-		Set: func(m *NotificationResourceModel, settings any) error {
-			s, err := toSettingsStruct[NotificationSettingsServiceNow](settings)
+		Set: func(m *notificationResourceModel, settings any) error {
+			s, err := toSettingsStruct[notificationSettingsServiceNow](settings)
 			m.Settings.ServiceNow = s
 			return err
 		},
@@ -251,10 +251,10 @@ func toSettingsStruct[T any](settings any) (*T, error) {
 	return &concreteSettings, nil
 }
 
-func (m *NotificationResourceModel) SetSettings(settings any) error {
+func (m *notificationResourceModel) SetSettings(settings any) error {
 	if accessor, found := settingsAccessors[m.Type.ValueString()]; found {
 		if m.Settings == nil {
-			m.Settings = &NotificationSettings{}
+			m.Settings = &notificationSettings{}
 		}
 		err := accessor.Set(m, settings)
 		if err != nil {
@@ -267,10 +267,10 @@ func (m *NotificationResourceModel) SetSettings(settings any) error {
 	return nil
 }
 
-func (m *NotificationResourceModel) GetSettings() any {
+func (m *notificationResourceModel) GetSettings() any {
 	if accessor, found := settingsAccessors[m.Type.ValueString()]; found {
 		if m.Settings == nil {
-			m.Settings = &NotificationSettings{}
+			m.Settings = &notificationSettings{}
 		}
 		return accessor.Get(m)
 	}

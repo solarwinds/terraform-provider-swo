@@ -2,68 +2,77 @@ package provider
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"github.com/solarwinds/terraform-provider-swo/internal/envvar"
+	"github.com/solarwinds/terraform-provider-swo/internal/validators"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	swoClient "github.com/solarwinds/swo-client-go/pkg/client"
 )
 
-// ApiTokenResourceModel is the main resource model.
-type ApiTokenResourceModel struct {
+// apiTokenResourceModel is the main resource model.
+type apiTokenResourceModel struct {
 	Id          types.String                `tfsdk:"id"`
 	Name        types.String                `tfsdk:"name"`
 	Enabled     types.Bool                  `tfsdk:"enabled"`
 	Type        types.String                `tfsdk:"type"`
-	Secure      types.Bool                  `tfsdk:"secure"`
 	Token       types.String                `tfsdk:"token"`
 	AccessLevel *swoClient.TokenAccessLevel `tfsdk:"access_level"`
-	Attributes  []ApiTokenAttribute         `tfsdk:"attributes"`
+	Attributes  []apiTokenAttribute         `tfsdk:"attributes"`
 }
 
-// ApiTokenAttribute is a custom attribute for the ApiTokenResourceModel.
-type ApiTokenAttribute struct {
+// apiTokenAttribute is a custom attribute for the ApiTokenResourceModel.
+type apiTokenAttribute struct {
 	Key   types.String `tfsdk:"key"`
 	Value types.String `tfsdk:"value"`
 }
 
-func (r *ApiTokenResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
-	tflog.Trace(ctx, "ApiTokenResource: Schema")
-
+func (r *apiTokenResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: fmt.Sprintf("A terraform resource for managing %s ApiTokens.", envvar.AppName),
+		Description: "A terraform resource for managing api tokens.",
 		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				Description: "This is a computed ID provided by the backend.",
-				Computed:    true,
-			},
+			"id": resourceIdAttribute(),
 			"name": schema.StringAttribute{
 				Description: "The user provided name of the token.",
 				Required:    true,
 			},
 			"enabled": schema.BoolAttribute{
 				Description: "The enabled state of the token.",
-				Required:    true,
+				Optional:    true,
+				Computed:    true,
+				Default:     booldefault.StaticBool(true),
 			},
 			"type": schema.StringAttribute{
 				Description: "The type of the token.",
-				Required:    true,
-			},
-			"secure": schema.BoolAttribute{
-				Description: "The secure state of the token. Secure tokens are only revealed to the user once at creation and cannot be unobfuscated.",
+				Optional:    true,
 				Computed:    true,
+				Default:     stringdefault.StaticString("public-api"),
 			},
 			"token": schema.StringAttribute{
 				Description: "The plain-text value of the token.",
 				Computed:    true,
+				Sensitive:   true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"access_level": schema.StringAttribute{
-				Description: "The access level of the token [READ|RECORD|FULL].",
-				Required:    true,
+				Description: "The access level of the token.",
+				Optional:    true,
+				Computed:    true,
+				Default:     stringdefault.StaticString(string(swoClient.TokenAccessLevelFull)),
+				Validators: []validator.String{
+					validators.SingleOption(
+						swoClient.TokenAccessLevelFull,
+						swoClient.TokenAccessLevelRead,
+						swoClient.TokenAccessLevelRecord),
+				},
 			},
 			"attributes": schema.SetNestedAttribute{
 				Description: "The custom attributes assigned to the token.",

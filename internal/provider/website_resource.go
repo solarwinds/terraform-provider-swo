@@ -7,54 +7,36 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 	swoClient "github.com/solarwinds/swo-client-go/pkg/client"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
-var _ resource.Resource = &WebsiteResource{}
-var _ resource.ResourceWithConfigure = &WebsiteResource{}
-var _ resource.ResourceWithImportState = &WebsiteResource{}
+var (
+	_ resource.Resource                = &websiteResource{}
+	_ resource.ResourceWithConfigure   = &websiteResource{}
+	_ resource.ResourceWithImportState = &websiteResource{}
+)
 
 func NewWebsiteResource() resource.Resource {
-	return &WebsiteResource{}
+	return &websiteResource{}
 }
 
 // Defines the resource implementation.
-type WebsiteResource struct {
+type websiteResource struct {
 	client *swoClient.Client
 }
 
-func (r *WebsiteResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_website"
+func (r *websiteResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = "website"
 }
 
-func (r *WebsiteResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	tflog.Trace(ctx, "WebsiteResource: Configure")
-
-	// Prevent panic if the provider has not been configured.
-	if req.ProviderData == nil {
-		return
-	}
-
-	client, ok := req.ProviderData.(*swoClient.Client)
-	if !ok {
-		resp.Diagnostics.AddError(
-			"Invalid Resource Client Type",
-			fmt.Sprintf("expected *swoClient.Client but received: %T.", req.ProviderData),
-		)
-		return
-	}
-
+func (r *websiteResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+	client, _ := req.ProviderData.(*swoClient.Client)
 	r.client = client
 }
 
-func (r *WebsiteResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	tflog.Trace(ctx, "WebsiteResource: Create")
-
-	var tfPlan WebsiteResourceModel
-
-	// Read the Terraform plan.
+func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var tfPlan websiteResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &tfPlan)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -81,7 +63,7 @@ func (r *WebsiteResource) Create(ctx context.Context, req resource.CreateRequest
 			},
 			TestFrom: swoClient.ProbeLocationInput{
 				Type: swoClient.ProbeLocationType(tfPlan.Monitoring.Availability.TestFromLocation.ValueString()),
-				Values: convertArray(tfPlan.Monitoring.Availability.LocationOptions, func(p ProbeLocation) string {
+				Values: convertArray(tfPlan.Monitoring.Availability.LocationOptions, func(p probeLocation) string {
 					return p.Value.ValueString()
 				}),
 			},
@@ -90,7 +72,7 @@ func (r *WebsiteResource) Create(ctx context.Context, req resource.CreateRequest
 				DaysPriorToExpiration:          swoClient.Ptr(int(tfPlan.Monitoring.Availability.SSL.DaysPriorToExpiration.ValueInt64())),
 				IgnoreIntermediateCertificates: tfPlan.Monitoring.Availability.SSL.IgnoreIntermediateCertificates.ValueBoolPointer(),
 			},
-			CustomHeaders: convertArray(tfPlan.Monitoring.CustomHeaders, func(h CustomHeader) swoClient.CustomHeaderInput {
+			CustomHeaders: convertArray(tfPlan.Monitoring.CustomHeaders, func(h customHeader) swoClient.CustomHeaderInput {
 				return swoClient.CustomHeaderInput{
 					Name:  h.Name.ValueString(),
 					Value: h.Value.ValueString(),
@@ -106,39 +88,32 @@ func (r *WebsiteResource) Create(ctx context.Context, req resource.CreateRequest
 	// Create the Website...
 	result, err := r.client.WebsiteService().Create(ctx, createInput)
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("error creating website '%s' - error: %s",
-			tfPlan.Name,
-			err))
+		resp.Diagnostics.AddError("Client Error",
+			fmt.Sprintf("error creating website '%s' - error: %s", tfPlan.Name, err))
 		return
 	}
 
 	// Get the latest Website state from the server so we can get the 'snippet' field. Ideally we need to update
 	// the API to return the 'snippet' field in the create response.
 	if website, err := r.client.WebsiteService().Read(ctx, result.Id); err != nil {
-		resp.Diagnostics.AddWarning("Client Error", fmt.Sprintf("error capturing RUM snippit for Website '%s' - error: %s",
-			tfPlan.Name,
-			err))
+		resp.Diagnostics.AddWarning("Client Error",
+			fmt.Sprintf("error capturing RUM snippit for Website '%s' - error: %s", tfPlan.Name, err))
 	} else {
 		tfPlan.Monitoring.Rum.Snippet = types.StringValue(*website.Monitoring.Rum.Snippet)
 	}
 
-	tflog.Trace(ctx, fmt.Sprintf("website %s created successfully - id=%s", tfPlan.Name, result.Id))
 	tfPlan.Id = types.StringValue(result.Id)
 	resp.Diagnostics.Append(resp.State.Set(ctx, tfPlan)...)
 }
 
-func (r *WebsiteResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	tflog.Trace(ctx, "WebsiteResource: Read")
-
-	var tfState WebsiteResourceModel
-
+func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var tfState websiteResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &tfState)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	// Read the Website...
-	tflog.Trace(ctx, fmt.Sprintf("read website with id: %s", tfState.Id))
 	website, err := r.client.WebsiteService().Read(ctx, tfState.Id.ValueString())
 
 	if err != nil {
@@ -149,27 +124,29 @@ func (r *WebsiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 
 	// Update the Terraform state with latest values from the server.
 	tfState.Url = types.StringValue(website.Url)
-	if website.Name != nil {
-		tfState.Name = types.StringValue(*website.Name)
-	}
+	tfState.Name = types.StringPointerValue(website.Name)
 
 	if website.Monitoring != nil {
 		monitoring := website.Monitoring
-		tfState.Monitoring = &WebsiteMonitoring{}
+		tfState.Monitoring = &websiteMonitoring{}
 
 		if monitoring.Availability != nil {
-			tfState.Monitoring.Availability = AvailabilityMonitoring{}
+			tfState.Monitoring.Availability = availabilityMonitoring{}
 			availability := monitoring.Availability
 
 			if availability.CheckForString != nil {
-				tfState.Monitoring.Availability.CheckForString = CheckForStringType{
+				tfState.Monitoring.Availability.CheckForString = &checkForStringType{
 					Operator: types.StringValue(string(availability.CheckForString.Operator)),
 					Value:    types.StringValue(availability.CheckForString.Value),
 				}
+			} else {
+				tfState.Monitoring.Availability.CheckForString = nil
 			}
 
 			if availability.TestIntervalInSeconds != nil {
 				tfState.Monitoring.Availability.TestIntervalInSeconds = types.Int64Value(int64(*availability.TestIntervalInSeconds))
+			} else {
+				tfState.Monitoring.Availability.TestIntervalInSeconds = types.Int64Null()
 			}
 
 			tfState.Monitoring.Availability.Protocols = convertArray(availability.Protocols, func(s swoClient.WebsiteProtocol) string {
@@ -177,51 +154,61 @@ func (r *WebsiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 			})
 
 			if availability.PlatformOptions != nil {
-				tfState.Monitoring.Availability.PlatformOptions = PlatformOptions{
+				tfState.Monitoring.Availability.PlatformOptions = platformOptions{
 					TestFromAll: types.BoolValue(availability.PlatformOptions.TestFromAll),
 					Platforms:   availability.PlatformOptions.Platforms,
 				}
+			} else {
+				tfState.Monitoring.Availability.PlatformOptions = platformOptions{}
 			}
 
 			if availability.TestFromLocation != nil {
 				tfState.Monitoring.Availability.TestFromLocation = types.StringValue(string(*availability.TestFromLocation))
+			} else {
+				tfState.Monitoring.Availability.TestFromLocation = types.StringNull()
 			}
 
 			if availability.LocationOptions != nil {
-				var locOpts []ProbeLocation
+				var locOpts []probeLocation
 				for _, p := range availability.LocationOptions {
-					locOpts = append(locOpts, ProbeLocation{
+					locOpts = append(locOpts, probeLocation{
 						Type:  types.StringValue(string(p.Type)),
 						Value: types.StringValue(string(p.Value)),
 					})
 				}
 				tfState.Monitoring.Availability.LocationOptions = locOpts
+			} else {
+				tfState.Monitoring.Availability.LocationOptions = nil
 			}
 
 			if availability.Ssl != nil {
-				tfState.Monitoring.Availability.SSL = SslMonitoring{
+				tfState.Monitoring.Availability.SSL = &sslMonitoring{
 					Enabled:                        types.BoolValue(availability.Ssl.Enabled),
 					IgnoreIntermediateCertificates: types.BoolValue(availability.Ssl.IgnoreIntermediateCertificates),
 				}
 				if availability.Ssl.DaysPriorToExpiration != nil {
 					tfState.Monitoring.Availability.SSL.DaysPriorToExpiration = types.Int64Value(int64(*availability.Ssl.DaysPriorToExpiration))
+				} else {
+					tfState.Monitoring.Availability.SSL.DaysPriorToExpiration = types.Int64Null()
 				}
+			} else {
+				tfState.Monitoring.Availability.SSL = nil
 			}
 		}
 
+		var customHeaders []customHeader
 		if monitoring.CustomHeaders != nil {
-			var customHeaders []CustomHeader
 			for _, h := range monitoring.CustomHeaders {
-				customHeaders = append(customHeaders, CustomHeader{
+				customHeaders = append(customHeaders, customHeader{
 					Name:  types.StringValue(h.Name),
 					Value: types.StringValue(h.Value),
 				})
 			}
-			tfState.Monitoring.CustomHeaders = customHeaders
 		}
+		tfState.Monitoring.CustomHeaders = customHeaders
 
 		if monitoring.Rum != nil {
-			tfState.Monitoring.Rum = RumMonitoring{
+			tfState.Monitoring.Rum = rumMonitoring{
 				Spa: types.BoolValue(monitoring.Rum.Spa),
 			}
 
@@ -232,108 +219,94 @@ func (r *WebsiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 			if monitoring.Rum.Snippet != nil {
 				tfState.Monitoring.Rum.Snippet = types.StringValue(*monitoring.Rum.Snippet)
 			}
+		} else {
+			tfState.Monitoring.Rum = rumMonitoring{}
 		}
+	} else {
+		tfState.Monitoring = nil
 	}
 
-	tflog.Trace(ctx, fmt.Sprintf("read Website success: %s", *website.Name))
 	resp.Diagnostics.Append(resp.State.Set(ctx, tfState)...)
 }
 
-func (r *WebsiteResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var tfPlan, tfState *WebsiteResourceModel
-
-	// Read the Terraform plan and state data.
+func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var tfPlan, tfState *websiteResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &tfPlan)...)
 	resp.Diagnostics.Append(req.State.Get(ctx, &tfState)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	// Update the Website...
-	tflog.Trace(ctx, fmt.Sprintf("updating Website with id: %s", tfState.Id))
-	err := r.client.WebsiteService().Update(ctx, swoClient.UpdateWebsiteInput{
-		Id:   tfState.Id.ValueString(),
-		Name: tfPlan.Name.ValueString(),
-		Url:  tfPlan.Url.ValueString(),
-		AvailabilityCheckSettings: &swoClient.AvailabilityCheckSettingsInput{
-			CheckForString: &swoClient.CheckForStringInput{
-				Operator: swoClient.CheckStringOperator(tfPlan.Monitoring.Availability.CheckForString.Operator.ValueString()),
-				Value:    tfPlan.Monitoring.Availability.CheckForString.Value.ValueString(),
-			},
-			TestIntervalInSeconds: int(tfPlan.Monitoring.Availability.TestIntervalInSeconds.ValueInt64()),
-			Protocols: convertArray(tfPlan.Monitoring.Availability.Protocols, func(s string) swoClient.WebsiteProtocol {
-				return swoClient.WebsiteProtocol(s)
-			}),
-			PlatformOptions: &swoClient.ProbePlatformOptionsInput{
-				TestFromAll: swoClient.Ptr(tfPlan.Monitoring.Availability.PlatformOptions.TestFromAll.ValueBool()),
-				ProbePlatforms: convertArray(tfPlan.Monitoring.Availability.PlatformOptions.Platforms, func(s string) swoClient.ProbePlatform {
-					return swoClient.ProbePlatform(s)
+	err := r.client.WebsiteService().Update(ctx,
+		swoClient.UpdateWebsiteInput{
+			Id:   tfState.Id.ValueString(),
+			Name: tfPlan.Name.ValueString(),
+			Url:  tfPlan.Url.ValueString(),
+			AvailabilityCheckSettings: &swoClient.AvailabilityCheckSettingsInput{
+				CheckForString: &swoClient.CheckForStringInput{
+					Operator: swoClient.CheckStringOperator(tfPlan.Monitoring.Availability.CheckForString.Operator.ValueString()),
+					Value:    tfPlan.Monitoring.Availability.CheckForString.Value.ValueString(),
+				},
+				TestIntervalInSeconds: int(tfPlan.Monitoring.Availability.TestIntervalInSeconds.ValueInt64()),
+				Protocols: convertArray(tfPlan.Monitoring.Availability.Protocols, func(s string) swoClient.WebsiteProtocol {
+					return swoClient.WebsiteProtocol(s)
+				}),
+				PlatformOptions: &swoClient.ProbePlatformOptionsInput{
+					TestFromAll: swoClient.Ptr(tfPlan.Monitoring.Availability.PlatformOptions.TestFromAll.ValueBool()),
+					ProbePlatforms: convertArray(tfPlan.Monitoring.Availability.PlatformOptions.Platforms, func(s string) swoClient.ProbePlatform {
+						return swoClient.ProbePlatform(s)
+					}),
+				},
+				TestFrom: swoClient.ProbeLocationInput{
+					Type: swoClient.ProbeLocationType(tfPlan.Monitoring.Availability.TestFromLocation.ValueString()),
+					Values: convertArray(tfPlan.Monitoring.Availability.LocationOptions, func(p probeLocation) string {
+						return p.Value.ValueString()
+					}),
+				},
+				Ssl: &swoClient.SslMonitoringInput{
+					Enabled:                        tfPlan.Monitoring.Availability.SSL.Enabled.ValueBoolPointer(),
+					DaysPriorToExpiration:          swoClient.Ptr(int(tfPlan.Monitoring.Availability.SSL.DaysPriorToExpiration.ValueInt64())),
+					IgnoreIntermediateCertificates: tfPlan.Monitoring.Availability.SSL.IgnoreIntermediateCertificates.ValueBoolPointer(),
+				},
+				CustomHeaders: convertArray(tfPlan.Monitoring.CustomHeaders, func(h customHeader) swoClient.CustomHeaderInput {
+					return swoClient.CustomHeaderInput{
+						Name:  h.Name.ValueString(),
+						Value: h.Value.ValueString(),
+					}
 				}),
 			},
-			TestFrom: swoClient.ProbeLocationInput{
-				Type: swoClient.ProbeLocationType(tfPlan.Monitoring.Availability.TestFromLocation.ValueString()),
-				Values: convertArray(tfPlan.Monitoring.Availability.LocationOptions, func(p ProbeLocation) string {
-					return p.Value.ValueString()
-				}),
+			Rum: &swoClient.RumMonitoringInput{
+				ApdexTimeInSeconds: swoClient.Ptr(int(tfPlan.Monitoring.Rum.ApdexTimeInSeconds.ValueInt64())),
+				Spa:                tfPlan.Monitoring.Rum.Spa.ValueBoolPointer(),
 			},
-			Ssl: &swoClient.SslMonitoringInput{
-				Enabled:                        tfPlan.Monitoring.Availability.SSL.Enabled.ValueBoolPointer(),
-				DaysPriorToExpiration:          swoClient.Ptr(int(tfPlan.Monitoring.Availability.SSL.DaysPriorToExpiration.ValueInt64())),
-				IgnoreIntermediateCertificates: tfPlan.Monitoring.Availability.SSL.IgnoreIntermediateCertificates.ValueBoolPointer(),
-			},
-			CustomHeaders: convertArray(tfPlan.Monitoring.CustomHeaders, func(h CustomHeader) swoClient.CustomHeaderInput {
-				return swoClient.CustomHeaderInput{
-					Name:  h.Name.ValueString(),
-					Value: h.Value.ValueString(),
-				}
-			}),
-		},
-		Rum: &swoClient.RumMonitoringInput{
-			ApdexTimeInSeconds: swoClient.Ptr(int(tfPlan.Monitoring.Rum.ApdexTimeInSeconds.ValueInt64())),
-			Spa:                tfPlan.Monitoring.Rum.Spa.ValueBoolPointer(),
-		},
-	})
+		})
 
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("error updating website %s. err: %s", tfState.Id, err))
+		resp.Diagnostics.AddError("Client Error",
+			fmt.Sprintf("error updating website %s. err: %s", tfState.Id, err))
 		return
 	}
 
-	tflog.Trace(ctx, fmt.Sprintf("website '%s' updated successfully", tfState.Id))
-
 	// Save to Terraform state.
-	tfPlan.Id = tfState.Id
-
-	if tfPlan.Monitoring != nil {
-		tfPlan.Monitoring.Rum.Snippet = tfState.Monitoring.Rum.Snippet
-	}
-
 	resp.Diagnostics.Append(resp.State.Set(ctx, &tfPlan)...)
 }
 
-func (r *WebsiteResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var tfState WebsiteResourceModel
-
-	// Read existing Terraform state.
+func (r *websiteResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var tfState websiteResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &tfState)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	// Delete the Website...
-	tflog.Trace(ctx, fmt.Sprintf("deleting website - id=%s", tfState.Id))
 	if err := r.client.WebsiteService().
 		Delete(ctx, tfState.Id.ValueString()); err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("error deleting website %s - %s", tfState.Id, err))
-		return
+		resp.Diagnostics.AddError("Client Error",
+			fmt.Sprintf("error deleting website %s - %s", tfState.Id, err))
 	}
-	tflog.Trace(ctx, fmt.Sprintf("website deleted: id=%s", tfState.Id))
 }
 
-func (r *WebsiteResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (r *websiteResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }

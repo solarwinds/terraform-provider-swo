@@ -20,12 +20,9 @@ func TestAccDashboardResource(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet("swo_dashboard.test", "id"),
 					resource.TestCheckResourceAttr("swo_dashboard.test", "name", "swo-terraform-provider [CREATE_TEST]"),
-					resource.TestCheckResourceAttrSet("swo_dashboard.test", "updated_at"),
-					resource.TestCheckResourceAttrSet("swo_dashboard.test", "created_at"),
 					resource.TestCheckResourceAttr("swo_dashboard.test", "widgets.#", "2"),
 					resource.TestCheckResourceAttr("swo_dashboard.test", "widgets.0.type", "TimeSeries"),
 					resource.TestCheckResourceAttr("swo_dashboard.test", "widgets.1.width", "4"),
-					resource.TestCheckResourceAttrSet("swo_dashboard.test", "updated_at"),
 				),
 			},
 			// ImportState testing

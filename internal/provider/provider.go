@@ -18,7 +18,21 @@ import (
 )
 
 // Ensure SwoProvider satisfies various provider interfaces.
-var _ provider.Provider = &SwoProvider{}
+var (
+	_ provider.Provider = &SwoProvider{}
+)
+
+var resources = []func() resource.Resource{
+	NewAlertResource,
+	NewApiTokenResource,
+	NewLogFilterResource,
+	NewDashboardResource,
+	NewNotificationResource,
+	NewWebsiteResource,
+	NewUriResource,
+}
+
+var dataSources = []func() datasource.DataSource{}
 
 // SwoProvider defines the provider implementation.
 type SwoProvider struct {
@@ -45,26 +59,24 @@ func (p *SwoProvider) Metadata(ctx context.Context, req provider.MetadataRequest
 }
 
 func (p *SwoProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
-	tflog.Trace(ctx, "SWO Provider: Schema")
-
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"api_token": schema.StringAttribute{
+				Description: fmt.Sprintf("The api token for the %s account.", envvar.AppName),
 				Required:    true,
 				Sensitive:   true,
-				Description: fmt.Sprintf("The authentication token for the %s account.", envvar.AppName),
 			},
 			"request_timeout": schema.Int64Attribute{
-				Optional:    true,
 				Description: "The request timeout period in seconds. Default is 30 seconds.",
+				Optional:    true,
 			},
 			"base_url": schema.StringAttribute{
-				Optional:    true,
 				Description: "The base url to use for requests to the server.",
+				Optional:    true,
 			},
 			"debug_mode": schema.BoolAttribute{
-				Optional:    true,
 				Description: "Setting to true will provide additional logging details.",
+				Optional:    true,
 			},
 		},
 	}
@@ -108,19 +120,17 @@ func (p *SwoProvider) Configure(ctx context.Context, req provider.ConfigureReque
 }
 
 func (p *SwoProvider) Resources(ctx context.Context) []func() resource.Resource {
-	return []func() resource.Resource{
-		NewAlertResource,
-		NewApiTokenResource,
-		NewLogFilterResource,
-		NewDashboardResource,
-		NewNotificationResource,
-		NewWebsiteResource,
-		NewUriResource,
+	var wrappedResources []func() resource.Resource
+	for _, f := range resources {
+		r := f()
+		wrappedResources = append(wrappedResources, func() resource.Resource { return newResourceWrapper(&r) })
 	}
+
+	return wrappedResources
 }
 
 func (p *SwoProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
-	return []func() datasource.DataSource{}
+	return dataSources
 }
 
 func New(version string, transport http.RoundTripper) func() provider.Provider {

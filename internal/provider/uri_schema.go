@@ -2,69 +2,64 @@ package provider
 
 import (
 	"context"
-	"fmt"
-
-	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"github.com/solarwinds/terraform-provider-swo/internal/envvar"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	swoClient "github.com/solarwinds/swo-client-go/pkg/client"
+	"github.com/solarwinds/terraform-provider-swo/internal/validators"
 )
 
-// UriResourceModel is the main resource structure
-type UriResourceModel struct {
+// uriResourceModel is the main resource structure
+type uriResourceModel struct {
 	Id              types.String                `tfsdk:"id"`
 	Name            types.String                `tfsdk:"name"`
 	Host            types.String                `tfsdk:"host"`
-	Options         *UriResourceOptions         `tfsdk:"options"`
-	TcpOptions      *UriResourceTcpOptions      `tfsdk:"tcp_options"`
-	TestDefinitions *UriResourceTestDefinitions `tfsdk:"test_definitions"`
+	Options         *uriResourceOptions         `tfsdk:"options"`
+	TcpOptions      *uriResourceTcpOptions      `tfsdk:"tcp_options"`
+	TestDefinitions *uriResourceTestDefinitions `tfsdk:"test_definitions"`
 }
 
-// UriResourceOptions represents the options field in the main resource
-type UriResourceOptions struct {
+// uriResourceOptions represents the options field in the main resource
+type uriResourceOptions struct {
 	IsPingEnabled types.Bool `tfsdk:"is_ping_enabled"`
 	IsTcpEnabled  types.Bool `tfsdk:"is_tcp_enabled"`
 }
 
-// UriResourceTcpOptions represents the tcp_options field in the main resource
-type UriResourceTcpOptions struct {
+// uriResourceTcpOptions represents the tcp_options field in the main resource
+type uriResourceTcpOptions struct {
 	Port           types.Int64  `tfsdk:"port"`
 	StringToExpect types.String `tfsdk:"string_to_expect"`
 	StringToSend   types.String `tfsdk:"string_to_send"`
 }
 
-// UriResourceTestDefinitions represents the test_definitions field in the main resource
-type UriResourceTestDefinitions struct {
+// uriResourceTestDefinitions represents the test_definitions field in the main resource
+type uriResourceTestDefinitions struct {
 	TestFromLocation      types.String                `tfsdk:"test_from_location"`
-	LocationOptions       []UriResourceProbeLocation  `tfsdk:"location_options"`
+	LocationOptions       []uriResourceProbeLocation  `tfsdk:"location_options"`
 	TestIntervalInSeconds types.Int64                 `tfsdk:"test_interval_in_seconds"`
-	PlatformOptions       *UriResourcePlatformOptions `tfsdk:"platform_options"`
+	PlatformOptions       *uriResourcePlatformOptions `tfsdk:"platform_options"`
 }
 
-// UriResourceProbeLocation represents location_options field in test_definitions
-type UriResourceProbeLocation struct {
+// uriResourceProbeLocation represents location_options field in test_definitions
+type uriResourceProbeLocation struct {
 	Type  types.String `tfsdk:"type"`
 	Value types.String `tfsdk:"value"`
 }
 
-// UriResourcePlatformOptions represents platform_options field in test_definitions
-type UriResourcePlatformOptions struct {
+// uriResourcePlatformOptions represents platform_options field in test_definitions
+type uriResourcePlatformOptions struct {
 	TestFromAll types.Bool `tfsdk:"test_from_all"`
 	Platforms   []string   `tfsdk:"platforms"`
 }
 
-func (r *UriResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
-	tflog.Trace(ctx, "UriResource: Schema")
-
+func (r *uriResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: fmt.Sprintf("A terraform resource for managing %s Uris.", envvar.AppName),
+		Description: "A terraform resource for managing Uri uptime checks.",
 		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				Description: "This is a computed ID provided by the backend.",
-				Computed:    true,
-			},
+			"id": resourceIdAttribute(),
 			"name": schema.StringAttribute{
 				Description: "The name of this Uri check.",
 				Required:    true,
@@ -110,8 +105,14 @@ func (r *UriResource) Schema(ctx context.Context, req resource.SchemaRequest, re
 				Required:    true,
 				Attributes: map[string]schema.Attribute{
 					"test_from_location": schema.StringAttribute{
-						Description: "The location type to test from [REGION|COUNTRY|CITY].",
+						Description: "The location type to test from.",
 						Required:    true,
+						Validators: []validator.String{
+							validators.SingleOption(
+								swoClient.ProbeLocationTypeRegion,
+								swoClient.ProbeLocationTypeCountry,
+								swoClient.ProbeLocationTypeCity),
+						},
 					},
 					"location_options": schema.SetNestedAttribute{
 						Description: "The Website availability monitoring location options.",
@@ -121,6 +122,12 @@ func (r *UriResource) Schema(ctx context.Context, req resource.SchemaRequest, re
 								"type": schema.StringAttribute{
 									Description: "The Website availability monitoring location option type.",
 									Required:    true,
+									Validators: []validator.String{
+										validators.SingleOption(
+											swoClient.ProbeLocationTypeRegion,
+											swoClient.ProbeLocationTypeCountry,
+											swoClient.ProbeLocationTypeCity),
+									},
 								},
 								"value": schema.StringAttribute{
 									Description: "The Website availability monitoring location option value.",
@@ -131,7 +138,9 @@ func (r *UriResource) Schema(ctx context.Context, req resource.SchemaRequest, re
 					},
 					"test_interval_in_seconds": schema.Int64Attribute{
 						Description: "The interval to test in seconds.",
-						Required:    true,
+						Optional:    true,
+						Computed:    true,
+						Default:     int64default.StaticInt64(900),
 					},
 					"platform_options": schema.SingleNestedAttribute{
 						Description: "The platform options for this Uri check.",
@@ -142,7 +151,7 @@ func (r *UriResource) Schema(ctx context.Context, req resource.SchemaRequest, re
 								Required:    true,
 							},
 							"platforms": schema.ListAttribute{
-								Description: "The platforms to test from [AWS|AZURE].",
+								Description: "The platforms to test from. Valid values are [AWS, AZURE].",
 								Optional:    true,
 								ElementType: types.StringType,
 							},
