@@ -7,54 +7,36 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 	swoClient "github.com/solarwinds/swo-client-go/pkg/client"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
-var _ resource.Resource = &LogFilterResource{}
-var _ resource.ResourceWithConfigure = &LogFilterResource{}
-var _ resource.ResourceWithImportState = &LogFilterResource{}
+var (
+	_ resource.Resource                = &logFilterResource{}
+	_ resource.ResourceWithConfigure   = &logFilterResource{}
+	_ resource.ResourceWithImportState = &logFilterResource{}
+)
 
 func NewLogFilterResource() resource.Resource {
-	return &LogFilterResource{}
+	return &logFilterResource{}
 }
 
 // Defines the resource implementation.
-type LogFilterResource struct {
+type logFilterResource struct {
 	client *swoClient.Client
 }
 
-func (r *LogFilterResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_logfilter"
+func (r *logFilterResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = "logfilter"
 }
 
-func (r *LogFilterResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	tflog.Trace(ctx, "LogFilterResource: Configure")
-
-	// Prevent panic if the provider has not been configured.
-	if req.ProviderData == nil {
-		return
-	}
-
-	client, ok := req.ProviderData.(*swoClient.Client)
-	if !ok {
-		resp.Diagnostics.AddError(
-			"Invalid Resource Client Type",
-			fmt.Sprintf("expected *swoClient.Client but received: %T.", req.ProviderData),
-		)
-		return
-	}
-
+func (r *logFilterResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+	client, _ := req.ProviderData.(*swoClient.Client)
 	r.client = client
 }
 
-func (r *LogFilterResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	tflog.Trace(ctx, "LogFilterResource: Create")
-
-	var tfPlan LogFilterResourceModel
-
-	// Read the Terraform plan.
+func (r *logFilterResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var tfPlan logFilterResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &tfPlan)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -65,7 +47,7 @@ func (r *LogFilterResource) Create(ctx context.Context, req resource.CreateReque
 		Name:           tfPlan.Name.ValueString(),
 		Description:    tfPlan.Description.ValueString(),
 		TokenSignature: tfPlan.TokenSignature,
-		Expressions: convertArray(tfPlan.Expressions, func(e LogFilterExpression) swoClient.CreateExclusionFilterExpressionInput {
+		Expressions: convertArray(tfPlan.Expressions, func(e logFilterExpression) swoClient.CreateExclusionFilterExpressionInput {
 			return swoClient.CreateExclusionFilterExpressionInput{
 				Kind:       swoClient.ExclusionFilterExpressionKind(e.Kind),
 				Expression: e.Expression,
@@ -76,29 +58,23 @@ func (r *LogFilterResource) Create(ctx context.Context, req resource.CreateReque
 	// Create the LogFilter...
 	result, err := r.client.LogFilterService().Create(ctx, createInput)
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("error creating logFilter '%s' - error: %s",
-			tfPlan.Name,
-			err))
+		resp.Diagnostics.AddError("Client Error",
+			fmt.Sprintf("error creating logFilter '%s' - error: %s", tfPlan.Name, err))
 		return
 	}
 
-	tflog.Trace(ctx, fmt.Sprintf("logFilter %s created successfully - id=%s", tfPlan.Name, result.Id))
 	tfPlan.Id = types.StringValue(result.Id)
 	resp.Diagnostics.Append(resp.State.Set(ctx, tfPlan)...)
 }
 
-func (r *LogFilterResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	tflog.Trace(ctx, "LogFilterResource: Read")
-
-	var tfState LogFilterResourceModel
-
+func (r *logFilterResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var tfState logFilterResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &tfState)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	// Read the LogFilter...
-	tflog.Trace(ctx, fmt.Sprintf("read logFilter with id: %s", tfState.Id))
 	logFilter, err := r.client.LogFilterService().Read(ctx, tfState.Id.ValueString())
 
 	if err != nil {
@@ -116,9 +92,9 @@ func (r *LogFilterResource) Read(ctx context.Context, req resource.ReadRequest, 
 	tfState.Description = types.StringValue(*logFilter.Description)
 	tfState.TokenSignature = logFilter.TokenSignature
 
-	var lfe []LogFilterExpression
+	var lfe []logFilterExpression
 	for _, p := range logFilter.Expressions {
-		lfe = append(lfe, LogFilterExpression{
+		lfe = append(lfe, logFilterExpression{
 			Kind:       swoClient.ExclusionFilterExpressionKind(p.Kind),
 			Expression: p.Expression,
 		})
@@ -126,31 +102,23 @@ func (r *LogFilterResource) Read(ctx context.Context, req resource.ReadRequest, 
 	tfState.Expressions = lfe
 
 	// Save to Terraform state.
-	tflog.Trace(ctx, fmt.Sprintf("read logFilter success: %s", logFilter.Name))
 	resp.Diagnostics.Append(resp.State.Set(ctx, tfState)...)
 }
 
-func (r *LogFilterResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var tfPlan, tfState *LogFilterResourceModel
-
-	// Read the Terraform plan and state data.
+func (r *logFilterResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var tfPlan, tfState *logFilterResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &tfPlan)...)
 	resp.Diagnostics.Append(req.State.Get(ctx, &tfState)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	// Update the LogFilter...
-	tflog.Trace(ctx, fmt.Sprintf("updating logFilter with id: %s", tfState.Id))
 	err := r.client.LogFilterService().Update(ctx, swoClient.UpdateExclusionFilterInput{
 		Id:          tfState.Id.ValueString(),
 		Name:        tfPlan.Name.ValueString(),
 		Description: tfPlan.Description.ValueString(),
-		Expressions: convertArray(tfPlan.Expressions, func(e LogFilterExpression) swoClient.UpdateExclusionFilterExpressionInput {
+		Expressions: convertArray(tfPlan.Expressions, func(e logFilterExpression) swoClient.UpdateExclusionFilterExpressionInput {
 			return swoClient.UpdateExclusionFilterExpressionInput{
 				Kind:       swoClient.ExclusionFilterExpressionKind(e.Kind),
 				Expression: e.Expression,
@@ -159,36 +127,30 @@ func (r *LogFilterResource) Update(ctx context.Context, req resource.UpdateReque
 	})
 
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("error updating logFilter %s. err: %s", tfState.Id, err))
+		resp.Diagnostics.AddError("Client Error",
+			fmt.Sprintf("error updating logFilter %s. err: %s", tfState.Id, err))
 		return
 	}
-
-	tflog.Trace(ctx, fmt.Sprintf("logFilter '%s' updated successfully", tfState.Id))
 
 	// Save to Terraform state.
 	tfPlan.Id = tfState.Id
 	resp.Diagnostics.Append(resp.State.Set(ctx, &tfPlan)...)
 }
 
-func (r *LogFilterResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var tfState LogFilterResourceModel
-
-	// Read existing Terraform state.
+func (r *logFilterResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var tfState logFilterResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &tfState)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	// Delete the LogFilter...
-	tflog.Trace(ctx, fmt.Sprintf("deleting logFilter: id=%s", tfState.Id))
-	if err := r.client.LogFilterService().
-		Delete(ctx, tfState.Id.ValueString()); err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("error deleting logFilter %s - %s", tfState.Id, err))
-		return
+	if err := r.client.LogFilterService().Delete(ctx, tfState.Id.ValueString()); err != nil {
+		resp.Diagnostics.AddError("Client Error",
+			fmt.Sprintf("error deleting logFilter %s - %s", tfState.Id, err))
 	}
-	tflog.Trace(ctx, fmt.Sprintf("logFilter deleted: id=%s", tfState.Id))
 }
 
-func (r *LogFilterResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (r *logFilterResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }

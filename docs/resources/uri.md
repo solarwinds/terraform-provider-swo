@@ -3,12 +3,12 @@
 page_title: "swo_uri Resource - terraform-provider-swo"
 subcategory: ""
 description: |-
-  A terraform resource for managing SWO Uris.
+  A terraform resource for managing Uri uptime checks.
 ---
 
 # swo_uri (Resource)
 
-A terraform resource for managing SWO Uris.
+A terraform resource for managing Uri uptime checks.
 
 ## Example Usage
 
@@ -76,7 +76,7 @@ resource "swo_uri" "test" {
 
 ### Read-Only
 
-- `id` (String) This is a computed ID provided by the backend.
+- `id` (String) The Id of the resource provided by the backend.
 
 <a id="nestedatt--options"></a>
 ### Nested Schema for `options`
@@ -93,12 +93,12 @@ Required:
 Required:
 
 - `location_options` (Attributes Set) The Website availability monitoring location options. (see [below for nested schema](#nestedatt--test_definitions--location_options))
-- `test_from_location` (String) The location type to test from [REGION|COUNTRY|CITY].
-- `test_interval_in_seconds` (Number) The interval to test in seconds.
+- `test_from_location` (String) The location type to test from.
 
 Optional:
 
 - `platform_options` (Attributes) The platform options for this Uri check. (see [below for nested schema](#nestedatt--test_definitions--platform_options))
+- `test_interval_in_seconds` (Number) The interval to test in seconds.
 
 <a id="nestedatt--test_definitions--location_options"></a>
 ### Nested Schema for `test_definitions.location_options`
@@ -118,7 +118,7 @@ Required:
 
 Optional:
 
-- `platforms` (List of String) The platforms to test from [AWS|AZURE].
+- `platforms` (List of String) The platforms to test from. Valid values are [AWS, AZURE].
 
 
 

@@ -3,12 +3,12 @@
 page_title: "swo_alert Resource - terraform-provider-swo"
 subcategory: ""
 description: |-
-  A terraform resource for managing SWO alerts.
+  A terraform resource for managing alerts.
 ---
 
 # swo_alert (Resource)
 
-A terraform resource for managing SWO alerts.
+A terraform resource for managing alerts.
 
 ## Example Usage
 
@@ -56,21 +56,24 @@ resource "swo_alert" "https_response_time" {
 - `conditions` (Attributes Set) One or more conditions that must be met to tigger the alert. (see [below for nested schema](#nestedatt--conditions))
 - `name` (String) Alert definition name.
 - `notifications` (List of String) A list of notifications to assign to this alert.
-- `severity` (String) Alert definition severity (INFO|WARNING|CRITICAL).
+- `severity` (String) Alert definition severity. Valid values are [INFO|WARNING|CRITICAL].
 
 ### Optional
 
-- `description` (String) Alert definition description. (Optional)
-- `enabled` (Boolean) Enabled whether Alert definition shall be evaluated. Default is true. (Optional)
-- `id` (String) Alert definition ID in UUID format. This is a computed value provided by the backend when an alert is created. (Optional)
-- `trigger_reset_actions` (Boolean) A flag indicating whether to send a notification when active alert returns to normal. It will be set to false if not specified. (Optional)
+- `description` (String) Alert definition description.
+- `enabled` (Boolean) Enabled whether Alert definition shall be evaluated. Default is true.
+- `trigger_reset_actions` (Boolean) A flag indicating whether to send a notification when active alert returns to normal. It will be set to false if not specified.
+
+### Read-Only
+
+- `id` (String) The Id of the resource provided by the backend.
 
 <a id="nestedatt--conditions"></a>
 ### Nested Schema for `conditions`
 
 Required:
 
-- `aggregation_type` (String) The aggregation type that will be applyed to the metric and duration. (MIN|MAX|AVG|SUM|LAST)
+- `aggregation_type` (String) The aggregation type that will be applyed to the metric and duration.
 - `duration` (String) Duration of time that will be used to check if the threshold has been breached.
 - `metric_name` (String) The field name of the metric to be filtered on.
 - `target_entity_types` (List of String) The entity types for scoping this alert (e.g. Website, Host, Database...).
@@ -78,17 +81,17 @@ Required:
 
 Optional:
 
-- `entity_ids` (List of String) A list of Entity IDs that will be used to filter on by the alert. (Optional)
-- `exclude_tags` (Attributes Set) List of Metric values that the metric field will not be in. (Optional) (see [below for nested schema](#nestedatt--conditions--exclude_tags))
-- `include_tags` (Attributes Set) List of Metric values that the metric field will be in. (Optional) (see [below for nested schema](#nestedatt--conditions--include_tags))
+- `entity_ids` (List of String) A list of Entity IDs that will be used to filter on by the alert.
+- `exclude_tags` (Attributes Set) List of Metric values that the metric field will not be in. (see [below for nested schema](#nestedatt--conditions--exclude_tags))
+- `include_tags` (Attributes Set) List of Metric values that the metric field will be in. (see [below for nested schema](#nestedatt--conditions--include_tags))
 
 <a id="nestedatt--conditions--exclude_tags"></a>
 ### Nested Schema for `conditions.exclude_tags`
 
 Optional:
 
-- `name` (String) Name of the metric values the metric field will not be in. (Optional)
-- `values` (List of String) Metric values the metric field will not be in. (Optional)
+- `name` (String) Name of the metric values the metric field will not be in.
+- `values` (List of String) Metric values the metric field will not be in.
 
 
 <a id="nestedatt--conditions--include_tags"></a>
@@ -96,5 +99,5 @@ Optional:
 
 Optional:
 
-- `name` (String) Name of the metric values the metric field will be in. (Optional)
-- `values` (List of String) Metric values the metric field will be in. (Optional)
+- `name` (String) Name of the metric values the metric field will be in.
+- `values` (List of String) Metric values the metric field will be in.

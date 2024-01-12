@@ -12,16 +12,29 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 	swoClient "github.com/solarwinds/swo-client-go/pkg/client"
 	"github.com/solarwinds/terraform-provider-swo/internal/envvar"
 )
 
 // Ensure SwoProvider satisfies various provider interfaces.
-var _ provider.Provider = &SwoProvider{}
+var (
+	_ provider.Provider = &swoProvider{}
+)
 
-// SwoProvider defines the provider implementation.
-type SwoProvider struct {
+var resources = []func() resource.Resource{
+	NewAlertResource,
+	NewApiTokenResource,
+	NewLogFilterResource,
+	NewDashboardResource,
+	NewNotificationResource,
+	NewWebsiteResource,
+	NewUriResource,
+}
+
+var dataSources = []func() datasource.DataSource{}
+
+// swoProvider defines the provider implementation.
+type swoProvider struct {
 	// Version is set to the provider version on release, "dev" when the
 	// provider is built and ran locally, and "test" when running acceptance
 	// testing.
@@ -29,49 +42,45 @@ type SwoProvider struct {
 	transport http.RoundTripper
 }
 
-// SwoProviderModel describes the provider data model.
-type SwoProviderModel struct {
+// swoProviderModel describes the provider data model.
+type swoProviderModel struct {
 	ApiToken       types.String `tfsdk:"api_token"`
 	RequestTimeout types.Int64  `tfsdk:"request_timeout"`
 	BaseURL        types.String `tfsdk:"base_url"`
 	DebugMode      types.Bool   `tfsdk:"debug_mode"`
 }
 
-func (p *SwoProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
-	tflog.Trace(ctx, "SWO Provider: Metadata")
-
+func (p *swoProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
 	resp.TypeName = "swo"
 	resp.Version = p.version
 }
 
-func (p *SwoProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
-	tflog.Trace(ctx, "SWO Provider: Schema")
-
+func (p *swoProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"api_token": schema.StringAttribute{
+				Description: fmt.Sprintf("The api token for the %s account.", envvar.AppName),
 				Required:    true,
 				Sensitive:   true,
-				Description: fmt.Sprintf("The authentication token for the %s account.", envvar.AppName),
 			},
 			"request_timeout": schema.Int64Attribute{
-				Optional:    true,
 				Description: "The request timeout period in seconds. Default is 30 seconds.",
+				Optional:    true,
 			},
 			"base_url": schema.StringAttribute{
-				Optional:    true,
 				Description: "The base url to use for requests to the server.",
+				Optional:    true,
 			},
 			"debug_mode": schema.BoolAttribute{
-				Optional:    true,
 				Description: "Setting to true will provide additional logging details.",
+				Optional:    true,
 			},
 		},
 	}
 }
 
-func (p *SwoProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
-	var config SwoProviderModel
+func (p *swoProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
+	var config swoProviderModel
 
 	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
 
@@ -85,9 +94,6 @@ func (p *SwoProvider) Configure(ctx context.Context, req provider.ConfigureReque
 			"Api Token Required",
 			"The api token was not provided.",
 		)
-	}
-
-	if resp.Diagnostics.HasError() {
 		return
 	}
 
@@ -107,25 +113,23 @@ func (p *SwoProvider) Configure(ctx context.Context, req provider.ConfigureReque
 	resp.ResourceData = client
 }
 
-func (p *SwoProvider) Resources(ctx context.Context) []func() resource.Resource {
-	return []func() resource.Resource{
-		NewAlertResource,
-		NewApiTokenResource,
-		NewLogFilterResource,
-		NewDashboardResource,
-		NewNotificationResource,
-		NewWebsiteResource,
-		NewUriResource,
+func (p *swoProvider) Resources(ctx context.Context) []func() resource.Resource {
+	var wrappedResources []func() resource.Resource
+	for _, f := range resources {
+		r := f()
+		wrappedResources = append(wrappedResources, func() resource.Resource { return newResourceWrapper(&r) })
 	}
+
+	return wrappedResources
 }
 
-func (p *SwoProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
-	return []func() datasource.DataSource{}
+func (p *swoProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
+	return dataSources
 }
 
 func New(version string, transport http.RoundTripper) func() provider.Provider {
 	return func() provider.Provider {
-		return &SwoProvider{
+		return &swoProvider{
 			version:   version,
 			transport: transport,
 		}

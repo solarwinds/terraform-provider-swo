@@ -2,42 +2,34 @@ package provider
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 	swoClient "github.com/solarwinds/swo-client-go/pkg/client"
-	"github.com/solarwinds/terraform-provider-swo/internal/envvar"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// LogFilterResourceModel is the main resource structure
-type LogFilterResourceModel struct {
+// logFilterResourceModel is the main resource structure
+type logFilterResourceModel struct {
 	Id             types.String          `tfsdk:"id"`
 	Name           types.String          `tfsdk:"name"`
 	Description    types.String          `tfsdk:"description"`
 	TokenSignature *string               `tfsdk:"token_signature"`
-	Expressions    []LogFilterExpression `tfsdk:"expressions"`
+	Expressions    []logFilterExpression `tfsdk:"expressions"`
 }
 
 // LogFilterResourceOptions represents the options field in the main resource
-type LogFilterExpression struct {
+type logFilterExpression struct {
 	Kind       swoClient.ExclusionFilterExpressionKind `tfsdk:"kind"`
 	Expression string                                  `tfsdk:"expression"`
 }
 
-func (r *LogFilterResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
-	tflog.Trace(ctx, "LogFilterResource: Schema")
-
+func (r *logFilterResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: fmt.Sprintf("A terraform resource for managing %s LogFilters.", envvar.AppName),
+		Description: "A terraform resource for managing log exclusion filters.",
 		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				Description: "This is a computed ID provided by the backend.",
-				Computed:    true,
-			},
+			"id": resourceIdAttribute(),
 			"name": schema.StringAttribute{
 				Description: "The name of the log exclusion filter.",
 				Required:    true,

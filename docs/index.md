@@ -16,10 +16,8 @@ description: |-
 terraform {
   required_providers {
     swo = {
-      version = ">= 0.0.7"
+      version = ">= 0.0.11"
       source  = "solarwinds/swo"
-      # Uncomment the following line to use the latest version of the provider from GitHub.
-      # source = "github.com/solarwinds/swo"
     }
   }
 }
@@ -40,7 +38,7 @@ provider "swo" {
 
 ### Required
 
-- `api_token` (String, Sensitive) The authentication token for the SWO account.
+- `api_token` (String, Sensitive) The api token for the SWO account.
 
 ### Optional
 

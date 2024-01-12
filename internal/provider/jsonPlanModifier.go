@@ -14,7 +14,7 @@ import (
 // stored as the value of a string attribute to prevent unwanted change detection
 // due to added white space, field ordering, or other string value differences that
 // aren't different when the json is unmarshaled into an object.
-func UseStandarizedJson() planmodifier.String {
+func useStandarizedJson() planmodifier.String {
 	return standarizeJson{}
 }
 

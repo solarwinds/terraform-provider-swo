@@ -3,12 +3,12 @@
 page_title: "swo_notification Resource - terraform-provider-swo"
 subcategory: ""
 description: |-
-  A terraform resource for managing SWO notifications.
+  A terraform resource for managing notifications.
 ---
 
 # swo_notification (Resource)
 
-A terraform resource for managing SWO notifications.
+A terraform resource for managing notifications.
 
 ## Example Usage
 
@@ -125,37 +125,35 @@ resource "swo_notification" "email" {
 ### Required
 
 - `settings` (Attributes) The notification settings. (see [below for nested schema](#nestedatt--settings))
-- `title` (String) Notification title.
+- `title` (String) The title of the notification.
 - `type` (String) Notification type (email, slack, etc).
 
 ### Optional
 
-- `description` (String) A short description of the Notification. (Optional)
+- `description` (String) A short description of the notification.
 
 ### Read-Only
 
-- `created_at` (String) When was this notification created?
-- `created_by` (String) Who created this notification?
-- `id` (String) Notification ID in UUID format. This is a computed value provided by the backend.
+- `id` (String) The Id of the resource provided by the backend.
 
 <a id="nestedatt--settings"></a>
 ### Nested Schema for `settings`
 
 Optional:
 
-- `amazonsns` (Attributes) Integration for sending alerts to Amazon Simple Notification Service. Provides message delivery from publishers to subscribers. (Optional) (see [below for nested schema](#nestedatt--settings--amazonsns))
-- `email` (Attributes) Email settings. (Optional) (see [below for nested schema](#nestedatt--settings--email))
-- `msteams` (Attributes) Integration for sending static alerts to a Microsoft Teams channel. (Optional) (see [below for nested schema](#nestedatt--settings--msteams))
-- `opsgenie` (Attributes) Integration for sending alerts via email or using a Webhook to OpsGenie. (Optional) (see [below for nested schema](#nestedatt--settings--opsgenie))
-- `pagerduty` (Attributes) Integration for sending events to PagerDuty. (Optional) (see [below for nested schema](#nestedatt--settings--pagerduty))
-- `pushover` (Attributes) Integration for Sending alerts to Pushover. (Optional) (see [below for nested schema](#nestedatt--settings--pushover))
-- `servicenow` (Attributes) Integration with SolarWinds Observability creates new incidents based on SolarWinds Observability alerts. (Optional) (see [below for nested schema](#nestedatt--settings--servicenow))
-- `slack` (Attributes) Integration for sending static alerts to a Slack channel. (Optional) (see [below for nested schema](#nestedatt--settings--slack))
-- `sms` (Attributes) For sending alerts Through SMS/Text. (Optional) (see [below for nested schema](#nestedatt--settings--sms))
-- `swsd` (Attributes) Integration with SolarWinds Observability creates new incidents based on SolarWinds Observability alerts. (Optional) (see [below for nested schema](#nestedatt--settings--swsd))
-- `victorops` (Attributes) Integration for sending events to VictorOps. (Optional) (see [below for nested schema](#nestedatt--settings--victorops))
-- `webhook` (Attributes) Integration with an existing notification service. (Optional) (see [below for nested schema](#nestedatt--settings--webhook))
-- `zapier` (Attributes) Integration for sending alerts to Zapier. (Optional) (see [below for nested schema](#nestedatt--settings--zapier))
+- `amazonsns` (Attributes) Integration for sending alerts to Amazon Simple Notification Service. Provides message delivery from publishers to subscribers. (see [below for nested schema](#nestedatt--settings--amazonsns))
+- `email` (Attributes) Email settings. (see [below for nested schema](#nestedatt--settings--email))
+- `msteams` (Attributes) Integration for sending static alerts to a Microsoft Teams channel. (see [below for nested schema](#nestedatt--settings--msteams))
+- `opsgenie` (Attributes) Integration for sending alerts via email or using a Webhook to OpsGenie. (see [below for nested schema](#nestedatt--settings--opsgenie))
+- `pagerduty` (Attributes) Integration for sending events to PagerDuty. (see [below for nested schema](#nestedatt--settings--pagerduty))
+- `pushover` (Attributes) Integration for Sending alerts to Pushover. (see [below for nested schema](#nestedatt--settings--pushover))
+- `servicenow` (Attributes) Integration with SolarWinds Observability creates new incidents based on SolarWinds Observability alerts. (see [below for nested schema](#nestedatt--settings--servicenow))
+- `slack` (Attributes) Integration for sending static alerts to a Slack channel. (see [below for nested schema](#nestedatt--settings--slack))
+- `sms` (Attributes) For sending alerts Through SMS/Text. (see [below for nested schema](#nestedatt--settings--sms))
+- `swsd` (Attributes) Integration with SolarWinds Observability creates new incidents based on SolarWinds Observability alerts. (see [below for nested schema](#nestedatt--settings--swsd))
+- `victorops` (Attributes) Integration for sending events to VictorOps. (see [below for nested schema](#nestedatt--settings--victorops))
+- `webhook` (Attributes) Integration with an existing notification service. (see [below for nested schema](#nestedatt--settings--webhook))
+- `zapier` (Attributes) Integration for sending alerts to Zapier. (see [below for nested schema](#nestedatt--settings--zapier))
 
 <a id="nestedatt--settings--amazonsns"></a>
 ### Nested Schema for `settings.amazonsns`
@@ -183,7 +181,7 @@ Required:
 
 Optional:
 
-- `id` (String) The user id associated to the email address. (Optional)
+- `id` (String) The user id associated to the email address.
 
 
 
@@ -280,7 +278,7 @@ Optional:
 
 Required:
 
-- `method` (String) HTTP Method for calling the webhook. (POST|GET)
+- `method` (String) HTTP Method for calling the webhook.
 - `url` (String) Webhook URL to an existing notification service.
 
 Optional:
@@ -288,7 +286,7 @@ Optional:
 - `auth_header_hame` (String) Header name for token auth.
 - `auth_header_value` (String, Sensitive) Header value for token auth.
 - `auth_password` (String, Sensitive) Password for basic auth type.
-- `auth_type` (String) Token or username/password auth. (basic|token)
+- `auth_type` (String) Token or username/password auth.
 - `auth_username` (String) Username for basic auth type.
 
 

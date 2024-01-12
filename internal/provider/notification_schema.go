@@ -11,8 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"github.com/solarwinds/terraform-provider-swo/internal/envvar"
+	"github.com/solarwinds/terraform-provider-swo/internal/validators"
 )
 
 const (
@@ -27,21 +26,19 @@ const (
 )
 
 // The main Notification Resource model that is derived from the schema.
-type NotificationResourceModel struct {
+type notificationResourceModel struct {
 	Id          types.String          `tfsdk:"id"`
 	Title       types.String          `tfsdk:"title"`
 	Description types.String          `tfsdk:"description"`
 	Type        types.String          `tfsdk:"type"`
-	Settings    *NotificationSettings `tfsdk:"settings"`
-	CreatedAt   types.String          `tfsdk:"created_at"`
-	CreatedBy   types.String          `tfsdk:"created_by"`
+	Settings    *notificationSettings `tfsdk:"settings"`
 }
 
-func (m *NotificationResourceModel) ParseId() (id string, notificationType string, err error) {
+func (m *notificationResourceModel) ParseId() (id string, notificationType string, err error) {
 	idParts := strings.Split(m.Id.ValueString(), ":")
 
 	if len(idParts) != 2 || idParts[0] == "" || idParts[1] == "" {
-		err = fmt.Errorf("expected identifier with format: id,type. got: %q", m.Id)
+		err = fmt.Errorf("expected identifier with format: id:type. got: %q", m.Id)
 	} else {
 		id = idParts[0]
 		notificationType = idParts[1]
@@ -50,42 +47,29 @@ func (m *NotificationResourceModel) ParseId() (id string, notificationType strin
 	return id, notificationType, err
 }
 
-func (r *NotificationResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
-	tflog.Trace(ctx, "NotificationResource: Schema")
-
+func (r *notificationResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: fmt.Sprintf("A terraform resource for managing %s notifications.", envvar.AppName),
+		Description: "A terraform resource for managing notifications.",
 		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				Description: "Notification ID in UUID format. This is a computed value provided by the backend.",
-				Computed:    true,
-			},
+			"id": resourceIdAttribute(),
 			"title": schema.StringAttribute{
-				Description: "Notification title.",
+				Description: "The title of the notification.",
 				Required:    true,
 			},
 			"description": schema.StringAttribute{
-				Description: "A short description of the Notification. (Optional)",
+				Description: "A short description of the notification.",
 				Optional:    true,
 			},
 			"type": schema.StringAttribute{
 				Description: "Notification type (email, slack, etc).",
 				Required:    true,
 			},
-			"created_by": schema.StringAttribute{
-				Description: "Who created this notification?",
-				Computed:    true,
-			},
-			"created_at": schema.StringAttribute{
-				Description: "When was this notification created?",
-				Computed:    true,
-			},
 			"settings": schema.SingleNestedAttribute{
 				Description: "The notification settings.",
 				Required:    true,
 				Attributes: map[string]schema.Attribute{
 					"email": schema.SingleNestedAttribute{
-						Description: "Email settings. (Optional)",
+						Description: "Email settings.",
 						Optional:    true,
 						Attributes: map[string]schema.Attribute{
 							"addresses": schema.SetNestedAttribute{
@@ -94,7 +78,7 @@ func (r *NotificationResource) Schema(ctx context.Context, req resource.SchemaRe
 								NestedObject: schema.NestedAttributeObject{
 									Attributes: map[string]schema.Attribute{
 										"id": schema.StringAttribute{
-											Description: "The user id associated to the email address. (Optional)",
+											Description: "The user id associated to the email address.",
 											Optional:    true,
 										},
 										"email": schema.StringAttribute{
@@ -113,7 +97,7 @@ func (r *NotificationResource) Schema(ctx context.Context, req resource.SchemaRe
 						},
 					},
 					"slack": schema.SingleNestedAttribute{
-						Description: "Integration for sending static alerts to a Slack channel. (Optional)",
+						Description: "Integration for sending static alerts to a Slack channel.",
 						Optional:    true,
 						Attributes: map[string]schema.Attribute{
 							"url": schema.StringAttribute{
@@ -129,7 +113,7 @@ func (r *NotificationResource) Schema(ctx context.Context, req resource.SchemaRe
 						},
 					},
 					"pagerduty": schema.SingleNestedAttribute{
-						Description: "Integration for sending events to PagerDuty. (Optional)",
+						Description: "Integration for sending events to PagerDuty.",
 						Optional:    true,
 						Attributes: map[string]schema.Attribute{
 							"routing_key": schema.StringAttribute{
@@ -157,7 +141,7 @@ func (r *NotificationResource) Schema(ctx context.Context, req resource.SchemaRe
 						},
 					},
 					"webhook": schema.SingleNestedAttribute{
-						Description: "Integration with an existing notification service. (Optional)",
+						Description: "Integration with an existing notification service.",
 						Optional:    true,
 						Attributes: map[string]schema.Attribute{
 							"url": schema.StringAttribute{
@@ -171,12 +155,18 @@ func (r *NotificationResource) Schema(ctx context.Context, req resource.SchemaRe
 								},
 							},
 							"method": schema.StringAttribute{
-								Description: "HTTP Method for calling the webhook. (POST|GET)",
+								Description: "HTTP Method for calling the webhook.",
 								Required:    true,
+								Validators: []validator.String{
+									validators.SingleOption("POST", "GET"),
+								},
 							},
 							"auth_type": schema.StringAttribute{
-								Description: "Token or username/password auth. (basic|token)",
+								Description: "Token or username/password auth.",
 								Optional:    true,
+								Validators: []validator.String{
+									validators.SingleOption("basic", "token"),
+								},
 							},
 							"auth_username": schema.StringAttribute{
 								Description: "Username for basic auth type.",
@@ -199,7 +189,7 @@ func (r *NotificationResource) Schema(ctx context.Context, req resource.SchemaRe
 						},
 					},
 					"victorops": schema.SingleNestedAttribute{
-						Description: "Integration for sending events to VictorOps. (Optional)",
+						Description: "Integration for sending events to VictorOps.",
 						Optional:    true,
 						Attributes: map[string]schema.Attribute{
 							"api_key": schema.StringAttribute{
@@ -215,7 +205,7 @@ func (r *NotificationResource) Schema(ctx context.Context, req resource.SchemaRe
 						},
 					},
 					"opsgenie": schema.SingleNestedAttribute{
-						Description: "Integration for sending alerts via email or using a Webhook to OpsGenie. (Optional)",
+						Description: "Integration for sending alerts via email or using a Webhook to OpsGenie.",
 						Optional:    true,
 						Attributes: map[string]schema.Attribute{
 							"hostname": schema.StringAttribute{
@@ -242,7 +232,7 @@ func (r *NotificationResource) Schema(ctx context.Context, req resource.SchemaRe
 						},
 					},
 					"amazonsns": schema.SingleNestedAttribute{
-						Description: "Integration for sending alerts to Amazon Simple Notification Service. Provides message delivery from publishers to subscribers. (Optional)",
+						Description: "Integration for sending alerts to Amazon Simple Notification Service. Provides message delivery from publishers to subscribers.",
 						Optional:    true,
 						Attributes: map[string]schema.Attribute{
 							"topic_arn": schema.StringAttribute{
@@ -267,7 +257,7 @@ func (r *NotificationResource) Schema(ctx context.Context, req resource.SchemaRe
 						},
 					},
 					"zapier": schema.SingleNestedAttribute{
-						Description: "Integration for sending alerts to Zapier. (Optional)",
+						Description: "Integration for sending alerts to Zapier.",
 						Optional:    true,
 						Attributes: map[string]schema.Attribute{
 							"url": schema.StringAttribute{
@@ -283,7 +273,7 @@ func (r *NotificationResource) Schema(ctx context.Context, req resource.SchemaRe
 						},
 					},
 					"msteams": schema.SingleNestedAttribute{
-						Description: "Integration for sending static alerts to a Microsoft Teams channel. (Optional)",
+						Description: "Integration for sending static alerts to a Microsoft Teams channel.",
 						Optional:    true,
 						Attributes: map[string]schema.Attribute{
 							"url": schema.StringAttribute{
@@ -299,7 +289,7 @@ func (r *NotificationResource) Schema(ctx context.Context, req resource.SchemaRe
 						},
 					},
 					"pushover": schema.SingleNestedAttribute{
-						Description: "Integration for Sending alerts to Pushover. (Optional)",
+						Description: "Integration for Sending alerts to Pushover.",
 						Optional:    true,
 						Attributes: map[string]schema.Attribute{
 							"user_key": schema.StringAttribute{
@@ -314,7 +304,7 @@ func (r *NotificationResource) Schema(ctx context.Context, req resource.SchemaRe
 						},
 					},
 					"sms": schema.SingleNestedAttribute{
-						Description: "For sending alerts Through SMS/Text. (Optional)",
+						Description: "For sending alerts Through SMS/Text.",
 						Optional:    true,
 						Attributes: map[string]schema.Attribute{
 							"phone_numbers": schema.StringAttribute{
@@ -330,7 +320,7 @@ func (r *NotificationResource) Schema(ctx context.Context, req resource.SchemaRe
 						},
 					},
 					"swsd": schema.SingleNestedAttribute{
-						Description: "Integration with SolarWinds Observability creates new incidents based on SolarWinds Observability alerts. (Optional)",
+						Description: "Integration with SolarWinds Observability creates new incidents based on SolarWinds Observability alerts.",
 						Optional:    true,
 						Attributes: map[string]schema.Attribute{
 							"app_token": schema.StringAttribute{
@@ -345,7 +335,7 @@ func (r *NotificationResource) Schema(ctx context.Context, req resource.SchemaRe
 						},
 					},
 					"servicenow": schema.SingleNestedAttribute{
-						Description: "Integration with SolarWinds Observability creates new incidents based on SolarWinds Observability alerts. (Optional)",
+						Description: "Integration with SolarWinds Observability creates new incidents based on SolarWinds Observability alerts.",
 						Optional:    true,
 						Attributes: map[string]schema.Attribute{
 							"app_token": schema.StringAttribute{

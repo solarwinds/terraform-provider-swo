@@ -3,19 +3,19 @@
 page_title: "swo_apitoken Resource - terraform-provider-swo"
 subcategory: ""
 description: |-
-  A terraform resource for managing SWO ApiTokens.
+  A terraform resource for managing api tokens.
 ---
 
 # swo_apitoken (Resource)
 
-A terraform resource for managing SWO ApiTokens.
+A terraform resource for managing api tokens.
 
 ## Example Usage
 
 ```terraform
 resource "swo_apitoken" "test" {
   name         = "terraform-provider-swo example"
-  access_level = "READ"
+  access_level = "FULL"
   type         = "public-api"
   enabled      = true
   attributes = [
@@ -32,20 +32,19 @@ resource "swo_apitoken" "test" {
 
 ### Required
 
-- `access_level` (String) The access level of the token [READ|RECORD|FULL].
-- `enabled` (Boolean) The enabled state of the token.
 - `name` (String) The user provided name of the token.
-- `type` (String) The type of the token.
 
 ### Optional
 
+- `access_level` (String) The access level of the token. Valid values are [FULL|READ|RECORD]. Default is FULL.
 - `attributes` (Attributes Set) The custom attributes assigned to the token. (see [below for nested schema](#nestedatt--attributes))
+- `enabled` (Boolean) The enabled state of the token. Default is true.
+- `type` (String) The type of the token. Default is public-api.
 
 ### Read-Only
 
-- `id` (String) This is a computed ID provided by the backend.
-- `secure` (Boolean) The secure state of the token. Secure tokens are only revealed to the user once at creation and cannot be unobfuscated.
-- `token` (String) The plain-text value of the token.
+- `id` (String) The Id of the resource provided by the backend.
+- `token` (String, Sensitive) The plain-text value of the token.
 
 <a id="nestedatt--attributes"></a>
 ### Nested Schema for `attributes`

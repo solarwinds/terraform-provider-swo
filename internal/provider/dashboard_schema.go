@@ -2,29 +2,25 @@ package provider
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"github.com/solarwinds/terraform-provider-swo/internal/envvar"
+	"github.com/solarwinds/terraform-provider-swo/internal/validators"
 )
 
 // The main Dashboard Resource model that is derived from the schema.
-type DashboardResourceModel struct {
+type dashboardResourceModel struct {
 	Id         types.String           `tfsdk:"id"`
 	Name       types.String           `tfsdk:"name"`
 	IsPrivate  types.Bool             `tfsdk:"is_private"`
 	CategoryId types.String           `tfsdk:"category_id"`
-	CreatedAt  types.String           `tfsdk:"created_at"`
-	UpdatedAt  types.String           `tfsdk:"updated_at"`
-	Widgets    []DashboardWidgetModel `tfsdk:"widgets"`
+	Widgets    []dashboardWidgetModel `tfsdk:"widgets"`
 }
 
-type DashboardWidgetModel struct {
+type dashboardWidgetModel struct {
 	Id         types.String `tfsdk:"id"`
 	Type       types.String `tfsdk:"type"`
 	X          types.Int64  `tfsdk:"x"`
@@ -34,19 +30,11 @@ type DashboardWidgetModel struct {
 	Properties types.String `tfsdk:"properties"`
 }
 
-func (r *DashboardResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
-	tflog.Trace(ctx, "DashboardResource: Schema")
-
+func (r *dashboardResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: fmt.Sprintf("A terraform resource for managing %s dashboards.", envvar.AppName),
+		Description: "A terraform resource for managing dashboards.",
 		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				Description: "The computed id of the dashboard.",
-				Computed:    true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
-			},
+			"id": resourceIdAttribute(),
 			"name": schema.StringAttribute{
 				Description: "The name of the dashboard.",
 				Required:    true,
@@ -59,14 +47,6 @@ func (r *DashboardResource) Schema(ctx context.Context, req resource.SchemaReque
 				Description: "The category that this dashboard is assigned to.",
 				Optional:    true,
 			},
-			"created_at": schema.StringAttribute{
-				Description: "The date and time the dashboard was created.",
-				Computed:    true,
-			},
-			"updated_at": schema.StringAttribute{
-				Description: "The date and time the dashboard was last updated.",
-				Computed:    true,
-			},
 			"widgets": schema.SetNestedAttribute{
 				Description: "The widgets that are placed on the dashboard.",
 				Optional:    true,
@@ -77,8 +57,11 @@ func (r *DashboardResource) Schema(ctx context.Context, req resource.SchemaReque
 							Computed:    true,
 						},
 						"type": schema.StringAttribute{
-							Description: "The type of the widget (e.g. Kpi, Proportional, TimeSeries)",
+							Description: "The type of the widget.",
 							Required:    true,
+							Validators: []validator.String{
+								validators.SingleOption("Kpi", "Proportional", "TimeSeries"),
+							},
 						},
 						"x": schema.Int64Attribute{
 							Description: "The X position of the widget.",
@@ -100,7 +83,7 @@ func (r *DashboardResource) Schema(ctx context.Context, req resource.SchemaReque
 							Description: "A JSON encoded string that defines the widget configuration.",
 							Required:    true,
 							PlanModifiers: []planmodifier.String{
-								UseStandarizedJson(),
+								useStandarizedJson(),
 							},
 						},
 					},

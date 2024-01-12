@@ -3,12 +3,12 @@
 page_title: "swo_website Resource - terraform-provider-swo"
 subcategory: ""
 description: |-
-  A terraform resource for managing SWO Websites.
+  A terraform resource for managing website uptime checks.
 ---
 
 # swo_website (Resource)
 
-A terraform resource for managing SWO Websites.
+A terraform resource for managing website uptime checks.
 
 ## Example Usage
 
@@ -94,7 +94,7 @@ resource "swo_website" "test_website" {
 
 ### Read-Only
 
-- `id` (String) Website Id. This is a computed value provided by the backend.
+- `id` (String) The Id of the resource provided by the backend.
 
 <a id="nestedatt--monitoring"></a>
 ### Nested Schema for `monitoring`
@@ -114,13 +114,13 @@ Required:
 - `location_options` (Attributes Set) The Website availability monitoring location options. (see [below for nested schema](#nestedatt--monitoring--availability--location_options))
 - `platform_options` (Attributes) The Website availability monitoring platform options. (see [below for nested schema](#nestedatt--monitoring--availability--platform_options))
 - `protocols` (List of String) The Website availability monitoring protocols.
-- `ssl` (Attributes) The Website availability monitoring SSL settings. (see [below for nested schema](#nestedatt--monitoring--availability--ssl))
 - `test_from_location` (String) The Website availability monitoring test from location.
 - `test_interval_in_seconds` (Number) The Website availability monitoring test interval in seconds.
 
 Optional:
 
 - `check_for_string` (Attributes) The Website availability monitoring check for string settings. (see [below for nested schema](#nestedatt--monitoring--availability--check_for_string))
+- `ssl` (Attributes) The Website availability monitoring SSL settings. (see [below for nested schema](#nestedatt--monitoring--availability--ssl))
 
 <a id="nestedatt--monitoring--availability--location_options"></a>
 ### Nested Schema for `monitoring.availability.location_options`
@@ -136,8 +136,17 @@ Required:
 
 Required:
 
-- `platforms` (List of String) The Website availability monitoring platform options.
+- `platforms` (List of String) The Website availability monitoring platform options. Valid values are [AWS, AZURE].
 - `test_from_all` (Boolean) Test from all platforms?
+
+
+<a id="nestedatt--monitoring--availability--check_for_string"></a>
+### Nested Schema for `monitoring.availability.check_for_string`
+
+Required:
+
+- `operator` (String) The Website availability monitoring check for string operator.
+- `value` (String) The Website availability monitoring check for string value.
 
 
 <a id="nestedatt--monitoring--availability--ssl"></a>
@@ -148,15 +157,6 @@ Required:
 - `days_prior_to_expiration` (Number) The Website availability monitoring SSL days prior to expiration.
 - `enabled` (Boolean) Is SSL monitoring enabled?
 - `ignore_intermediate_certificates` (Boolean) Ignore intermediate certificates?
-
-
-<a id="nestedatt--monitoring--availability--check_for_string"></a>
-### Nested Schema for `monitoring.availability.check_for_string`
-
-Required:
-
-- `operator` (String) The Website availability monitoring check for string operator.
-- `value` (String) The Website availability monitoring check for string value.
 
 
 

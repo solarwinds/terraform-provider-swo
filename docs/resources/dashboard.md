@@ -3,12 +3,12 @@
 page_title: "swo_dashboard Resource - terraform-provider-swo"
 subcategory: ""
 description: |-
-  A terraform resource for managing SWO dashboards.
+  A terraform resource for managing dashboards.
 ---
 
 # swo_dashboard (Resource)
 
-A terraform resource for managing SWO dashboards.
+A terraform resource for managing dashboards.
 
 ## Example Usage
 
@@ -191,9 +191,7 @@ resource "swo_dashboard" "metrics_dashboard" {
 
 ### Read-Only
 
-- `created_at` (String) The date and time the dashboard was created.
-- `id` (String) The computed id of the dashboard.
-- `updated_at` (String) The date and time the dashboard was last updated.
+- `id` (String) The Id of the resource provided by the backend.
 
 <a id="nestedatt--widgets"></a>
 ### Nested Schema for `widgets`
@@ -202,7 +200,7 @@ Required:
 
 - `height` (Number) The height of the widget.
 - `properties` (String) A JSON encoded string that defines the widget configuration.
-- `type` (String) The type of the widget (e.g. Kpi, Proportional, TimeSeries)
+- `type` (String) The type of the widget.
 - `width` (Number) The width of the widget.
 - `x` (Number) The X position of the widget.
 - `y` (Number) The Y position of the widget.
