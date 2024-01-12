@@ -3,12 +3,12 @@
 page_title: "swo_logfilter Resource - terraform-provider-swo"
 subcategory: ""
 description: |-
-  A terraform resource for managing SWO LogFilters.
+  A terraform resource for managing log exclusion filters.
 ---
 
 # swo_logfilter (Resource)
 
-A terraform resource for managing SWO LogFilters.
+A terraform resource for managing log exclusion filters.
 
 ## Example Usage
 
@@ -41,7 +41,7 @@ resource "swo_logfilter" "test" {
 
 ### Read-Only
 
-- `id` (String) This is a computed ID provided by the backend.
+- `id` (String) The Id of the resource provided by the backend.
 
 <a id="nestedatt--expressions"></a>
 ### Nested Schema for `expressions`
