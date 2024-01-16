@@ -31,7 +31,7 @@ resource "swo_logfilter" "test" {
 
 ### Required
 
-- `expressions` (Attributes Set) The list of exclusions for the log exclusion filter. (see [below for nested schema](#nestedatt--expressions))
+- `expressions` (Attributes List) The list of exclusions for the log exclusion filter. (see [below for nested schema](#nestedatt--expressions))
 - `name` (String) The name of the log exclusion filter.
 
 ### Optional
@@ -49,4 +49,4 @@ resource "swo_logfilter" "test" {
 Required:
 
 - `expression` (String) The expression of the log exclusion filter.
-- `kind` (String) The kind of the log exclusion filter [STRING|REGEX].
+- `kind` (String) The kind of the log exclusion filter. Valid values are [`STRING`|`REGEX`].

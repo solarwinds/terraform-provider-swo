@@ -150,8 +150,8 @@ func (r *uriResource) Schema(ctx context.Context, req resource.SchemaRequest, re
 								Description: "Whether or not to test from all platforms.",
 								Required:    true,
 							},
-							"platforms": schema.ListAttribute{
-								Description: "The platforms to test from. Valid values are [AWS, AZURE].",
+							"platforms": schema.SetAttribute{
+								Description: "The platforms to test from. Valid values are [`AWS`, `AZURE`].",
 								Optional:    true,
 								ElementType: types.StringType,
 							},

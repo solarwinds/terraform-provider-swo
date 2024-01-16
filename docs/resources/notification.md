@@ -278,7 +278,7 @@ Optional:
 
 Required:
 
-- `method` (String) HTTP Method for calling the webhook.
+- `method` (String) HTTP Method for calling the webhook. Valid values are [`POST`|`GET`].
 - `url` (String) Webhook URL to an existing notification service.
 
 Optional:
@@ -286,7 +286,7 @@ Optional:
 - `auth_header_hame` (String) Header name for token auth.
 - `auth_header_value` (String, Sensitive) Header value for token auth.
 - `auth_password` (String, Sensitive) Password for basic auth type.
-- `auth_type` (String) Token or username/password auth.
+- `auth_type` (String) Token or username/password auth. Valid values are [`basic`|`token`].
 - `auth_username` (String) Username for basic auth type.
 
 

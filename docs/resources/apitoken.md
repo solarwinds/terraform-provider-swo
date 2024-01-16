@@ -17,7 +17,6 @@ resource "swo_apitoken" "test" {
   name         = "terraform-provider-swo example"
   access_level = "FULL"
   type         = "public-api"
-  enabled      = true
   attributes = [
     {
       key   = "attribute-key"
@@ -36,10 +35,10 @@ resource "swo_apitoken" "test" {
 
 ### Optional
 
-- `access_level` (String) The access level of the token. Valid values are [FULL|READ|RECORD]. Default is FULL.
+- `access_level` (String) The access level of the token. Valid values are [`FULL`|`READ`|`RECORD`]. Default is `FULL`.
 - `attributes` (Attributes Set) The custom attributes assigned to the token. (see [below for nested schema](#nestedatt--attributes))
-- `enabled` (Boolean) The enabled state of the token. Default is true.
-- `type` (String) The type of the token. Default is public-api.
+- `enabled` (Boolean) The enabled state of the token. Default is `true`.
+- `type` (String) The type of the token. Default is `public-api`.
 
 ### Read-Only
 

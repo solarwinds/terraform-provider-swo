@@ -21,77 +21,58 @@ func resourceIdAttribute() schema.StringAttribute {
 }
 
 func enrichSchema(s *schema.Schema) {
-	for _, attr := range s.Attributes {
-		enrichResourceOrBlock(attr)
-	}
-
-	for _, block := range s.Blocks {
-		enrichResourceOrBlock(block)
+	for i, attr := range s.Attributes {
+		s.Attributes[i] = enrichAttribute(attr)
 	}
 }
 
-// Enrich an attribute or block and all child attributes/blocks if the type has them.
-// NOTE: This function is recursive.
-func enrichResourceOrBlock(el any) {
-	switch v := el.(type) {
+func enrichAttribute(attr schema.Attribute) schema.Attribute {
+	switch v := attr.(type) {
 	case schema.StringAttribute:
-		enrichDescription(&v)
+		return enrichDescription(v)
 	case schema.BoolAttribute:
-		enrichDescription(&v)
+		return enrichDescription(v)
 	case schema.Int64Attribute:
-		enrichDescription(&v)
+		return enrichDescription(v)
 	case schema.ListAttribute:
-		enrichDescription(&v)
+		return enrichDescription(v)
 	case schema.Float64Attribute:
-		enrichDescription(&v)
+		return enrichDescription(v)
 	case schema.MapAttribute:
-		enrichDescription(&v)
+		return enrichDescription(v)
 	case schema.SetAttribute:
-		enrichDescription(&v)
+		return enrichDescription(v)
 	case schema.NumberAttribute:
-		enrichDescription(&v)
+		return enrichDescription(v)
 	case schema.ObjectAttribute:
-		enrichDescription(&v)
+		return enrichDescription(v)
 	case schema.SingleNestedAttribute:
-		enrichNestedAttribute(v)
+		for i, chld := range v.Attributes {
+			v.Attributes[i] = enrichAttribute(chld)
+		}
+		return enrichDescription(v)
 	case schema.ListNestedAttribute:
-		enrichNestedAttribute(v)
-		enrichDescription(&v)
+		for i, chld := range v.NestedObject.Attributes {
+			v.NestedObject.Attributes[i] = enrichAttribute(chld)
+		}
+		return enrichDescription(v)
 	case schema.SetNestedAttribute:
-		enrichNestedAttribute(v)
-		enrichDescription(&v)
+		for i, chld := range v.NestedObject.Attributes {
+			v.NestedObject.Attributes[i] = enrichAttribute(chld)
+		}
+		return enrichDescription(v)
 	case schema.MapNestedAttribute:
-		enrichNestedAttribute(v)
-		enrichDescription(&v)
-	case schema.SingleNestedBlock:
-		enrichBlock(v)
-		enrichDescription(&v)
-	case schema.ListNestedBlock:
-		enrichBlock(v)
-		enrichDescription(&v)
-	case schema.SetNestedBlock:
-		enrichBlock(v)
-		enrichDescription(&v)
+		for i, chld := range v.NestedObject.Attributes {
+			v.NestedObject.Attributes[i] = enrichAttribute(chld)
+		}
+		return enrichDescription(v)
 	}
+
+	return attr
 }
 
-func enrichNestedAttribute(attr schema.NestedAttribute) {
-	for _, attr := range attr.GetNestedObject().GetAttributes() {
-		enrichResourceOrBlock(attr)
-	}
-}
-
-func enrichBlock(block schema.Block) {
-	for _, attr := range block.GetNestedObject().GetAttributes() {
-		enrichResourceOrBlock(attr)
-	}
-	for _, block := range block.GetNestedObject().GetBlocks() {
-		enrichResourceOrBlock(block)
-	}
-}
-
-func enrichDescription(value any) {
-	rv := reflect.ValueOf(value)
+func enrichDescription[T schema.Attribute](value T) T {
+	rv := reflect.ValueOf(&value)
 	descField := rv.Elem().FieldByName("Description")
 	curentDesc := descField.String()
 
@@ -111,9 +92,9 @@ func enrichDescription(value any) {
 					if len(validValuesMsg) > 0 {
 						sep = "|"
 					}
-					validValuesMsg += fmt.Sprintf("%s%v", sep, v.Index(i))
+					validValuesMsg += fmt.Sprintf("%s`%v`", sep, v.Index(i))
 				}
-				curentDesc = fmt.Sprintf("%s Valid values are `[%s]`.", curentDesc, validValuesMsg)
+				curentDesc = fmt.Sprintf("%s Valid values are [%s].", curentDesc, validValuesMsg)
 				break
 			}
 		}
@@ -129,4 +110,5 @@ func enrichDescription(value any) {
 	}
 
 	descField.SetString(curentDesc)
+	return value
 }
