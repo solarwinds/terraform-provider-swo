@@ -34,17 +34,17 @@ func enrichAttribute(attr schema.Attribute) schema.Attribute {
 		return enrichDescription(v)
 	case schema.Int64Attribute:
 		return enrichDescription(v)
-	case schema.ListAttribute:
-		return enrichDescription(v)
 	case schema.Float64Attribute:
-		return enrichDescription(v)
-	case schema.MapAttribute:
-		return enrichDescription(v)
-	case schema.SetAttribute:
 		return enrichDescription(v)
 	case schema.NumberAttribute:
 		return enrichDescription(v)
 	case schema.ObjectAttribute:
+		return enrichDescription(v)
+	case schema.ListAttribute:
+		return enrichDescription(v)
+	case schema.MapAttribute:
+		return enrichDescription(v)
+	case schema.SetAttribute:
 		return enrichDescription(v)
 	case schema.SingleNestedAttribute:
 		for i, chld := range v.Attributes {
