@@ -93,19 +93,19 @@ Required:
 Required:
 
 - `location_options` (Attributes Set) The Website availability monitoring location options. (see [below for nested schema](#nestedatt--test_definitions--location_options))
-- `test_from_location` (String) The location type to test from.
+- `test_from_location` (String) The location type to test from. Valid values are [`REGION`|`COUNTRY`|`CITY`].
 
 Optional:
 
 - `platform_options` (Attributes) The platform options for this Uri check. (see [below for nested schema](#nestedatt--test_definitions--platform_options))
-- `test_interval_in_seconds` (Number) The interval to test in seconds.
+- `test_interval_in_seconds` (Number) The interval to test in seconds. Default is `900`.
 
 <a id="nestedatt--test_definitions--location_options"></a>
 ### Nested Schema for `test_definitions.location_options`
 
 Required:
 
-- `type` (String) The Website availability monitoring location option type.
+- `type` (String) The Website availability monitoring location option type. Valid values are [`REGION`|`COUNTRY`|`CITY`].
 - `value` (String) The Website availability monitoring location option value.
 
 
@@ -118,7 +118,7 @@ Required:
 
 Optional:
 
-- `platforms` (List of String) The platforms to test from. Valid values are [AWS, AZURE].
+- `platforms` (Set of String) The platforms to test from. Valid values are [`AWS`, `AZURE`].
 
 
 

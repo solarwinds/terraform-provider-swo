@@ -16,7 +16,7 @@ description: |-
 terraform {
   required_providers {
     swo = {
-      version = ">= 0.0.11"
+      version = ">= 0.0.13"
       source  = "solarwinds/swo"
     }
   }

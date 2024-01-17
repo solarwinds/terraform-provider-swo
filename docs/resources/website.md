@@ -114,7 +114,7 @@ Required:
 - `location_options` (Attributes Set) The Website availability monitoring location options. (see [below for nested schema](#nestedatt--monitoring--availability--location_options))
 - `platform_options` (Attributes) The Website availability monitoring platform options. (see [below for nested schema](#nestedatt--monitoring--availability--platform_options))
 - `protocols` (List of String) The Website availability monitoring protocols.
-- `test_from_location` (String) The Website availability monitoring test from location.
+- `test_from_location` (String) The Website availability monitoring test from location. Valid values are [`REGION`|`COUNTRY`|`CITY`].
 - `test_interval_in_seconds` (Number) The Website availability monitoring test interval in seconds.
 
 Optional:
@@ -127,7 +127,7 @@ Optional:
 
 Required:
 
-- `type` (String) The Website availability monitoring location option type.
+- `type` (String) The Website availability monitoring location option type. Valid values are [`REGION`|`COUNTRY`|`CITY`].
 - `value` (String) The Website availability monitoring location option value.
 
 

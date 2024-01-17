@@ -200,7 +200,7 @@ Required:
 
 - `height` (Number) The height of the widget.
 - `properties` (String) A JSON encoded string that defines the widget configuration.
-- `type` (String) The type of the widget.
+- `type` (String) The type of the widget. Valid values are [`Kpi`|`Proportional`|`TimeSeries`].
 - `width` (Number) The width of the widget.
 - `x` (Number) The X position of the widget.
 - `y` (Number) The Y position of the widget.

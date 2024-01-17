@@ -4,9 +4,11 @@ import (
 	"context"
 
 	swoClient "github.com/solarwinds/swo-client-go/pkg/client"
+	"github.com/solarwinds/terraform-provider-swo/internal/validators"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -42,14 +44,19 @@ func (r *logFilterResource) Schema(ctx context.Context, req resource.SchemaReque
 				Description: "The token signature of the log exclusion filter.",
 				Optional:    true,
 			},
-			"expressions": schema.SetNestedAttribute{
+			"expressions": schema.ListNestedAttribute{
 				Description: "The list of exclusions for the log exclusion filter.",
 				Required:    true,
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"kind": schema.StringAttribute{
-							Description: "The kind of the log exclusion filter [STRING|REGEX].",
+							Description: "The kind of the log exclusion filter.",
 							Required:    true,
+							Validators: []validator.String{
+								validators.SingleOption(
+									swoClient.ExclusionFilterExpressionKindString,
+									swoClient.ExclusionFilterExpressionKindRegex),
+							},
 						},
 						"expression": schema.StringAttribute{
 							Description: "The expression of the log exclusion filter.",

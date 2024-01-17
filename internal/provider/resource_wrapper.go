@@ -50,7 +50,7 @@ func (r *resourceWrapper) Metadata(ctx context.Context, req resource.MetadataReq
 
 func (r *resourceWrapper) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	(*r.innerResource).Schema(ctx, req, resp)
-	enrichFrameworkResourceSchema(&resp.Schema)
+	enrichSchema(&resp.Schema)
 }
 
 func (r *resourceWrapper) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
