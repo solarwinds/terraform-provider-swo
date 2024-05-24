@@ -43,14 +43,27 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 	}
 
 	// Create our input request.
+	var checkForString *swoClient.CheckForStringInput
+	if tfPlan.Monitoring.Availability.CheckForString != nil {
+		checkForString = &swoClient.CheckForStringInput{
+			Operator: swoClient.CheckStringOperator(tfPlan.Monitoring.Availability.CheckForString.Operator.ValueString()),
+			Value:    tfPlan.Monitoring.Availability.CheckForString.Value.ValueString(),
+		}
+	}
+	var ssl *swoClient.SslMonitoringInput
+	if tfPlan.Monitoring.Availability.SSL != nil {
+		ssl = &swoClient.SslMonitoringInput{
+			Enabled:                        tfPlan.Monitoring.Availability.SSL.Enabled.ValueBoolPointer(),
+			DaysPriorToExpiration:          swoClient.Ptr(int(tfPlan.Monitoring.Availability.SSL.DaysPriorToExpiration.ValueInt64())),
+			IgnoreIntermediateCertificates: tfPlan.Monitoring.Availability.SSL.IgnoreIntermediateCertificates.ValueBoolPointer(),
+		}
+	}
+
 	createInput := swoClient.CreateWebsiteInput{
 		Name: tfPlan.Name.ValueString(),
 		Url:  tfPlan.Url.ValueString(),
 		AvailabilityCheckSettings: &swoClient.AvailabilityCheckSettingsInput{
-			CheckForString: &swoClient.CheckForStringInput{
-				Operator: swoClient.CheckStringOperator(tfPlan.Monitoring.Availability.CheckForString.Operator.ValueString()),
-				Value:    tfPlan.Monitoring.Availability.CheckForString.Value.ValueString(),
-			},
+			CheckForString:        checkForString,
 			TestIntervalInSeconds: int(tfPlan.Monitoring.Availability.TestIntervalInSeconds.ValueInt64()),
 			Protocols: convertArray(tfPlan.Monitoring.Availability.Protocols, func(s string) swoClient.WebsiteProtocol {
 				return swoClient.WebsiteProtocol(s)
@@ -67,11 +80,7 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 					return p.Value.ValueString()
 				}),
 			},
-			Ssl: &swoClient.SslMonitoringInput{
-				Enabled:                        tfPlan.Monitoring.Availability.SSL.Enabled.ValueBoolPointer(),
-				DaysPriorToExpiration:          swoClient.Ptr(int(tfPlan.Monitoring.Availability.SSL.DaysPriorToExpiration.ValueInt64())),
-				IgnoreIntermediateCertificates: tfPlan.Monitoring.Availability.SSL.IgnoreIntermediateCertificates.ValueBoolPointer(),
-			},
+			Ssl: ssl,
 			CustomHeaders: convertArray(tfPlan.Monitoring.CustomHeaders, func(h customHeader) swoClient.CustomHeaderInput {
 				return swoClient.CustomHeaderInput{
 					Name:  h.Name.ValueString(),
@@ -237,6 +246,22 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
+	var checkForString *swoClient.CheckForStringInput
+	if tfPlan.Monitoring.Availability.CheckForString != nil {
+		checkForString = &swoClient.CheckForStringInput{
+			Operator: swoClient.CheckStringOperator(tfPlan.Monitoring.Availability.CheckForString.Operator.ValueString()),
+			Value:    tfPlan.Monitoring.Availability.CheckForString.Value.ValueString(),
+		}
+	}
+	var ssl *swoClient.SslMonitoringInput
+	if tfPlan.Monitoring.Availability.SSL != nil {
+		ssl = &swoClient.SslMonitoringInput{
+			Enabled:                        tfPlan.Monitoring.Availability.SSL.Enabled.ValueBoolPointer(),
+			DaysPriorToExpiration:          swoClient.Ptr(int(tfPlan.Monitoring.Availability.SSL.DaysPriorToExpiration.ValueInt64())),
+			IgnoreIntermediateCertificates: tfPlan.Monitoring.Availability.SSL.IgnoreIntermediateCertificates.ValueBoolPointer(),
+		}
+	}
+
 	// Update the Website...
 	err := r.client.WebsiteService().Update(ctx,
 		swoClient.UpdateWebsiteInput{
@@ -244,10 +269,7 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 			Name: tfPlan.Name.ValueString(),
 			Url:  tfPlan.Url.ValueString(),
 			AvailabilityCheckSettings: &swoClient.AvailabilityCheckSettingsInput{
-				CheckForString: &swoClient.CheckForStringInput{
-					Operator: swoClient.CheckStringOperator(tfPlan.Monitoring.Availability.CheckForString.Operator.ValueString()),
-					Value:    tfPlan.Monitoring.Availability.CheckForString.Value.ValueString(),
-				},
+				CheckForString:        checkForString,
 				TestIntervalInSeconds: int(tfPlan.Monitoring.Availability.TestIntervalInSeconds.ValueInt64()),
 				Protocols: convertArray(tfPlan.Monitoring.Availability.Protocols, func(s string) swoClient.WebsiteProtocol {
 					return swoClient.WebsiteProtocol(s)
@@ -264,11 +286,7 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 						return p.Value.ValueString()
 					}),
 				},
-				Ssl: &swoClient.SslMonitoringInput{
-					Enabled:                        tfPlan.Monitoring.Availability.SSL.Enabled.ValueBoolPointer(),
-					DaysPriorToExpiration:          swoClient.Ptr(int(tfPlan.Monitoring.Availability.SSL.DaysPriorToExpiration.ValueInt64())),
-					IgnoreIntermediateCertificates: tfPlan.Monitoring.Availability.SSL.IgnoreIntermediateCertificates.ValueBoolPointer(),
-				},
+				Ssl: ssl,
 				CustomHeaders: convertArray(tfPlan.Monitoring.CustomHeaders, func(h customHeader) swoClient.CustomHeaderInput {
 					return swoClient.CustomHeaderInput{
 						Name:  h.Name.ValueString(),
