@@ -22,6 +22,14 @@ func TestAccWebsiteResource(t *testing.T) {
 					resource.TestCheckResourceAttr("swo_website.test", "url", "www.solarwinds.com"),
 				),
 			},
+			{
+				Config: testAccWebsiteResourceConfigWithoutOptionals("test create without"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet("swo_website.test", "id"),
+					resource.TestCheckResourceAttr("swo_website.test", "name", "test create without"),
+					resource.TestCheckResourceAttr("swo_website.test", "url", "www.solarwinds.com"),
+				),
+			},
 			// ImportState testing
 			{
 				ResourceName:      "swo_website.test",
@@ -33,6 +41,12 @@ func TestAccWebsiteResource(t *testing.T) {
 				Config: testAccWebsiteResourceConfig("test two"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("swo_website.test", "name", "test two"),
+				),
+			},
+			{
+				Config: testAccWebsiteResourceConfigWithoutOptionals("test update without"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("swo_website.test", "name", "test update without"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
@@ -63,6 +77,68 @@ func testAccWebsiteResourceConfig(name string) string {
 					enabled                          = true
 					ignore_intermediate_certificates = true
 				}
+	
+				protocols                = ["HTTP", "HTTPS"]
+				test_interval_in_seconds = 300
+				test_from_location       = "REGION"
+	
+				location_options = [
+					{
+						type  = "REGION"
+						value = "NA"
+					},
+					{
+						type  = "REGION"
+						value = "AS"
+					},
+					{
+						type  = "REGION"
+						value = "SA"
+					},
+					{
+						type  = "REGION"
+						value = "OC"
+					}
+				]
+	
+				platform_options = {
+					test_from_all = false
+					platforms     = ["AWS"]
+				}
+			}
+	
+			rum = {
+				apdex_time_in_seconds = 4
+				spa                   = true
+			}
+	
+			custom_headers = [
+				{
+					name  = "Custom-Header-1"
+					value = "Custom-Value-1"
+				},
+				{
+					name  = "Custom-Header-2"
+					value = "Custom-Value-2"
+				}
+			]
+		}
+	}`, name)
+}
+
+func testAccWebsiteResourceConfigWithoutOptionals(name string) string {
+	return providerConfig + fmt.Sprintf(`
+	resource "swo_website" "test_website" {
+		name        = %[1]q
+		url  = "https://example.com"
+	
+		monitoring = {
+			options = {
+				is_availability_active = true
+				is_rum_active          = true
+			}
+	
+			availability = {
 	
 				protocols                = ["HTTP", "HTTPS"]
 				test_interval_in_seconds = 300
