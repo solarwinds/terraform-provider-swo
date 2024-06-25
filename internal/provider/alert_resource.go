@@ -64,16 +64,17 @@ func (r *alertResource) Read(ctx context.Context, req resource.ReadRequest, resp
 		return
 	}
 
-	alertDef, err := r.client.AlertsService().Read(ctx, tfState.Id.String())
+	alertId := tfState.Id.ValueString()
+	_, err := r.client.AlertsService().Read(ctx, alertId)
 
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("error getting alert %s. error: %s",
-			alertDef.Id,
+		alertId,
 			err))
 		return
 	}
 
-	// r.updataState(tfState, alertDef)
+	// r.updateState(tfState, alertDef)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &tfState)...)
 }
