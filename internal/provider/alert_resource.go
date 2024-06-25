@@ -69,7 +69,7 @@ func (r *alertResource) Read(ctx context.Context, req resource.ReadRequest, resp
 
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("error getting alert %s. error: %s",
-		alertId,
+			alertId,
 			err))
 		return
 	}
