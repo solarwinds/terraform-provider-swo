@@ -143,7 +143,7 @@ func (model *alertResourceModel) toAlertDefinitionInput() swoClient.AlertDefinit
 		Enabled:     model.Enabled.ValueBool(),
 		Severity:    swoClient.AlertSeverity(model.Severity.ValueString()),
 		Actions:     model.toAlertActionInput(),
-    TriggerResetActions: model.TriggerResetActions.ValueBoolPointer(),
+		TriggerResetActions: model.TriggerResetActions.ValueBoolPointer(),
 		Condition:   conditions,
 	}
 }
