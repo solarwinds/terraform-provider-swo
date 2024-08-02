@@ -39,12 +39,13 @@ type sslMonitoring struct {
 }
 
 type websiteMonitoring struct {
-	Options       monitoringOptions      `tfsdk:"options"`
+	Options       *monitoringOptions     `tfsdk:"options"`
 	Availability  availabilityMonitoring `tfsdk:"availability"`
 	Rum           rumMonitoring          `tfsdk:"rum"`
 	CustomHeaders []customHeader         `tfsdk:"custom_headers"`
 }
 
+// Deprecated: Options are not used anymore
 type monitoringOptions struct {
 	IsAvailabilityActive types.Bool `tfsdk:"is_availability_active"`
 	IsRumActive          types.Bool `tfsdk:"is_rum_active"`
@@ -94,8 +95,9 @@ func (r *websiteResource) Schema(ctx context.Context, req resource.SchemaRequest
 				Required:    true,
 				Attributes: map[string]schema.Attribute{
 					"options": schema.SingleNestedAttribute{
-						Description: "The Website monitoring options.",
-						Required:    true,
+						Description:        "The Website monitoring options.",
+						Optional:           true,
+						DeprecationMessage: "Remove this attribute's configuration as it's no longer in use and the attribute will be removed in the next major version of the provider.",
 						Attributes: map[string]schema.Attribute{
 							"is_availability_active": schema.BoolAttribute{
 								Description: "Is availability monitoring active?",
