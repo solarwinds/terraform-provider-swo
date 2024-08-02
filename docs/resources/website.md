@@ -186,5 +186,5 @@ Read-Only:
 
 Required:
 
-- `is_availability_active` (Boolean) Is availability monitoring active?
-- `is_rum_active` (Boolean) Is RUM monitoring active?
+- `is_availability_active` (Boolean, Deprecated) Is availability monitoring active?
+- `is_rum_active` (Boolean, Deprecated) Is RUM monitoring active?

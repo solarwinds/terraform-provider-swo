@@ -100,12 +100,14 @@ func (r *websiteResource) Schema(ctx context.Context, req resource.SchemaRequest
 						DeprecationMessage: "Remove this attribute's configuration as it's no longer in use and the attribute will be removed in the next major version of the provider.",
 						Attributes: map[string]schema.Attribute{
 							"is_availability_active": schema.BoolAttribute{
-								Description: "Is availability monitoring active?",
-								Required:    true,
+								Description:        "Is availability monitoring active?",
+								DeprecationMessage: "Remove this attribute's configuration as it's no longer in use and the attribute will be removed in the next major version of the provider.",
+								Required:           true,
 							},
 							"is_rum_active": schema.BoolAttribute{
-								Description: "Is RUM monitoring active?",
-								Required:    true,
+								Description:        "Is RUM monitoring active?",
+								DeprecationMessage: "Remove this attribute's configuration as it's no longer in use and the attribute will be removed in the next major version of the provider.",
+								Required:           true,
 							},
 						},
 					},
