@@ -45,6 +45,7 @@ resource "swo_alert" "https_response_time" {
     },
   ]
   notifications = [swo_notification.msteams.id, swo_notification.opsgenie.id]
+  trigger_reset_actions = true
 }
 ```
 

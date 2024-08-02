@@ -3,10 +3,6 @@ resource "swo_website" "test_website" {
   url  = "https://example.com"
 
   monitoring = {
-    options = {
-      is_availability_active = true
-      is_rum_active          = true
-    }
 
     availability = {
       check_for_string = {
