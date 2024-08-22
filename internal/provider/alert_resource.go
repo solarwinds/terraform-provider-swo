@@ -64,16 +64,17 @@ func (r *alertResource) Read(ctx context.Context, req resource.ReadRequest, resp
 		return
 	}
 
-	alertDef, err := r.client.AlertsService().Read(ctx, tfState.Id.String())
+	alertId := tfState.Id.ValueString()
+	_, err := r.client.AlertsService().Read(ctx, alertId)
 
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("error getting alert %s. error: %s",
-			alertDef.Id,
+			alertId,
 			err))
 		return
 	}
 
-	// r.updataState(tfState, alertDef)
+	// r.updateState(tfState, alertDef)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &tfState)...)
 }
@@ -142,6 +143,7 @@ func (model *alertResourceModel) toAlertDefinitionInput() swoClient.AlertDefinit
 		Enabled:     model.Enabled.ValueBool(),
 		Severity:    swoClient.AlertSeverity(model.Severity.ValueString()),
 		Actions:     model.toAlertActionInput(),
+		TriggerResetActions: model.TriggerResetActions.ValueBoolPointer(),
 		Condition:   conditions,
 	}
 }

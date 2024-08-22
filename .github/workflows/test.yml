@@ -7,22 +7,16 @@ on:
 
 jobs:
   test:
-    strategy:
-      fail-fast: false
-      matrix:
-        os:  ["windows-latest", "ubuntu-latest", "macOS-latest"]
-        go:  ["1.20.x", "1.21.x"]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
-          go-version: ${{ matrix.go }}
+          go-version: ">= 1.22.0"
       - run: go mod verify
       - run: go vet ./...
-    #   tests are disabled in GHA for now since they are run within the corporate VPN
-    #   - run: go test ./... -race -vet=off
+      #   tests are disabled in GHA for now since they are run within the corporate VPN
+      #   - run: go test ./... -race -vet=off
       - uses: dominikh/staticcheck-action@v1.3.0
         with:
           install-go: false
-          cache-key: ${{ matrix.go }}
