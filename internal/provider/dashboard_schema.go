@@ -40,7 +40,7 @@ func (r *dashboardResource) Schema(ctx context.Context, req resource.SchemaReque
 				Required:    true,
 			},
 			"is_private": schema.BoolAttribute{
-				Description: "Is this dashboard restricted to the owner?",
+				Description: "True if the dashboard is restricted to the owner",
 				Optional:    true,
 			},
 			"category_id": schema.StringAttribute{

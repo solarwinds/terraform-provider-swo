@@ -81,7 +81,7 @@ func (r *apiTokenResource) Read(ctx context.Context, req resource.ReadRequest, r
 
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error",
-			fmt.Sprintf("error reading apiToken %s. error: %s", tfState.Id, err))
+			fmt.Sprintf("error reading API token %s. error: %s", tfState.Id, err))
 		return
 	}
 
@@ -116,7 +116,7 @@ func (r *apiTokenResource) Update(ctx context.Context, req resource.UpdateReques
 	err := r.client.ApiTokenService().Update(ctx, updateInput)
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error",
-			fmt.Sprintf("error updating apiToken %s. err: %s", tfState.Id, err))
+			fmt.Sprintf("error updating API token %s. err: %s", tfState.Id, err))
 		return
 	}
 
@@ -134,7 +134,7 @@ func (r *apiTokenResource) Delete(ctx context.Context, req resource.DeleteReques
 	// Delete the ApiToken...
 	if err := r.client.ApiTokenService().Delete(ctx, tfState.Id.ValueString()); err != nil {
 		resp.Diagnostics.AddError("Client Error",
-			fmt.Sprintf("error deleting apiToken %s - %s", tfState.Id, err))
+			fmt.Sprintf("error deleting API token %s - %s", tfState.Id, err))
 	}
 }
 

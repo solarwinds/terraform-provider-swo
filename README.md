@@ -2,58 +2,20 @@
 
 ## terraform-provider-swo
 
-This provider lets you save clicking in the Solarwinds Observability Platform user interface by allowing you to produce SWO configuration with the rest of your cloud infratructure.
+This provider lets you manage your SolarWinds Observability configuration (e.g. alerts, websites, API tokens, etc.) using Terraform. Its
+Terraform registry page can be found [here](https://registry.terraform.io/providers/solarwinds/swo/latest).
 
-The SWO terraform provider enables the automation of:
+## Using the provider
 
-- Alerts
-- Api Tokens
-- Dashboards
-- Log Exclusion Filters
-- Notification Services
-- Uris (uptime checks)
-- Websites (uptime checks)
+Full documentation for using the provider can be found at the [Terraform Registry](https://registry.terraform.io/providers/solarwinds/swo/latest/docs) or in the `/docs` folder of this repo.
 
 ### Example usage
 
 See `example.tf` [in this repo](https://github.com/solarwinds/terraform-provider-swo/blob/master/examples/) to understand how to start using the provider.
 
-### Installing
-
-- Grab the latest release binary from the [Releases page](https://github.com/solarwinds/terraform-provider-swo/releases).
-- Extract and place the binary into `$HOME/.terraform.d/plugins/github.com/solarwinds/terraform-provider-swo/<VERSION>/<ARCH>/terraform-provider-swo` (Replace `<VERSION>` with the version downloaded and `<ARCH>` with the machine architecture (eg. `darwin_amd64` or `darwin_arm64`)
-- Set the execute flag on the binary
-
-```
-chmod 755 $HOME/.terraform.d/plugins/github.com/solarwinds/terraform-provider-swo/<VERSION>/<ARCH>/terraform-provider-swo
-```
-
-- You should now be able to write TF code for the Solarwinds Observability Platform with the rest of your infrastructure code.
-
-### Usage Notes
-
-In order for the provider to work in a module, you need to add a required_providers block in your module as such:
-
-```hcl
-terraform {
-  required_providers {
-    swo = {
-      source  = "solarwinds/swo"
-      version = ">= 0.0.11"
-    }
-  }
-}
-```
-
-This needs to be done because this provider has not been published to the Terraform registry, which is the default location that Terraform will look in when searching for providers.
-
-### Issues/Bugs
+## Issues/Bugs
 
 Please report bugs and request enhancements in the [Issues area](https://github.com/solarwinds/terraform-provider-swo/issues) of this repo.
-
-## Using the provider
-
-Full documentation for using the provider can be found at the [Terraform Registry](https://registry.terraform.io/providers/solarwinds/swo/latest/docs) or in the `/docs` folder of this repo.
 
 ## Developing the Provider
 
@@ -92,13 +54,6 @@ Then commit the changes to `go.mod` and `go.sum`.
 
 ## Terraform Debugging
 
-Mac Install Terraform:
-
-```
-$ brew tap hashicorp/tap
-$ brew install hashicorp/tap/terraform
-```
-
 Follow this: https://opencredo.com/blogs/running-a-terraform-provider-with-a-debugger/
 For vscode setup a .vscode/launch.json file that looks like this
 
@@ -117,7 +72,7 @@ For vscode setup a .vscode/launch.json file that looks like this
 }
 ```
 
-Run the new debugger. If everything was set up correctly, the plugin will output a message to the Debug Console telling you to set the TF_REATTACH_PROVIDERS environment variable.
+Run the debugger. If everything was set up correctly, the plugin will output a message to the Debug Console telling you to set the TF_REATTACH_PROVIDERS environment variable.
 
 Below you see an example of what should be displayed in your Debug Console if the provider stated up correctly. Copy the variable in your Debug Console and export it in your terminal. Don't export what is in the example below.
 
@@ -131,9 +86,14 @@ Provider started. To attach Terraform CLI, set the TF_REATTACH_PROVIDERS environ
 
 export the `TF_REATTACH_PROVIDERS` you get back.
 
-If you're running Apple M1 chip.
+If you're running Apple M1 chip:
 
 ```
 export GODEBUG=asyncpreemptoff=1
+```
+
+Run Terraform:
+
+```
 terraform init -upgrade
 ```

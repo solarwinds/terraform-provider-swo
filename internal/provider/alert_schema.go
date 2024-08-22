@@ -42,19 +42,19 @@ type alertTagsModel struct {
 
 func (r *alertResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "A terraform resource for managing alerts.",
+		Description: "A Terraform resource for managing alerts.",
 		Attributes: map[string]schema.Attribute{
 			"id": resourceIdAttribute(),
 			"name": schema.StringAttribute{
-				Description: "Alert definition name.",
+				Description: "Alert name.",
 				Required:    true,
 			},
 			"description": schema.StringAttribute{
-				Description: "Alert definition description.",
+				Description: "Alert description.",
 				Optional:    true,
 			},
 			"severity": schema.StringAttribute{
-				Description: "Alert definition severity.",
+				Description: "Alert severity.",
 				Required:    true,
 				Validators: []validator.String{
 					validators.SingleOption(
@@ -65,17 +65,18 @@ func (r *alertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 				},
 			},
 			"enabled": schema.BoolAttribute{
-				Description: "Enabled whether Alert definition shall be evaluated.",
+				Description: "True if the Alert should be evaluated.",
 				Computed:    true,
 				Optional:    true,
 				Default:     booldefault.StaticBool(true),
 			},
 			"trigger_reset_actions": schema.BoolAttribute{
-				Description: "A flag indicating whether to send a notification when active alert returns to normal. It will be set to false if not specified.",
+				Description: "True if a notification should be sent when an active alert returns to normal. Default is false.",
 				Optional:    true,
+				Default:     booldefault.StaticBool(false),
 			},
 			"conditions": schema.SetNestedAttribute{
-				Description: "One or more conditions that must be met to tigger the alert.",
+				Description: "One or more conditions that must be met to trigger the alert. These conditions are evaluated as a logical AND.",
 				Required:    true,
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
@@ -84,15 +85,15 @@ func (r *alertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 							Required:    true,
 						},
 						"threshold": schema.StringAttribute{
-							Description: "Operator and value that represents the threshold of an the alert. When the threshold is breached it triggers the alert. For Opertator - binaryOperator:(=|!=|>|<|>=|<=), logicalOperator:(AND|OR)",
+							Description: "Operator and value that represent the threshold of an the alert. When the threshold is breached it triggers the alert. For Operator - binaryOperator:(=|!=|>|<|>=|<=), logicalOperator:(AND|OR) E.g. '>=10'",
 							Required:    true,
 						},
 						"duration": schema.StringAttribute{
-							Description: "Duration of time that will be used to check if the threshold has been breached.",
+							Description: "How long the threshold has been met before triggering an alert.",
 							Required:    true,
 						},
 						"aggregation_type": schema.StringAttribute{
-							Description: "The aggregation type that will be applyed to the metric and duration.",
+							Description: "The aggregation function that will be applied to the metric.",
 							Required:    true,
 							Validators: []validator.String{
 								validators.SingleOption(
@@ -106,26 +107,26 @@ func (r *alertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 							},
 						},
 						"entity_ids": schema.ListAttribute{
-							Description: "A list of Entity IDs that will be used to filter on by the alert.",
+							Description: "A list of Entity IDs that will be used to filter on the alert. The alert will only trigger if the alert matches one or more of the entity IDs.",
 							Optional:    true,
 							ElementType: types.StringType,
 						},
 						"target_entity_types": schema.ListAttribute{
-							Description: "The entity types for scoping this alert (e.g. Website, Host, Database...).",
+							Description: "The entity types that the alert will be applied to.",
 							Required:    true,
 							ElementType: types.StringType,
 						},
 						"include_tags": schema.SetNestedAttribute{
-							Description: "List of Metric values that the metric field will be in.",
+							Description: "Tag key and values to match in order to trigger an alert.",
 							Optional:    true,
 							NestedObject: schema.NestedAttributeObject{
 								Attributes: map[string]schema.Attribute{
 									"name": schema.StringAttribute{
-										Description: "Name of the metric values the metric field will be in.",
+										Description: "Tag key to match.",
 										Optional:    true,
 									},
 									"values": schema.ListAttribute{
-										Description: "Metric values the metric field will be in.",
+										Description: "Values to match.",
 										Optional:    true,
 										ElementType: types.StringType,
 									},
@@ -133,16 +134,16 @@ func (r *alertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 							},
 						},
 						"exclude_tags": schema.SetNestedAttribute{
-							Description: "List of Metric values that the metric field will not be in.",
+							Description: "Tag key and values to match in order to not trigger an alert.",
 							Optional:    true,
 							NestedObject: schema.NestedAttributeObject{
 								Attributes: map[string]schema.Attribute{
 									"name": schema.StringAttribute{
-										Description: "Name of the metric values the metric field will not be in.",
+										Description: "Tag key to match.",
 										Optional:    true,
 									},
 									"values": schema.ListAttribute{
-										Description: "Metric values the metric field will not be in.",
+										Description: "Values to match.",
 										Optional:    true,
 										ElementType: types.StringType,
 									},
@@ -153,7 +154,7 @@ func (r *alertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 				},
 			},
 			"notifications": schema.ListAttribute{
-				Description: "A list of notifications to assign to this alert.",
+				Description: "A list of notifications that should be triggered for this alert.",
 				Required:    true,
 				ElementType: types.StringType,
 			},

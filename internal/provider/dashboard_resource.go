@@ -80,7 +80,7 @@ func setDashboardValuesFromCreate(dashboard *swoClient.CreateDashboardResult, pl
 	for _, w := range dashboard.Widgets {
 		lIdx := slices.IndexFunc(dashboard.Layout, func(l swoClient.CreateDashboardLayout) bool { return l.Id == w.Id })
 		if lIdx <= -1 {
-			return fmt.Errorf("layout missing for widget. this may indicate a data intigrity problem on the server. looking for id: %s", w.Id)
+			return fmt.Errorf("layout missing for widget id: %s", w.Id)
 		}
 
 		// The layout that will give us the widget coordinates for comparison to the plan.
@@ -120,7 +120,7 @@ func setDashboardValuesFromRead(dashboard *swoClient.ReadDashboardResult, state 
 	for _, w := range dashboard.Widgets {
 		lIdx := slices.IndexFunc(dashboard.Layout, func(l swoClient.ReadDashboardLayout) bool { return l.Id == w.Id })
 		if lIdx <= -1 {
-			return fmt.Errorf("layout missing for widget. this may indicate a data intigrity problem on the server. looking for id: %s", w.Id)
+			return fmt.Errorf("layout missing for widget id: %s", w.Id)
 		}
 
 		// We found the layout that will give us the widget coordinates for comparison to the plan.
@@ -188,7 +188,7 @@ func (r *dashboardResource) Create(ctx context.Context, req resource.CreateReque
 	widgets, layouts, err := widgetsFromPlan(tfPlan)
 	if err != nil {
 		resp.Diagnostics.AddError("swo provider error",
-			fmt.Sprintf("convert plan to api error: %s, name: %s", err, tfPlan.Name))
+			fmt.Sprintf("convert plan to API error: %s, name: %s", err, tfPlan.Name))
 		return
 	}
 
