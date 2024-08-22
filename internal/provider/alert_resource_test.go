@@ -20,8 +20,8 @@ func TestAccAlertResource(t *testing.T) {
 					resource.TestCheckResourceAttr("swo_alert.test", "name", "Mock Alert Name"),
 					resource.TestCheckResourceAttr("swo_alert.test", "description", "Mock alert description."),
 					resource.TestCheckResourceAttr("swo_alert.test", "severity", "CRITICAL"),
-					resource.TestCheckResourceAttr("swo_alert.test", "type", "ENTITY_METRIC"),
 					resource.TestCheckResourceAttr("swo_alert.test", "target_entity_types.0", "Website"),
+					resource.TestCheckResourceAttr("swo_alert.test", "trigger_reset_actions", "true"),
 					// Verify number of conditions.
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.#", "1"),
 					// Verify the conditions.
@@ -63,15 +63,15 @@ resource "swo_alert" "test" {
   name        = %[1]q
   description = "Mock alert description."
   severity    = "CRITICAL"
-  type        = "ENTITY_METRIC"
-	enabled     = true
-  target_entity_types = ["Website"]
+  enabled     = true
+  trigger_reset_actions = true
   conditions = [
     {
       metric_name      = "synthetics.https.response.time"
       threshold        = ">=3000ms"
       duration         = "5m"
       aggregation_type = "AVG"
+      target_entity_types = ["Website"]
       entity_ids = [
         "e-1521946194448543744",
         "e-1521947552186691584"

@@ -9,7 +9,6 @@ resource "swo_alert" "https_response_time" {
       threshold        = ">=3000"
       duration         = "5m"
       aggregation_type = "AVG"
-      type             = "ENTITY_METRIC"
       target_entity_types = [
         "Website"
       ]
@@ -30,4 +29,5 @@ resource "swo_alert" "https_response_time" {
     },
   ]
   notifications = [swo_notification.msteams.id, swo_notification.opsgenie.id]
+  trigger_reset_actions = true
 }
