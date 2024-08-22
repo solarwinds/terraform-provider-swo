@@ -50,15 +50,15 @@ func (model alertConditionModel) toAlertConditionInputs(conditions []swoClient.A
 		},
 	}
 
-	conditionsOrderd := []swoClient.AlertConditionNodeInput{}
+	conditionsOrdered := []swoClient.AlertConditionNodeInput{}
 	conditionsReturnedLen := len(conditionMaps)
 	lastId := len(conditions) + conditionsReturnedLen
 
-	//Use the conditionsMaps to order our conditions, and assign the correct "OperandIds".
+	// Use the conditionsMaps to order our conditions, and assign the correct "OperandIds".
 	for _, conditionMap := range conditionMaps {
 		condition := conditionMap.condition
 
-		//If the condition is empty dont add it.
+		// If the condition is empty don't add it.
 		if reflect.DeepEqual(condition, swoClient.AlertConditionNodeInput{}) {
 			continue
 		}
@@ -79,10 +79,10 @@ func (model alertConditionModel) toAlertConditionInputs(conditions []swoClient.A
 		}
 
 		lastId--
-		conditionsOrderd = append([]swoClient.AlertConditionNodeInput{condition}, conditionsOrderd...)
+		conditionsOrdered = append([]swoClient.AlertConditionNodeInput{condition}, conditionsOrdered...)
 	}
 
-	return append(conditions, conditionsOrderd...)
+	return append(conditions, conditionsOrdered...)
 }
 
 func (model *alertConditionModel) toThresholdConditionInputs() (swoClient.AlertConditionNodeInput, swoClient.AlertConditionNodeInput) {
@@ -133,7 +133,7 @@ func (model *alertConditionModel) toDurationConditionInput() swoClient.AlertCond
 }
 
 func (model *alertConditionModel) toAggregationConditionInput() swoClient.AlertConditionNodeInput {
-	aggragationCondition := swoClient.AlertConditionNodeInput{}
+	aggregationCondition := swoClient.AlertConditionNodeInput{}
 
 	operator := model.AggregationType.ValueString()
 	operatorType, err := swoClient.GetAlertConditionType(operator)
@@ -142,11 +142,11 @@ func (model *alertConditionModel) toAggregationConditionInput() swoClient.AlertC
 	}
 
 	if operator != "" {
-		aggragationCondition.Type = operatorType
-		aggragationCondition.Operator = &operator
+		aggregationCondition.Type = operatorType
+		aggregationCondition.Operator = &operator
 	}
 
-	return aggragationCondition
+	return aggregationCondition
 }
 
 func (model *alertConditionModel) toMetricFieldConditionInput() swoClient.AlertConditionNodeInput {

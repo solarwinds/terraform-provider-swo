@@ -35,7 +35,7 @@ type apiTokenAttribute struct {
 
 func (r *apiTokenResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "A terraform resource for managing api tokens.",
+		Description: "A terraform resource for managing API tokens.",
 		Attributes: map[string]schema.Attribute{
 			"id": resourceIdAttribute(),
 			"name": schema.StringAttribute{
@@ -43,13 +43,13 @@ func (r *apiTokenResource) Schema(ctx context.Context, req resource.SchemaReques
 				Required:    true,
 			},
 			"enabled": schema.BoolAttribute{
-				Description: "The enabled state of the token.",
+				Description: "True if the token is enabled.",
 				Optional:    true,
 				Computed:    true,
 				Default:     booldefault.StaticBool(true),
 			},
 			"type": schema.StringAttribute{
-				Description: "The type of the token.",
+				Description: "The type of token.",
 				Optional:    true,
 				Computed:    true,
 				Default:     stringdefault.StaticString("public-api"),
