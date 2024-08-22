@@ -138,13 +138,13 @@ func (model *alertResourceModel) toAlertDefinitionInput() swoClient.AlertDefinit
 	}
 
 	return swoClient.AlertDefinitionInput{
-		Name:        model.Name.ValueString(),
-		Description: model.Description.ValueStringPointer(),
-		Enabled:     model.Enabled.ValueBool(),
-		Severity:    swoClient.AlertSeverity(model.Severity.ValueString()),
-		Actions:     model.toAlertActionInput(),
+		Name:                model.Name.ValueString(),
+		Description:         model.Description.ValueStringPointer(),
+		Enabled:             model.Enabled.ValueBool(),
+		Severity:            swoClient.AlertSeverity(model.Severity.ValueString()),
+		Actions:             model.toAlertActionInput(),
 		TriggerResetActions: model.TriggerResetActions.ValueBoolPointer(),
-		Condition:   conditions,
+		Condition:           conditions,
 	}
 }
 

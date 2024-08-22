@@ -154,21 +154,36 @@ func (model *alertConditionModel) toMetricFieldConditionInput() swoClient.AlertC
 	metricName := model.MetricName.ValueString()
 
 	if metricName != "" {
-		entityFilter := swoClient.AlertConditionNodeEntityFilterInput{
-			Types: model.TargetEntityTypes,
-			Ids:   model.EntityIds,
-		}
-
 		metricFieldCondition = swoClient.AlertConditionNodeInput{
-			Type:         string(swoClient.AlertMetricFieldType),
-			FieldName:    &metricName,
-			EntityFilter: &entityFilter,
-			MetricFilter: &swoClient.AlertFilterExpressionInput{
-				Operation: swoClient.FilterOperationAnd,
-			},
+			Type:      string(swoClient.AlertMetricFieldType),
+			FieldName: &metricName,
 		}
 
-		includeTags := *model.IncludeTags
+		if len(model.EntityIds) > 0 {
+			entityFilter := &swoClient.AlertConditionNodeEntityFilterInput{
+				Types: model.TargetEntityTypes,
+				Ids:   model.EntityIds,
+			}
+
+			metricFieldCondition.EntityFilter = entityFilter
+		}
+
+		var includeTags []alertTagsModel
+		var excludeTags []alertTagsModel
+
+		if model.IncludeTags != nil {
+			includeTags = *model.IncludeTags
+		}
+
+		if model.ExcludeTags != nil {
+			excludeTags = *model.ExcludeTags
+		}
+
+		if len(includeTags) > 0 || len(excludeTags) > 0 {
+			metricFieldCondition.MetricFilter = &swoClient.AlertFilterExpressionInput{
+				Operation: swoClient.FilterOperationAnd,
+			}
+		}
 
 		for _, tag := range includeTags {
 			propertyName := tag.Name.ValueString()
@@ -184,8 +199,6 @@ func (model *alertConditionModel) toMetricFieldConditionInput() swoClient.AlertC
 			)
 
 		}
-
-		excludeTags := *model.ExcludeTags
 
 		for _, tag := range excludeTags {
 			propertyName := tag.Name.ValueString()

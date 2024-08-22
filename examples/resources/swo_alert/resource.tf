@@ -9,7 +9,6 @@ resource "swo_alert" "https_response_time" {
       threshold        = ">=3000"
       duration         = "5m"
       aggregation_type = "AVG"
-      type             = "ENTITY_METRIC"
       target_entity_types = [
         "Website"
       ]
