@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/google/go-cmp/cmp"
@@ -19,7 +20,18 @@ var (
 	_ resource.Resource                = &dashboardResource{}
 	_ resource.ResourceWithConfigure   = &dashboardResource{}
 	_ resource.ResourceWithImportState = &dashboardResource{}
+
+	errLayoutMissing    = errors.New("layout missing for widget id")
+	errWidgetProperties = errors.New("widget properties error")
 )
+
+func newLayoutError(id string) error {
+	return fmt.Errorf("%w: %s", errLayoutMissing, id)
+}
+
+func newWidgetPropertiesError(msg string, id string) error {
+	return fmt.Errorf("%w: %s id:%s", errWidgetProperties, msg, id)
+}
 
 func NewDashboardResource() resource.Resource {
 	return &dashboardResource{}
@@ -80,7 +92,7 @@ func setDashboardValuesFromCreate(dashboard *swoClient.CreateDashboardResult, pl
 	for _, w := range dashboard.Widgets {
 		lIdx := slices.IndexFunc(dashboard.Layout, func(l swoClient.CreateDashboardLayout) bool { return l.Id == w.Id })
 		if lIdx <= -1 {
-			return fmt.Errorf("layout missing for widget id: %s", w.Id)
+			return newLayoutError(w.Id)
 		}
 
 		// The layout that will give us the widget coordinates for comparison to the plan.
@@ -120,7 +132,7 @@ func setDashboardValuesFromRead(dashboard *swoClient.ReadDashboardResult, state 
 	for _, w := range dashboard.Widgets {
 		lIdx := slices.IndexFunc(dashboard.Layout, func(l swoClient.ReadDashboardLayout) bool { return l.Id == w.Id })
 		if lIdx <= -1 {
-			return fmt.Errorf("layout missing for widget id: %s", w.Id)
+			return newLayoutError(w.Id)
 		}
 
 		// We found the layout that will give us the widget coordinates for comparison to the plan.
@@ -128,8 +140,7 @@ func setDashboardValuesFromRead(dashboard *swoClient.ReadDashboardResult, state 
 		isInState := false
 		props, err := json.Marshal(w.Properties)
 		if err != nil {
-			return fmt.Errorf("widget properties error: %s, id: %s",
-				err, w.Id)
+			return newWidgetPropertiesError(err.Error(), w.Id)
 		}
 
 		for wIdx := range state.Widgets {
@@ -146,7 +157,7 @@ func setDashboardValuesFromRead(dashboard *swoClient.ReadDashboardResult, state 
 				var stateProps any
 				err = json.Unmarshal([]byte(stateW.Properties.ValueString()), &stateProps)
 				if err != nil {
-					return fmt.Errorf("widget properties error: %s, id: %s", err, w.Id)
+					return newWidgetPropertiesError(err.Error(), w.Id)
 				}
 
 				// The json string can be marshalled differently than what is specified in the terraform
