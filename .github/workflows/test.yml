@@ -5,18 +5,34 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+  pull-requests: read
+  checks: write
+
 jobs:
-  test:
+  golangci:
+    name: lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: ">= 1.22.0"
-      - run: go mod verify
-      - run: go vet ./...
-      #   tests are disabled in GHA for now since they are run within the corporate VPN
-      #   - run: go test ./... -race -vet=off
-      - uses: dominikh/staticcheck-action@v1.3.0
+          go-version: stable
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
         with:
-          install-go: false
+          version: latest
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - name: Install dependencies
+        run: go get .
+      - name: Build
+        run: go build -v ./...
+      - name: Test
+        run: go test
