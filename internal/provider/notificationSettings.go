@@ -2,9 +2,18 @@ package provider
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 )
+
+var (
+	errUnsupportedNotificationType = errors.New("unsupported notification type")
+)
+
+func newUnsupportedNotificationTypeError(notificationType string) error {
+	return fmt.Errorf("%w: %s", errUnsupportedNotificationType, notificationType)
+}
 
 type notificationSettings struct {
 	Email                 *notificationSettingsEmail                 `tfsdk:"email"`
@@ -261,7 +270,7 @@ func (m *notificationResourceModel) SetSettings(settings any) error {
 			return err
 		}
 	} else {
-		return fmt.Errorf("unsupported notification type: %s", m.Type.ValueString())
+		return newUnsupportedNotificationTypeError(m.Type.ValueString())
 	}
 
 	return nil

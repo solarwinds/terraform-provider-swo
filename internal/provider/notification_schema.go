@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -25,6 +26,14 @@ const (
 	httpSchemeRegex          = `^(http|https)`
 )
 
+var (
+	errParse = errors.New("parser error")
+)
+
+func newParseError(msg string) error {
+	return fmt.Errorf("%w: %s", errParse, msg)
+}
+
 // The main Notification Resource model that is derived from the schema.
 type notificationResourceModel struct {
 	Id          types.String          `tfsdk:"id"`
@@ -38,7 +47,7 @@ func (m *notificationResourceModel) ParseId() (id string, notificationType strin
 	idParts := strings.Split(m.Id.ValueString(), ":")
 
 	if len(idParts) != 2 || idParts[0] == "" || idParts[1] == "" {
-		err = fmt.Errorf("expected identifier with format: id:type. got: %q", m.Id)
+		err = newParseError(fmt.Sprintf("expected identifier with format id:type. got: %q", m.Id))
 	} else {
 		id = idParts[0]
 		notificationType = idParts[1]
