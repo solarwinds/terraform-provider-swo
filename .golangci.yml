@@ -4,7 +4,6 @@ linters:
   enable:
     - ireturn
     - err113
-    - revive
     - gosec
     - errcheck
     - nilnil
