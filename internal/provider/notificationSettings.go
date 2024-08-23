@@ -8,11 +8,11 @@ import (
 )
 
 var (
-	unsupportedNotificationTypeError = errors.New("unsupported notification type")
+	errUnsupportedNotificationType = errors.New("unsupported notification type")
 )
 
 func newUnsupportedNotificationTypeError(notificationType string) error {
-	return fmt.Errorf("%w: %s", unsupportedNotificationTypeError, notificationType)
+	return fmt.Errorf("%w: %s", errUnsupportedNotificationType, notificationType)
 }
 
 type notificationSettings struct {

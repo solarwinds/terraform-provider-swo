@@ -21,16 +21,16 @@ var (
 	_ resource.ResourceWithConfigure   = &dashboardResource{}
 	_ resource.ResourceWithImportState = &dashboardResource{}
 
-	layoutError           = errors.New("layout missing for widget id")
-	widgetPropertiesError = errors.New("widget properties error")
+	errLayoutMissing    = errors.New("layout missing for widget id")
+	errWidgetProperties = errors.New("widget properties error")
 )
 
 func newLayoutError(id string) error {
-	return fmt.Errorf("%w: %s", layoutError, id)
+	return fmt.Errorf("%w: %s", errLayoutMissing, id)
 }
 
 func newWidgetPropertiesError(msg string, id string) error {
-	return fmt.Errorf("%w: %s id:%s", widgetPropertiesError, msg, id)
+	return fmt.Errorf("%w: %s id:%s", errWidgetProperties, msg, id)
 }
 
 func NewDashboardResource() resource.Resource {

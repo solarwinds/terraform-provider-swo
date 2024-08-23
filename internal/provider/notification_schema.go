@@ -27,11 +27,11 @@ const (
 )
 
 var (
-	parseError = errors.New("parser error")
+	errParse = errors.New("parser error")
 )
 
 func newParseError(msg string) error {
-	return fmt.Errorf("%w: %s", parseError, msg)
+	return fmt.Errorf("%w: %s", errParse, msg)
 }
 
 // The main Notification Resource model that is derived from the schema.
