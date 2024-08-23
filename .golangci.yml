@@ -2,7 +2,9 @@
 linters:
   disable-all: true
   enable:
-    - ireturn
+    # ireturn is going to fail because of provider.go requiring all resource constructors to
+    # return resource.Resource.
+    #- ireturn
     - err113
     - gosec
     - errcheck
