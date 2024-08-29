@@ -15,11 +15,11 @@ func TestAccDashboardResource(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config:             testAccDashboardResourceConfig("swo-terraform-provider [CREATE_TEST]"),
+				Config:             testAccDashboardResourceConfig("test-acc swo-terraform-provider [CREATE_TEST]"),
 				ExpectNonEmptyPlan: true,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet("swo_dashboard.test", "id"),
-					resource.TestCheckResourceAttr("swo_dashboard.test", "name", "swo-terraform-provider [CREATE_TEST]"),
+					resource.TestCheckResourceAttr("swo_dashboard.test", "name", "test-acc swo-terraform-provider [CREATE_TEST]"),
 					resource.TestCheckResourceAttr("swo_dashboard.test", "widgets.#", "2"),
 					resource.TestCheckResourceAttr("swo_dashboard.test", "widgets.0.type", "TimeSeries"),
 					resource.TestCheckResourceAttr("swo_dashboard.test", "widgets.1.width", "4"),
@@ -33,7 +33,7 @@ func TestAccDashboardResource(t *testing.T) {
 			},
 			// Update and Read testing
 			{
-				Config:             testAccDashboardResourceConfig("swo-terraform-provider [UPDATE_TEST]"),
+				Config:             testAccDashboardResourceConfig("test-acc swo-terraform-provider [UPDATE_TEST]"),
 				ExpectNonEmptyPlan: true,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("swo_dashboard.test", "name", "swo-terraform-provider [UPDATE_TEST]"),
@@ -45,7 +45,7 @@ func TestAccDashboardResource(t *testing.T) {
 }
 
 func testAccDashboardResourceConfig(name string) string {
-	return providerConfig + fmt.Sprintf(`
+	return providerConfig() + fmt.Sprintf(`
 	resource "swo_dashboard" "test" {
 		name = %[1]q
 		is_private = true

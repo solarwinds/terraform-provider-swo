@@ -43,7 +43,7 @@ func TestAccUriResource(t *testing.T) {
 }
 
 func testAccUriResourceConfig(name string) string {
-	return providerConfig + fmt.Sprintf(`
+	return providerConfig() + fmt.Sprintf(`
 	resource "swo_uri" "test_uri" {
 		name        = %[1]q
 		host  = "https://example.com"

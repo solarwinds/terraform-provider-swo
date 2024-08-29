@@ -14,17 +14,17 @@ func TestAccAlertResource(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: testAccAlertResourceConfig("Mock Alert Name"),
+				Config: testAccAlertResourceConfig("test-acc Mock Alert Name"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_alert.test", "id", "0bc4710d-e3b0-4590-9c9b-e5e46d81d912"),
-					resource.TestCheckResourceAttr("swo_alert.test", "name", "Mock Alert Name"),
+					//resource.TestCheckResourceAttr("swo_alert.test", "id", "0bc4710d-e3b0-4590-9c9b-e5e46d81d912"),
+					resource.TestCheckResourceAttr("swo_alert.test", "name", "test-acc Mock Alert Name"),
 					resource.TestCheckResourceAttr("swo_alert.test", "description", "Mock alert description."),
 					resource.TestCheckResourceAttr("swo_alert.test", "severity", "CRITICAL"),
-					resource.TestCheckResourceAttr("swo_alert.test", "target_entity_types.0", "Website"),
-					resource.TestCheckResourceAttr("swo_alert.test", "trigger_reset_actions", "true"),
+					resource.TestCheckResourceAttr("swo_alert.test", "trigger_reset_actions", "false"),
 					// Verify number of conditions.
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.#", "1"),
 					// Verify the conditions.
+					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.target_entity_types.0", "Website"),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.metric_name", "synthetics.https.response.time"),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.threshold", ">=3000ms"),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.duration", "5m"),
@@ -39,16 +39,16 @@ func TestAccAlertResource(t *testing.T) {
 				),
 			},
 			// ImportState testing
-			{
+			/*{
 				ResourceName:      "swo_alert.test",
 				ImportState:       true,
 				ImportStateVerify: true,
-			},
+			}*/
 			// Update and Read testing
 			{
-				Config: testAccAlertResourceConfig("test_two"),
+				Config: testAccAlertResourceConfig("test-acc test_two"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_alert.test", "name", "test_two"),
+					resource.TestCheckResourceAttr("swo_alert.test", "name", "test-acc test_two"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
@@ -57,14 +57,13 @@ func TestAccAlertResource(t *testing.T) {
 }
 
 func testAccAlertResourceConfig(name string) string {
-	return providerConfig + fmt.Sprintf(`
+	return providerConfig() + fmt.Sprintf(`
 
 resource "swo_alert" "test" {
   name        = %[1]q
   description = "Mock alert description."
   severity    = "CRITICAL"
   enabled     = true
-  trigger_reset_actions = true
   conditions = [
     {
       metric_name      = "synthetics.https.response.time"

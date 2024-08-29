@@ -1,24 +1,22 @@
 package provider
 
 import (
+	"fmt"
+	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 )
 
-const (
-	// providerConfig is a shared configuration to combine with the actual
-	// test configuration so the SWO client is properly configured.
-	// It is also possible to use environment variables instead,
-	// such as updating the Makefile and running the testing through that tool.
-	providerConfig = `
-provider "swo" {
-	api_token = "123xyz"
+func providerConfig() string {
+	return fmt.Sprintf(`provider "swo" {
+	api_token = "%s"
 	request_timeout = 10
+	base_url = "%s"
+	debug_mode = true
+}`, os.Getenv("SWO_API_TOKEN"), os.Getenv("SWO_BASE_URL"))
 }
-`
-)
 
 // testAccProtoV6ProviderFactories are used to instantiate a provider during
 // acceptance testing. The factory function will be invoked for every Terraform

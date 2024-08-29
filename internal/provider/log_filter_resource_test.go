@@ -15,7 +15,7 @@ func TestAccLogFilterResource(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: testAccLogFilterResourceConfig("test one"),
+				Config: testAccLogFilterResourceConfig("test-acc test one"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet("swo_logfilter.test", "id"),
 					resource.TestCheckResourceAttr("swo_logfilter.test", "name", "test one"),
@@ -41,7 +41,7 @@ func TestAccLogFilterResource(t *testing.T) {
 }
 
 func testAccLogFilterResourceConfig(name string) string {
-	return providerConfig + fmt.Sprintf(`
+	return providerConfig() + fmt.Sprintf(`
 	resource "swo_logfilter" "test_logfilter" {
 		name = %[1]q
 		description  = "test description"
