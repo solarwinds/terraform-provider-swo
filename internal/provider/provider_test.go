@@ -2,6 +2,7 @@ package provider
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"testing"
 
@@ -10,12 +11,21 @@ import (
 )
 
 func providerConfig() string {
+	apiToken := os.Getenv("SWO_API_TOKEN")
+	if apiToken == "" {
+		log.Fatal("SWO_API_TOKEN must be set for acceptance tests")
+	}
+
+	baseURL := os.Getenv("SWO_BASE_URL")
+	if baseURL == "" {
+		log.Fatal("SWO_BASE_URL must be set for acceptance tests")
+	}
+
 	return fmt.Sprintf(`provider "swo" {
 	api_token = "%s"
 	request_timeout = 10
 	base_url = "%s"
-	debug_mode = true
-}`, os.Getenv("SWO_API_TOKEN"), os.Getenv("SWO_BASE_URL"))
+}`, apiToken, baseURL)
 }
 
 // testAccProtoV6ProviderFactories are used to instantiate a provider during
