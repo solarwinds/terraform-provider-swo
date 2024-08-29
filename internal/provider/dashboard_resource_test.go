@@ -36,7 +36,7 @@ func TestAccDashboardResource(t *testing.T) {
 				Config:             testAccDashboardResourceConfig("test-acc swo-terraform-provider [UPDATE_TEST]"),
 				ExpectNonEmptyPlan: true,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_dashboard.test", "name", "swo-terraform-provider [UPDATE_TEST]"),
+					resource.TestCheckResourceAttr("swo_dashboard.test", "name", "test-acc swo-terraform-provider [UPDATE_TEST]"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
