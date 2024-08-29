@@ -15,7 +15,7 @@ func TestAccNotificationResource(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: testAccNotificationResourceConfig("test one"),
+				Config: testAccNotificationResourceConfig("test-acc test one"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet("swo_notification.test", "id"),
 					resource.TestCheckResourceAttr("swo_notification.test", "title", "test one"),
@@ -35,7 +35,7 @@ func TestAccNotificationResource(t *testing.T) {
 			},
 			// Update and Read testing
 			{
-				Config: testAccNotificationResourceConfig("test two"),
+				Config: testAccNotificationResourceConfig("test-acc test two"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("swo_notification.test", "title", "test two"),
 				),
@@ -46,7 +46,7 @@ func TestAccNotificationResource(t *testing.T) {
 }
 
 func testAccNotificationResourceConfig(title string) string {
-	return providerConfig + fmt.Sprintf(`
+	return providerConfig() + fmt.Sprintf(`
 	resource "swo_notification" "test" {
 		title        = %[1]q
 		description = "testing..."

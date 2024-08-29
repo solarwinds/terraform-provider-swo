@@ -15,7 +15,7 @@ func TestAccWebsiteResource(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: testAccWebsiteResourceConfig("test one"),
+				Config: testAccWebsiteResourceConfig("test-acc test one"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet("swo_website.test", "id"),
 					resource.TestCheckResourceAttr("swo_website.test", "name", "test one"),
@@ -38,7 +38,7 @@ func TestAccWebsiteResource(t *testing.T) {
 			},
 			// Update and Read testing
 			{
-				Config: testAccWebsiteResourceConfig("test two"),
+				Config: testAccWebsiteResourceConfig("test-acc test two"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("swo_website.test", "name", "test two"),
 				),
@@ -55,7 +55,7 @@ func TestAccWebsiteResource(t *testing.T) {
 }
 
 func testAccWebsiteResourceConfig(name string) string {
-	return providerConfig + fmt.Sprintf(`
+	return providerConfig() + fmt.Sprintf(`
 	resource "swo_website" "test_website" {
 		name        = %[1]q
 		url  = "https://example.com"
@@ -127,7 +127,7 @@ func testAccWebsiteResourceConfig(name string) string {
 }
 
 func testAccWebsiteResourceConfigWithoutOptionals(name string) string {
-	return providerConfig + fmt.Sprintf(`
+	return providerConfig() + fmt.Sprintf(`
 	resource "swo_website" "test_website" {
 		name        = %[1]q
 		url  = "https://example.com"

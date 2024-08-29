@@ -73,6 +73,7 @@ func (r *alertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 			"trigger_reset_actions": schema.BoolAttribute{
 				Description: "True if a notification should be sent when an active alert returns to normal. Default is false.",
 				Optional:    true,
+				Computed:    true,
 				Default:     booldefault.StaticBool(false),
 			},
 			"conditions": schema.SetNestedAttribute{

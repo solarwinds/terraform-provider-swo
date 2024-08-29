@@ -15,10 +15,10 @@ func TestAccApiTokenResource(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: testAccApiTokenResourceConfig("test one"),
+				Config: testAccApiTokenResourceConfig("test-acc test one"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet("swo_apitoken.test", "id"),
-					resource.TestCheckResourceAttr("swo_apitoken.test", "name", "test one"),
+					resource.TestCheckResourceAttr("swo_apitoken.test", "name", "test-acc test one"),
 				),
 			},
 			// ImportState testing
@@ -29,9 +29,9 @@ func TestAccApiTokenResource(t *testing.T) {
 			},
 			// Update and Read testing
 			{
-				Config: testAccApiTokenResourceConfig("test two"),
+				Config: testAccApiTokenResourceConfig("test-acc test two"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_apitoken.test", "name", "test two"),
+					resource.TestCheckResourceAttr("swo_apitoken.test", "name", "test-acc test two"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
@@ -40,7 +40,7 @@ func TestAccApiTokenResource(t *testing.T) {
 }
 
 func testAccApiTokenResourceConfig(name string) string {
-	return providerConfig + fmt.Sprintf(`
+	return providerConfig() + fmt.Sprintf(`
 	resource "swo_apitoken" "test_uri" {
 		name        = %[1]q
 		access_level = "READ"
