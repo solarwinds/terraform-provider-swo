@@ -15,13 +15,13 @@ func TestAccUriResource(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: testAccUriResourceConfig("test one"),
+				Config: testAccUriResourceConfig("test-acc test one"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet("swo_uri.test", "id"),
-					resource.TestCheckResourceAttr("swo_uri.test", "name", "test one"),
-					resource.TestCheckResourceAttr("swo_uri.test", "host", "www.solarwinds.com"),
-					resource.TestCheckResourceAttr("swo_uri.test", "options.is_ping_enabled", "true"),
-					resource.TestCheckResourceAttr("swo_uri.test", "options.is_tcp_enabled", "false"),
+					resource.TestCheckResourceAttr("swo_uri.test", "name", "test-acc test one"),
+					resource.TestCheckResourceAttr("swo_uri.test", "host", "example.com"),
+					resource.TestCheckResourceAttr("swo_uri.test", "options.is_ping_enabled", "false"),
+					resource.TestCheckResourceAttr("swo_uri.test", "options.is_tcp_enabled", "true"),
 				),
 			},
 			// ImportState testing
@@ -32,9 +32,9 @@ func TestAccUriResource(t *testing.T) {
 			},
 			// Update and Read testing
 			{
-				Config: testAccUriResourceConfig("test two"),
+				Config: testAccUriResourceConfig("test-acc test two"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_uri.test", "name", "test two"),
+					resource.TestCheckResourceAttr("swo_uri.test", "name", "test-acc test two"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
@@ -44,13 +44,13 @@ func TestAccUriResource(t *testing.T) {
 
 func testAccUriResourceConfig(name string) string {
 	return providerConfig() + fmt.Sprintf(`
-	resource "swo_uri" "test_uri" {
+	resource "swo_uri" "test" {
 		name        = %[1]q
-		host  = "https://example.com"
+		host  = "example.com"
 	
 		options = {
-			is_ping_enabled = true
-			is_tcp_enabled  = false
+			is_ping_enabled = false
+			is_tcp_enabled  = true
 		}
 	
 		tcp_options = {
