@@ -18,7 +18,7 @@ func TestAccLogFilterResource(t *testing.T) {
 				Config: testAccLogFilterResourceConfig("test-acc test one"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet("swo_logfilter.test", "id"),
-					resource.TestCheckResourceAttr("swo_logfilter.test", "name", "test one"),
+					resource.TestCheckResourceAttr("swo_logfilter.test", "name", "test-acc test one"),
 					resource.TestCheckResourceAttr("swo_logfilter.test", "description", "test description"),
 				),
 			},
@@ -30,9 +30,9 @@ func TestAccLogFilterResource(t *testing.T) {
 			},
 			// Update and Read testing
 			{
-				Config: testAccLogFilterResourceConfig("test two"),
+				Config: testAccLogFilterResourceConfig("test-acc test two"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_logfilter.test", "name", "test two"),
+					resource.TestCheckResourceAttr("swo_logfilter.test", "name", "test-acc test two"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
@@ -42,7 +42,7 @@ func TestAccLogFilterResource(t *testing.T) {
 
 func testAccLogFilterResourceConfig(name string) string {
 	return providerConfig() + fmt.Sprintf(`
-	resource "swo_logfilter" "test_logfilter" {
+	resource "swo_logfilter" "test" {
 		name = %[1]q
 		description  = "test description"
 		token_signature = null
