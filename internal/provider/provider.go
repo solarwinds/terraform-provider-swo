@@ -63,12 +63,12 @@ func (p *swoProvider) Schema(ctx context.Context, req provider.SchemaRequest, re
 				Required:    true,
 				Sensitive:   true,
 			},
-			"request_timeout": schema.Int64Attribute{
-				Description: "The request timeout period in seconds. Default is 30 seconds.",
-				Optional:    true,
-			},
 			"base_url": schema.StringAttribute{
 				Description: "The base url to use for requests to the server.",
+				Required:    true,
+			},
+			"request_timeout": schema.Int64Attribute{
+				Description: "The request timeout period in seconds. Default is 30 seconds.",
 				Optional:    true,
 			},
 			"debug_mode": schema.BoolAttribute{
@@ -91,8 +91,17 @@ func (p *swoProvider) Configure(ctx context.Context, req provider.ConfigureReque
 	if config.ApiToken.IsUnknown() {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("api_token"),
-			"Api Token Required",
-			"The api token was not provided.",
+			"api_token required",
+			"The api_token configuration parameter was not provided and is required. Please provide a public API token for the SolarWinds Observability API.",
+		)
+		return
+	}
+
+	if config.BaseURL.IsUnknown() {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("base_url"),
+			"base_url required",
+			"The base_url configuration parameter was not provided and is required. Please provide the URL of the SolarWinds Observability API.",
 		)
 		return
 	}

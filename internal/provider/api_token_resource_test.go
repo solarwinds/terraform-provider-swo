@@ -23,9 +23,10 @@ func TestAccApiTokenResource(t *testing.T) {
 			},
 			// ImportState testing
 			{
-				ResourceName:      "swo_apitoken.test",
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            "swo_apitoken.test",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"token"},
 			},
 			// Update and Read testing
 			{
@@ -41,9 +42,9 @@ func TestAccApiTokenResource(t *testing.T) {
 
 func testAccApiTokenResourceConfig(name string) string {
 	return providerConfig() + fmt.Sprintf(`
-	resource "swo_apitoken" "test_uri" {
+	resource "swo_apitoken" "test" {
 		name        = %[1]q
-		access_level = "READ"
+		access_level = "API_FULL"
 		type = "public-api"
 		enabled = true
 		attributes = [

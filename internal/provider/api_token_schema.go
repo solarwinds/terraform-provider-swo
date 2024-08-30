@@ -71,7 +71,8 @@ func (r *apiTokenResource) Schema(ctx context.Context, req resource.SchemaReques
 					validators.SingleOption(
 						swoClient.TokenAccessLevelFull,
 						swoClient.TokenAccessLevelRead,
-						swoClient.TokenAccessLevelRecord),
+						swoClient.TokenAccessLevelRecord,
+						"API_FULL"),
 				},
 			},
 			"attributes": schema.SetNestedAttribute{
