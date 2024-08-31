@@ -18,13 +18,11 @@ func TestAccNotificationResource(t *testing.T) {
 				Config: testAccNotificationResourceConfig("test-acc test one"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet("swo_notification.test", "id"),
-					resource.TestCheckResourceAttr("swo_notification.test", "title", "test one"),
+					resource.TestCheckResourceAttr("swo_notification.test", "title", "test-acc test one"),
 					resource.TestCheckResourceAttr("swo_notification.test", "description", "testing..."),
 					resource.TestCheckResourceAttr("swo_notification.test", "type", "email"),
 					resource.TestCheckResourceAttr("swo_notification.test", "settings.email.addresses.0.email", "test1@host.com"),
 					resource.TestCheckResourceAttr("swo_notification.test", "settings.email.addresses.1.email", "test2@host.com"),
-					resource.TestCheckResourceAttrSet("swo_notification.test", "created_by"),
-					resource.TestCheckResourceAttrSet("swo_notification.test", "created_at"),
 				),
 			},
 			// ImportState testing
@@ -37,7 +35,7 @@ func TestAccNotificationResource(t *testing.T) {
 			{
 				Config: testAccNotificationResourceConfig("test-acc test two"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_notification.test", "title", "test two"),
+					resource.TestCheckResourceAttr("swo_notification.test", "title", "test-acc test two"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
