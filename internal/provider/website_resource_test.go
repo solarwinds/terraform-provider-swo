@@ -81,6 +81,18 @@ func testAccWebsiteResourceConfig(name string) string {
 					{
 						type  = "REGION"
 						value = "NA"
+					},
+					{
+						type  = "REGION"
+						value = "AS"
+					},
+					{
+						type  = "REGION"
+						value = "SA"
+					},
+					{
+						type  = "REGION"
+						value = "OC"
 					}
 				]
 	
@@ -127,6 +139,18 @@ func testAccWebsiteResourceConfigWithoutOptionals(name string) string {
 					{
 						type  = "REGION"
 						value = "NA"
+					},
+					{
+						type  = "REGION"
+						value = "AS"
+					},
+					{
+						type  = "REGION"
+						value = "SA"
+					},
+					{
+						type  = "REGION"
+						value = "OC"
 					}
 				]
 	
