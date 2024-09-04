@@ -18,8 +18,8 @@ func TestAccWebsiteResource(t *testing.T) {
 				Config: testAccWebsiteResourceConfig("test-acc test one"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet("swo_website.test", "id"),
-					resource.TestCheckResourceAttr("swo_website.test", "name", "test one"),
-					resource.TestCheckResourceAttr("swo_website.test", "url", "www.solarwinds.com"),
+					resource.TestCheckResourceAttr("swo_website.test", "name", "test-acc test one"),
+					resource.TestCheckResourceAttr("swo_website.test", "url", "https://example.com"),
 				),
 			},
 			{
@@ -27,7 +27,7 @@ func TestAccWebsiteResource(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet("swo_website.test", "id"),
 					resource.TestCheckResourceAttr("swo_website.test", "name", "test create without"),
-					resource.TestCheckResourceAttr("swo_website.test", "url", "www.solarwinds.com"),
+					resource.TestCheckResourceAttr("swo_website.test", "url", "https://solarwinds.com"),
 				),
 			},
 			// ImportState testing
@@ -40,13 +40,13 @@ func TestAccWebsiteResource(t *testing.T) {
 			{
 				Config: testAccWebsiteResourceConfig("test-acc test two"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_website.test", "name", "test two"),
+					resource.TestCheckResourceAttr("swo_website.test", "name", "test-acc test two"),
 				),
 			},
 			{
-				Config: testAccWebsiteResourceConfigWithoutOptionals("test update without"),
+				Config: testAccWebsiteResourceConfigWithoutOptionals("test-acc test update without"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_website.test", "name", "test update without"),
+					resource.TestCheckResourceAttr("swo_website.test", "name", "test-acc test update without"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
@@ -56,16 +56,11 @@ func TestAccWebsiteResource(t *testing.T) {
 
 func testAccWebsiteResourceConfig(name string) string {
 	return providerConfig() + fmt.Sprintf(`
-	resource "swo_website" "test_website" {
+	resource "swo_website" "test" {
 		name        = %[1]q
 		url  = "https://example.com"
 	
 		monitoring = {
-			options = {
-				is_availability_active = true
-				is_rum_active          = true
-			}
-	
 			availability = {
 				check_for_string = {
 					operator = "CONTAINS"
@@ -128,16 +123,12 @@ func testAccWebsiteResourceConfig(name string) string {
 
 func testAccWebsiteResourceConfigWithoutOptionals(name string) string {
 	return providerConfig() + fmt.Sprintf(`
-	resource "swo_website" "test_website" {
+	resource "swo_website" "test" {
 		name        = %[1]q
-		url  = "https://example.com"
+		url  = "https://solarwinds.com"
 	
 		monitoring = {
-			options = {
-				is_availability_active = true
-				is_rum_active          = true
-			}
-	
+
 			availability = {
 	
 				protocols                = ["HTTP", "HTTPS"]
@@ -166,6 +157,12 @@ func testAccWebsiteResourceConfigWithoutOptionals(name string) string {
 				platform_options = {
 					test_from_all = false
 					platforms     = ["AWS"]
+				}
+
+				ssl = {
+					days_prior_to_expiration         = 30
+					enabled                          = false
+					ignore_intermediate_certificates = false
 				}
 			}
 	
