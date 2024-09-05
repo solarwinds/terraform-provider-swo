@@ -41,7 +41,7 @@ func (r *logFilterResource) Schema(ctx context.Context, req resource.SchemaReque
 				Optional:    true,
 			},
 			"token_signature": schema.StringAttribute{
-				Description: "The token signature of the log exclusion filter.",
+				Description: "The ID of the ingestion token to scope the exclusion filter to. If not provided, the filter will be global. If provided, the filter will only apply to logs ingested by the specified token. (NOTE: There may be only one global filter.)",
 				Optional:    true,
 			},
 			"expressions": schema.ListNestedAttribute{
