@@ -23,6 +23,11 @@ jobs:
         uses: golangci/golangci-lint-action@v6
         with:
           version: latest
+      - name: Echo ENVs
+        run: |
+          run: echo "GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}"
+        env:
+          MY_ENV_VAR: "SomeValue"
   build-and-test:
     runs-on: ubuntu-latest
     steps:
