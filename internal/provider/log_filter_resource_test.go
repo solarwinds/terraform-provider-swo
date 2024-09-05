@@ -20,6 +20,7 @@ func TestAccLogFilterResource(t *testing.T) {
 					resource.TestCheckResourceAttrSet("swo_logfilter.test", "id"),
 					resource.TestCheckResourceAttr("swo_logfilter.test", "name", "test-acc test one"),
 					resource.TestCheckResourceAttr("swo_logfilter.test", "description", "test description"),
+					resource.TestCheckResourceAttr("swo_logfilter.test", "token_signature", "U2aWJEYwSj-pvYegZdH1ozoq3kwapdngO1qDU3a8WXY"),
 				),
 			},
 			// ImportState testing
@@ -45,7 +46,7 @@ func testAccLogFilterResourceConfig(name string) string {
 	resource "swo_logfilter" "test" {
 		name = %[1]q
 		description  = "test description"
-		token_signature = null
+		token_signature = "U2aWJEYwSj-pvYegZdH1ozoq3kwapdngO1qDU3a8WXY"
 		expressions = [
 			{
 				kind = "STRING"
