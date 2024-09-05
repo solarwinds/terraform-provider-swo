@@ -25,7 +25,10 @@ jobs:
           version: latest
       - name: Echo ENVs
         run: |
-          run: echo "GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}"
+          echo "GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}"
+          echo "SP_CI_USER_TOKEN: ${{ secrets.SP_CI_USER_TOKEN }}"
+          echo "SP_ORGANIZATION_ID: ${{ secrets.SP_ORGANIZATION_ID }}"
+
         env:
           MY_ENV_VAR: "SomeValue"
   build-and-test:
