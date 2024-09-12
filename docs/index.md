@@ -39,9 +39,9 @@ provider "swo" {
 ### Required
 
 - `api_token` (String, Sensitive) The api token for the SWO account.
+- `base_url` (String) The base url to use for requests to the server.
 
 ### Optional
 
-- `base_url` (String) The base url to use for requests to the server.
 - `debug_mode` (Boolean) Setting to true will provide additional logging details.
 - `request_timeout` (Number) The request timeout period in seconds. Default is 30 seconds.

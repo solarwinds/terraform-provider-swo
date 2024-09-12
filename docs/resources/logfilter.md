@@ -16,7 +16,7 @@ A terraform resource for managing log exclusion filters.
 resource "swo_logfilter" "test" {
   name            = "terraform-provider-swo example"
   description     = "test log filter"
-  token_signature = null
+  token_signature = swo_apitoken.an_ingestion_token.id
   expressions = [
     {
       kind       = "STRING"
@@ -37,7 +37,7 @@ resource "swo_logfilter" "test" {
 ### Optional
 
 - `description` (String) The description of the log exclusion filter.
-- `token_signature` (String) The token signature of the log exclusion filter.
+- `token_signature` (String) The ID of the ingestion token to scope the exclusion filter to. If not provided, the filter will be global. If provided, the filter will only apply to logs ingested by the specified token. (NOTE: There may be only one global filter.)
 
 ### Read-Only
 

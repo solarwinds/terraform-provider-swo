@@ -28,6 +28,6 @@ resource "swo_alert" "https_response_time" {
       exclude_tags = []
     },
   ]
-  notifications = [swo_notification.msteams.id, swo_notification.opsgenie.id]
+  notifications         = [swo_notification.msteams.id, swo_notification.opsgenie.id]
   trigger_reset_actions = true
 }
