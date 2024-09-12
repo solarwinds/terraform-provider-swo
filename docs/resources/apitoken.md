@@ -3,12 +3,12 @@
 page_title: "swo_apitoken Resource - terraform-provider-swo"
 subcategory: ""
 description: |-
-  A terraform resource for managing api tokens.
+  A terraform resource for managing API tokens.
 ---
 
 # swo_apitoken (Resource)
 
-A terraform resource for managing api tokens.
+A terraform resource for managing API tokens.
 
 ## Example Usage
 
@@ -35,10 +35,10 @@ resource "swo_apitoken" "test" {
 
 ### Optional
 
-- `access_level` (String) The access level of the token. Valid values are [`FULL`|`READ`|`RECORD`]. Default is `FULL`.
+- `access_level` (String) The access level of the token. Valid values are [`FULL`|`READ`|`RECORD`|`API_FULL`]. Default is `FULL`.
 - `attributes` (Attributes Set) The custom attributes assigned to the token. (see [below for nested schema](#nestedatt--attributes))
-- `enabled` (Boolean) The enabled state of the token. Default is `true`.
-- `type` (String) The type of the token. Default is `public-api`.
+- `enabled` (Boolean) True if the token is enabled. Default is `true`.
+- `type` (String) The type of token. Default is `public-api`.
 
 ### Read-Only
 

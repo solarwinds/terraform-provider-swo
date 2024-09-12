@@ -186,7 +186,7 @@ func (r *notificationResource) Schema(ctx context.Context, req resource.SchemaRe
 								Optional:    true,
 								Sensitive:   true,
 							},
-							"auth_header_hame": schema.StringAttribute{
+							"auth_header_name": schema.StringAttribute{
 								Description: "Header name for token auth.",
 								Optional:    true,
 							},

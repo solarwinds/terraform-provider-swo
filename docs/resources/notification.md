@@ -283,7 +283,7 @@ Required:
 
 Optional:
 
-- `auth_header_hame` (String) Header name for token auth.
+- `auth_header_name` (String) Header name for token auth.
 - `auth_header_value` (String, Sensitive) Header value for token auth.
 - `auth_password` (String, Sensitive) Password for basic auth type.
 - `auth_type` (String) Token or username/password auth. Valid values are [`basic`|`token`].

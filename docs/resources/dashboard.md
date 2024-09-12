@@ -186,7 +186,7 @@ resource "swo_dashboard" "metrics_dashboard" {
 ### Optional
 
 - `category_id` (String) The category that this dashboard is assigned to.
-- `is_private` (Boolean) Is this dashboard restricted to the owner?
+- `is_private` (Boolean) True if the dashboard is restricted to the owner
 - `widgets` (Attributes Set) The widgets that are placed on the dashboard. (see [below for nested schema](#nestedatt--widgets))
 
 ### Read-Only
