@@ -40,3 +40,12 @@ jobs:
           # GitHub sets the GITHUB_TOKEN secret automatically.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
+          SP_CI_USER_TOKEN: ${{ secrets.SP_CI_USER_TOKEN }}
+          SP_ORGANIZATION_ID: ${{ secrets.SP_ORGANIZATION_ID }}
+          SP_PROJECT: ${{ secrets.SP_PROJECT }}
+
+          SWO_ISSUER_ID: ${{ secrets.SWO_ISSUER_ID }}
+          SWO_KEY_ID: ${{ secrets.SWO_KEY_ID }}
+          SWO_MAC_P8_FILE: ${{ secrets.SWO_MAC_P8_FILE }}
+          SWO_MAC_P12_CERT: ${{ secrets.SWO_MAC_P12_CERT }}
+          SWO_P12_PASSWORD: ${{ secrets.SWO_P12_PASSWORD }}
