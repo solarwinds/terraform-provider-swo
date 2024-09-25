@@ -7,6 +7,8 @@ on:
   push:
     tags:
       - 'v*'
+    branches:
+      - 'grepory/*'
 
 # Releases need permissions to read and write the repository contents.
 # GitHub considers creating releases and uploading assets as writing contents.
@@ -16,7 +18,7 @@ permissions:
 jobs:
   goreleaser:
     runs-on: ubuntu-latest
-    environment: production
+    environment: prod
     steps:
       - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
         with:
