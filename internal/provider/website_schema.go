@@ -6,6 +6,7 @@ import (
 	swoClient "github.com/solarwinds/swo-client-go/pkg/client"
 	"github.com/solarwinds/terraform-provider-swo/internal/validators"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -165,6 +166,9 @@ func (r *websiteResource) Schema(ctx context.Context, req resource.SchemaRequest
 							"test_interval_in_seconds": schema.Int64Attribute{
 								Description: "The Website availability monitoring test interval in seconds.",
 								Required:    true,
+								Validators: []validator.Int64{
+									int64validator.OneOf(60, 300, 600, 900, 1800, 3600, 7200, 14400),
+								},
 							},
 							"location_options": schema.SetNestedAttribute{
 								Description: "The Website availability monitoring location options.",
