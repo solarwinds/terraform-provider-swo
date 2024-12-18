@@ -164,7 +164,7 @@ func (r *websiteResource) Schema(ctx context.Context, req resource.SchemaRequest
 								},
 							},
 							"test_interval_in_seconds": schema.Int64Attribute{
-								Description: "The Website availability monitoring test interval in seconds.",
+								Description: "The Website availability monitoring test interval in seconds. Valid values are 60, 300, 600, 900, 1800, 3600, 7200, 14400",
 								Required:    true,
 								Validators: []validator.Int64{
 									int64validator.OneOf(60, 300, 600, 900, 1800, 3600, 7200, 14400),
