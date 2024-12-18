@@ -38,4 +38,4 @@ jobs:
         env:
           SWO_API_TOKEN: ${{ secrets.SWO_API_TOKEN }}
           SWO_BASE_URL: ${{ secrets.SWO_BASE_URL }}
-        run: go test ./internal/provider
+        run: go test ./...
