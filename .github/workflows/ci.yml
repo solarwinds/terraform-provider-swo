@@ -35,7 +35,4 @@ jobs:
       - name: Build
         run: go build -v ./...
       - name: Test
-        env:
-          SWO_API_TOKEN: ${{ secrets.SWO_API_TOKEN }}
-          SWO_BASE_URL: ${{ secrets.SWO_BASE_URL }}
-        run: go test ./...
+        run: go test
