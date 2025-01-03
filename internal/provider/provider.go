@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -18,7 +19,8 @@ import (
 
 // Ensure SwoProvider satisfies various provider interfaces.
 var (
-	_ provider.Provider = &swoProvider{}
+	_                     provider.Provider = &swoProvider{}
+	ErrNonMatchingEntites                   = errors.New("updated entity properties don't match")
 )
 
 var resources = []func() resource.Resource{

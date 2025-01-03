@@ -252,7 +252,7 @@ func (r *uriResource) Update(ctx context.Context, req resource.UpdateRequest, re
 
 		// Updated entity properties don't match, retry
 		if !match {
-			return nil, fmt.Errorf("updated entity properties don't match")
+			return nil, ErrNonMatchingEntites
 		}
 
 		return uri, nil

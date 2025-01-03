@@ -355,7 +355,7 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 
 		// Updated entity properties don't match, retry
 		if !match {
-			return nil, fmt.Errorf("updated entity properties don't match")
+			return nil, ErrNonMatchingEntites
 		}
 
 		return website, nil
