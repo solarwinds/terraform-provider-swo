@@ -15,10 +15,10 @@ func TestAccUriResource(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: testAccUriResourceConfig("test-acc test one"),
+				Config: testAccUriResourceConfig("test-acc test one [CREATE_TEST]"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet("swo_uri.test", "id"),
-					resource.TestCheckResourceAttr("swo_uri.test", "name", "test-acc test one"),
+					resource.TestCheckResourceAttr("swo_uri.test", "name", "test-acc test one [CREATE_TEST]"),
 					resource.TestCheckResourceAttr("swo_uri.test", "host", "example.com"),
 					resource.TestCheckResourceAttr("swo_uri.test", "options.is_ping_enabled", "false"),
 					resource.TestCheckResourceAttr("swo_uri.test", "options.is_tcp_enabled", "true"),
@@ -32,9 +32,9 @@ func TestAccUriResource(t *testing.T) {
 			},
 			// Update and Read testing
 			{
-				Config: testAccUriResourceConfig("test-acc test two"),
+				Config: testAccUriResourceConfig("test-acc test two [CREATE_TEST]"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_uri.test", "name", "test-acc test two"),
+					resource.TestCheckResourceAttr("swo_uri.test", "name", "test-acc test two [CREATE_TEST]"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase

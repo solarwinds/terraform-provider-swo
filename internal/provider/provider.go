@@ -33,6 +33,11 @@ var resources = []func() resource.Resource{
 
 var dataSources = []func() datasource.DataSource{}
 
+const (
+	expBackoffMaxInterval = 30 * time.Second
+	expBackoffMaxElapsed  = 2 * time.Minute
+)
+
 // swoProvider defines the provider implementation.
 type swoProvider struct {
 	// Version is set to the provider version on release, "dev" when the

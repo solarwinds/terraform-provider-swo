@@ -2,12 +2,16 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"reflect"
 
+	"github.com/cenkalti/backoff/v5"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	swoClient "github.com/solarwinds/swo-client-go/pkg/client"
+	swoClientTypes "github.com/solarwinds/swo-client-go/types"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
@@ -66,7 +70,7 @@ func (r *uriResource) Create(ctx context.Context, req resource.CreateRequest, re
 				Values: convertArray(tfPlan.TestDefinitions.LocationOptions,
 					func(v uriResourceProbeLocation) string { return v.Value.ValueString() }),
 			},
-			TestIntervalInSeconds: int(tfPlan.TestDefinitions.TestIntervalInSeconds.ValueInt64()),
+			TestIntervalInSeconds: swoClientTypes.TestIntervalInSeconds(int(tfPlan.TestDefinitions.TestIntervalInSeconds.ValueInt64())),
 		},
 	}
 
@@ -85,12 +89,27 @@ func (r *uriResource) Create(ctx context.Context, req resource.CreateRequest, re
 func (r *uriResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var tfState uriResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &tfState)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// Read the Uri...
-	uri, err := r.client.UriService().Read(ctx, tfState.Id.ValueString())
+	// Creates and Updates are eventually consistant. Retry until the URI's entity Id is returned.
+	uri, err := r.backoffRetry(func() (*swoClient.ReadUriResult, error) {
+		// Read the Uri...
+		uri, err := r.client.UriService().Read(ctx, tfState.Id.ValueString())
+
+		if err != nil {
+			// The entity is still being created, retry
+			if err == swoClient.ErrEntityIdNil {
+				return nil, swoClient.ErrEntityIdNil
+			}
+
+			return nil, backoff.Permanent(err)
+		}
+
+		return uri, nil
+	})
 
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error",
@@ -195,7 +214,8 @@ func (r *uriResource) Update(ctx context.Context, req resource.UpdateRequest, re
 				Values: convertArray(tfPlan.TestDefinitions.LocationOptions,
 					func(v uriResourceProbeLocation) string { return v.Value.ValueString() }),
 			},
-			TestIntervalInSeconds: int(tfPlan.TestDefinitions.TestIntervalInSeconds.ValueInt64()),
+
+			TestIntervalInSeconds: swoClientTypes.TestIntervalInSeconds(int(tfPlan.TestDefinitions.TestIntervalInSeconds.ValueInt64())),
 		},
 	}
 
@@ -207,6 +227,36 @@ func (r *uriResource) Update(ctx context.Context, req resource.UpdateRequest, re
 			fmt.Sprintf("error updating uri %s. err: %s", tfState.Id, err))
 		return
 	}
+
+	// Updates are eventually consistant. Retry until the URI we read and the URI we are updating to match.
+	r.backoffRetry(func() (*swoClient.ReadUriResult, error) {
+		// Read the Uri...
+		uri, err := r.client.UriService().Read(ctx, tfState.Id.ValueString())
+
+		if err != nil {
+			return nil, backoff.Permanent(err)
+		}
+
+		match := (updateInput.Name == *uri.Name) &&
+			(updateInput.IpOrDomain == uri.Host) &&
+			(updateInput.PingOptions.Enabled == uri.Options.IsPingEnabled) &&
+			(updateInput.TcpOptions.Enabled == uri.Options.IsTcpEnabled) &&
+			(updateInput.TcpOptions.Port == uri.TcpOptions.Port) &&
+			(updateInput.TcpOptions.StringToExpect == uri.TcpOptions.StringToExpect) &&
+			(updateInput.TcpOptions.StringToSend == uri.TcpOptions.StringToSend) &&
+			(updateInput.TestDefinitions.TestIntervalInSeconds == *uri.TestDefinitions.TestIntervalInSeconds) &&
+			(updateInput.TestDefinitions.PlatformOptions.TestFromAll == &uri.TestDefinitions.PlatformOptions.TestFromAll) &&
+			(reflect.DeepEqual(updateInput.TestDefinitions.PlatformOptions.ProbePlatforms, uri.TestDefinitions.PlatformOptions.Platforms)) &&
+			(updateInput.TestDefinitions.TestFrom.GetType() == *uri.TestDefinitions.GetTestFromLocation()) &&
+			(reflect.DeepEqual(updateInput.TestDefinitions.TestFrom.GetValues(), uri.TestDefinitions.GetLocationOptions()))
+
+		// Updated entity properties don't match, retry
+		if !match {
+			return nil, errors.New("updated entity properties don't match")
+		}
+
+		return uri, nil
+	})
 
 	// Save to Terraform state.
 	tfPlan.Id = tfState.Id
@@ -229,4 +279,11 @@ func (r *uriResource) Delete(ctx context.Context, req resource.DeleteRequest, re
 
 func (r *uriResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
+func (r *uriResource) backoffRetry(operation func() (*swoClient.ReadUriResult, error)) (*swoClient.ReadUriResult, error) {
+	expBackoff := backoff.NewExponentialBackOff()
+	expBackoff.MaxInterval = expBackoffMaxInterval
+
+	return backoff.Retry(context.Background(), operation, backoff.WithBackOff(expBackoff), backoff.WithMaxElapsedTime(expBackoffMaxElapsed))
 }

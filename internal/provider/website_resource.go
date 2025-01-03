@@ -2,12 +2,17 @@ package provider
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"reflect"
 
+	"github.com/cenkalti/backoff/v5"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	swoClient "github.com/solarwinds/swo-client-go/pkg/client"
+	swoClientTypes "github.com/solarwinds/swo-client-go/types"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
@@ -64,7 +69,7 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 		Url:  tfPlan.Url.ValueString(),
 		AvailabilityCheckSettings: &swoClient.AvailabilityCheckSettingsInput{
 			CheckForString:        checkForString,
-			TestIntervalInSeconds: int(tfPlan.Monitoring.Availability.TestIntervalInSeconds.ValueInt64()),
+			TestIntervalInSeconds: swoClientTypes.TestIntervalInSeconds(int(tfPlan.Monitoring.Availability.TestIntervalInSeconds.ValueInt64())),
 			Protocols: convertArray(tfPlan.Monitoring.Availability.Protocols, func(s string) swoClient.WebsiteProtocol {
 				return swoClient.WebsiteProtocol(s)
 			}),
@@ -102,9 +107,11 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
+	website, err := r.ReadRetry(ctx, result.Id)
+
 	// Get the latest Website state from the server so we can get the 'snippet' field. Ideally we need to update
 	// the API to return the 'snippet' field in the create response.
-	if website, err := r.client.WebsiteService().Read(ctx, result.Id); err != nil {
+	if err != nil {
 		resp.Diagnostics.AddWarning("Client Error",
 			fmt.Sprintf("error capturing RUM snippit for Website '%s' - error: %s", tfPlan.Name, err))
 	} else {
@@ -118,12 +125,12 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var tfState websiteResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &tfState)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// Read the Website...
-	website, err := r.client.WebsiteService().Read(ctx, tfState.Id.ValueString())
+	website, err := r.ReadRetry(ctx, tfState.Id.ValueString())
 
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error",
@@ -262,49 +269,97 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 		}
 	}
 
+	updateInput := swoClient.UpdateWebsiteInput{
+		Id:   tfState.Id.ValueString(),
+		Name: tfPlan.Name.ValueString(),
+		Url:  tfPlan.Url.ValueString(),
+		AvailabilityCheckSettings: &swoClient.AvailabilityCheckSettingsInput{
+			CheckForString:        checkForString,
+			TestIntervalInSeconds: swoClientTypes.TestIntervalInSeconds(int(tfPlan.Monitoring.Availability.TestIntervalInSeconds.ValueInt64())),
+			Protocols: convertArray(tfPlan.Monitoring.Availability.Protocols, func(s string) swoClient.WebsiteProtocol {
+				return swoClient.WebsiteProtocol(s)
+			}),
+			PlatformOptions: &swoClient.ProbePlatformOptionsInput{
+				TestFromAll: swoClient.Ptr(tfPlan.Monitoring.Availability.PlatformOptions.TestFromAll.ValueBool()),
+				ProbePlatforms: convertArray(tfPlan.Monitoring.Availability.PlatformOptions.Platforms, func(s string) swoClient.ProbePlatform {
+					return swoClient.ProbePlatform(s)
+				}),
+			},
+			TestFrom: swoClient.ProbeLocationInput{
+				Type: swoClient.ProbeLocationType(tfPlan.Monitoring.Availability.TestFromLocation.ValueString()),
+				Values: convertArray(tfPlan.Monitoring.Availability.LocationOptions, func(p probeLocation) string {
+					return p.Value.ValueString()
+				}),
+			},
+			Ssl: ssl,
+			CustomHeaders: convertArray(tfPlan.Monitoring.CustomHeaders, func(h customHeader) swoClient.CustomHeaderInput {
+				return swoClient.CustomHeaderInput{
+					Name:  h.Name.ValueString(),
+					Value: h.Value.ValueString(),
+				}
+			}),
+		},
+		Rum: &swoClient.RumMonitoringInput{
+			ApdexTimeInSeconds: swoClient.Ptr(int(tfPlan.Monitoring.Rum.ApdexTimeInSeconds.ValueInt64())),
+			Spa:                tfPlan.Monitoring.Rum.Spa.ValueBoolPointer(),
+		},
+	}
+
 	// Update the Website...
-	err := r.client.WebsiteService().Update(ctx,
-		swoClient.UpdateWebsiteInput{
-			Id:   tfState.Id.ValueString(),
-			Name: tfPlan.Name.ValueString(),
-			Url:  tfPlan.Url.ValueString(),
-			AvailabilityCheckSettings: &swoClient.AvailabilityCheckSettingsInput{
-				CheckForString:        checkForString,
-				TestIntervalInSeconds: int(tfPlan.Monitoring.Availability.TestIntervalInSeconds.ValueInt64()),
-				Protocols: convertArray(tfPlan.Monitoring.Availability.Protocols, func(s string) swoClient.WebsiteProtocol {
-					return swoClient.WebsiteProtocol(s)
-				}),
-				PlatformOptions: &swoClient.ProbePlatformOptionsInput{
-					TestFromAll: swoClient.Ptr(tfPlan.Monitoring.Availability.PlatformOptions.TestFromAll.ValueBool()),
-					ProbePlatforms: convertArray(tfPlan.Monitoring.Availability.PlatformOptions.Platforms, func(s string) swoClient.ProbePlatform {
-						return swoClient.ProbePlatform(s)
-					}),
-				},
-				TestFrom: swoClient.ProbeLocationInput{
-					Type: swoClient.ProbeLocationType(tfPlan.Monitoring.Availability.TestFromLocation.ValueString()),
-					Values: convertArray(tfPlan.Monitoring.Availability.LocationOptions, func(p probeLocation) string {
-						return p.Value.ValueString()
-					}),
-				},
-				Ssl: ssl,
-				CustomHeaders: convertArray(tfPlan.Monitoring.CustomHeaders, func(h customHeader) swoClient.CustomHeaderInput {
-					return swoClient.CustomHeaderInput{
-						Name:  h.Name.ValueString(),
-						Value: h.Value.ValueString(),
-					}
-				}),
-			},
-			Rum: &swoClient.RumMonitoringInput{
-				ApdexTimeInSeconds: swoClient.Ptr(int(tfPlan.Monitoring.Rum.ApdexTimeInSeconds.ValueInt64())),
-				Spa:                tfPlan.Monitoring.Rum.Spa.ValueBoolPointer(),
-			},
-		})
+	err := r.client.WebsiteService().Update(ctx, updateInput)
 
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error",
 			fmt.Sprintf("error updating website %s. err: %s", tfState.Id, err))
 		return
 	}
+
+	// Updates are eventually consistant. Retry until the Website we read and the Website we are updating to match.
+	r.BackoffRetry(func() (*swoClient.ReadWebsiteResult, error) {
+		// Read the Uri...
+		website, err := r.client.WebsiteService().Read(ctx, tfState.Id.ValueString())
+
+		if err != nil {
+			return nil, backoff.Permanent(err)
+		}
+
+		probePlatforms := convertArray(website.Monitoring.Availability.PlatformOptions.Platforms, func(s string) swoClient.ProbePlatform {
+			return swoClient.ProbePlatform(s)
+		})
+
+		bCustomHeader, err := json.Marshal(website.Monitoring.CustomHeaders)
+		if err != nil {
+			return nil, err
+		}
+
+		bUpdatedCustomHeader, err := json.Marshal(updateInput.AvailabilityCheckSettings.CustomHeaders)
+		if err != nil {
+			return nil, err
+		}
+
+		match :=
+			(updateInput.Name == *website.Name) &&
+				(updateInput.Url == website.Url) &&
+				(updateInput.AvailabilityCheckSettings.CheckForString == (*swoClient.CheckForStringInput)(website.Monitoring.Availability.CheckForString)) &&
+				(updateInput.AvailabilityCheckSettings.TestIntervalInSeconds == *website.Monitoring.Availability.TestIntervalInSeconds) &&
+				(reflect.DeepEqual(updateInput.AvailabilityCheckSettings.GetProtocols(), website.Monitoring.Availability.GetProtocols())) &&
+				(*updateInput.AvailabilityCheckSettings.PlatformOptions.TestFromAll == website.Monitoring.Availability.PlatformOptions.GetTestFromAll()) &&
+				(reflect.DeepEqual(updateInput.AvailabilityCheckSettings.PlatformOptions.GetProbePlatforms(), probePlatforms)) &&
+				(updateInput.AvailabilityCheckSettings.TestFrom.Type == *website.Monitoring.Availability.TestFromLocation) &&
+				(*updateInput.AvailabilityCheckSettings.Ssl.DaysPriorToExpiration == *website.Monitoring.Availability.Ssl.DaysPriorToExpiration) &&
+				(*updateInput.AvailabilityCheckSettings.Ssl.Enabled == website.Monitoring.Availability.Ssl.Enabled) &&
+				(*updateInput.AvailabilityCheckSettings.Ssl.IgnoreIntermediateCertificates == website.Monitoring.Availability.Ssl.IgnoreIntermediateCertificates) &&
+				(string(bCustomHeader) == string(bUpdatedCustomHeader)) &&
+				(*updateInput.Rum.Spa == website.Monitoring.Rum.Spa) &&
+				(*updateInput.Rum.ApdexTimeInSeconds == *website.Monitoring.Rum.ApdexTimeInSeconds)
+
+		// Updated entity properties don't match, retry
+		if !match {
+			return nil, errors.New("updated entity properties don't match")
+		}
+
+		return website, nil
+	})
 
 	// Save to Terraform state.
 	resp.Diagnostics.Append(resp.State.Set(ctx, &tfPlan)...)
@@ -327,4 +382,34 @@ func (r *websiteResource) Delete(ctx context.Context, req resource.DeleteRequest
 
 func (r *websiteResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
+func (r *websiteResource) BackoffRetry(operation func() (*swoClient.ReadWebsiteResult, error)) (*swoClient.ReadWebsiteResult, error) {
+	expBackoff := backoff.NewExponentialBackOff()
+	expBackoff.MaxInterval = expBackoffMaxInterval
+
+	return backoff.Retry(context.Background(), operation, backoff.WithBackOff(expBackoff), backoff.WithMaxElapsedTime(expBackoffMaxElapsed))
+}
+func (r *websiteResource) ReadRetry(ctx context.Context, id string) (*swoClient.ReadWebsiteResult, error) {
+	// Creates and Updates are eventually consistant. Retry until the URI's entity Id is returned.
+	website, err := r.BackoffRetry(func() (*swoClient.ReadWebsiteResult, error) {
+		website, err := r.client.WebsiteService().Read(ctx, id)
+
+		if err != nil {
+			// The entity is still being created, retry
+			if err == swoClient.ErrEntityIdNil {
+				return nil, swoClient.ErrEntityIdNil
+			}
+
+			return nil, backoff.Permanent(err)
+		}
+
+		return website, nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return website, nil
 }
