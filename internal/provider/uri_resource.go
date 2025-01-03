@@ -101,7 +101,7 @@ func (r *uriResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 
 		if err != nil {
 			// The entity is still being created, retry
-			if err == swoClient.ErrEntityIdNil {
+			if errors.Is(err, swoClient.ErrEntityIdNil) {
 				return nil, swoClient.ErrEntityIdNil
 			}
 
@@ -229,7 +229,7 @@ func (r *uriResource) Update(ctx context.Context, req resource.UpdateRequest, re
 	}
 
 	// Updates are eventually consistant. Retry until the URI we read and the URI we are updating match.
-	r.backoffRetry(func() (*swoClient.ReadUriResult, error) {
+	_, err = r.backoffRetry(func() (*swoClient.ReadUriResult, error) {
 		// Read the Uri...
 		uri, err := r.client.UriService().Read(ctx, tfState.Id.ValueString())
 
@@ -252,11 +252,17 @@ func (r *uriResource) Update(ctx context.Context, req resource.UpdateRequest, re
 
 		// Updated entity properties don't match, retry
 		if !match {
-			return nil, errors.New("updated entity properties don't match")
+			return nil, fmt.Errorf("updated entity properties don't match")
 		}
 
 		return uri, nil
 	})
+
+	if err != nil {
+		resp.Diagnostics.AddError("Client Error",
+			fmt.Sprintf("error updating uri %s. err: %s", tfState.Id, err))
+		return
+	}
 
 	// Save to Terraform state.
 	tfPlan.Id = tfState.Id

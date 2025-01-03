@@ -315,7 +315,7 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 	}
 
 	// Updates are eventually consistant. Retry until the Website we read and the Website we are updating match.
-	r.BackoffRetry(func() (*swoClient.ReadWebsiteResult, error) {
+	_, err = r.BackoffRetry(func() (*swoClient.ReadWebsiteResult, error) {
 		// Read the Uri...
 		website, err := r.client.WebsiteService().Read(ctx, tfState.Id.ValueString())
 
@@ -355,11 +355,17 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 
 		// Updated entity properties don't match, retry
 		if !match {
-			return nil, errors.New("updated entity properties don't match")
+			return nil, fmt.Errorf("updated entity properties don't match")
 		}
 
 		return website, nil
 	})
+
+	if err != nil {
+		resp.Diagnostics.AddError("Client Error",
+			fmt.Sprintf("error updating website %s. err: %s", tfState.Id, err))
+		return
+	}
 
 	// Save to Terraform state.
 	resp.Diagnostics.Append(resp.State.Set(ctx, &tfPlan)...)
@@ -397,7 +403,7 @@ func (r *websiteResource) ReadRetry(ctx context.Context, id string) (*swoClient.
 
 		if err != nil {
 			// The entity is still being created, retry
-			if err == swoClient.ErrEntityIdNil {
+			if errors.Is(err, swoClient.ErrEntityIdNil) {
 				return nil, swoClient.ErrEntityIdNil
 			}
 
