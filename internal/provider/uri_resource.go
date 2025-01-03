@@ -228,7 +228,7 @@ func (r *uriResource) Update(ctx context.Context, req resource.UpdateRequest, re
 		return
 	}
 
-	// Updates are eventually consistant. Retry until the URI we read and the URI we are updating to match.
+	// Updates are eventually consistant. Retry until the URI we read and the URI we are updating match.
 	r.backoffRetry(func() (*swoClient.ReadUriResult, error) {
 		// Read the Uri...
 		uri, err := r.client.UriService().Read(ctx, tfState.Id.ValueString())

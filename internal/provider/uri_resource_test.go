@@ -32,9 +32,9 @@ func TestAccUriResource(t *testing.T) {
 			},
 			// Update and Read testing
 			{
-				Config: testAccUriResourceConfig("test-acc test two [CREATE_TEST]"),
+				Config: testAccUriResourceConfig("test-acc test two [UPDATE_TEST]"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_uri.test", "name", "test-acc test two [CREATE_TEST]"),
+					resource.TestCheckResourceAttr("swo_uri.test", "name", "test-acc test two [UPDATE_TEST]"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase

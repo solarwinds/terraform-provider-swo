@@ -314,7 +314,7 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
-	// Updates are eventually consistant. Retry until the Website we read and the Website we are updating to match.
+	// Updates are eventually consistant. Retry until the Website we read and the Website we are updating match.
 	r.BackoffRetry(func() (*swoClient.ReadWebsiteResult, error) {
 		// Read the Uri...
 		website, err := r.client.WebsiteService().Read(ctx, tfState.Id.ValueString())

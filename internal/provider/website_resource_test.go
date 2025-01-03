@@ -38,9 +38,9 @@ func TestAccWebsiteResource(t *testing.T) {
 			},
 			// Update and Read testing
 			{
-				Config: testAccWebsiteResourceConfig("test-acc test two [CREATE_TEST]"),
+				Config: testAccWebsiteResourceConfig("test-acc test two [UPDATE_TEST]"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_website.test", "name", "test-acc test two [CREATE_TEST]"),
+					resource.TestCheckResourceAttr("swo_website.test", "name", "test-acc test two [UPDATE_TEST]"),
 				),
 			},
 			{
