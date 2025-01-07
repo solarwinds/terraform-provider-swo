@@ -15,18 +15,18 @@ func TestAccWebsiteResource(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: testAccWebsiteResourceConfig("test-acc test one"),
+				Config: testAccWebsiteResourceConfig("test-acc test one [CREATE_TEST]"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet("swo_website.test", "id"),
-					resource.TestCheckResourceAttr("swo_website.test", "name", "test-acc test one"),
+					resource.TestCheckResourceAttr("swo_website.test", "name", "test-acc test one [CREATE_TEST]"),
 					resource.TestCheckResourceAttr("swo_website.test", "url", "https://example.com"),
 				),
 			},
 			{
-				Config: testAccWebsiteResourceConfigWithoutOptionals("test create without"),
+				Config: testAccWebsiteResourceConfigWithoutOptionals("test-acc create without [CREATE_TEST]"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet("swo_website.test", "id"),
-					resource.TestCheckResourceAttr("swo_website.test", "name", "test create without"),
+					resource.TestCheckResourceAttr("swo_website.test", "name", "test-acc create without [CREATE_TEST]"),
 					resource.TestCheckResourceAttr("swo_website.test", "url", "https://solarwinds.com"),
 				),
 			},
@@ -38,15 +38,15 @@ func TestAccWebsiteResource(t *testing.T) {
 			},
 			// Update and Read testing
 			{
-				Config: testAccWebsiteResourceConfig("test-acc test two"),
+				Config: testAccWebsiteResourceConfig("test-acc test two [UPDATE_TEST]"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_website.test", "name", "test-acc test two"),
+					resource.TestCheckResourceAttr("swo_website.test", "name", "test-acc test two [UPDATE_TEST]"),
 				),
 			},
 			{
-				Config: testAccWebsiteResourceConfigWithoutOptionals("test-acc test update without"),
+				Config: testAccWebsiteResourceConfigWithoutOptionals("test-acc test update without [UPDATE_TEST]"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_website.test", "name", "test-acc test update without"),
+					resource.TestCheckResourceAttr("swo_website.test", "name", "test-acc test update without [UPDATE_TEST]"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase

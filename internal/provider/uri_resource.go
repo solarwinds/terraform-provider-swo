@@ -2,12 +2,16 @@ package provider
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"reflect"
 
+	"github.com/cenkalti/backoff/v5"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	swoClient "github.com/solarwinds/swo-client-go/pkg/client"
+	swoClientTypes "github.com/solarwinds/swo-client-go/types"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
@@ -66,7 +70,7 @@ func (r *uriResource) Create(ctx context.Context, req resource.CreateRequest, re
 				Values: convertArray(tfPlan.TestDefinitions.LocationOptions,
 					func(v uriResourceProbeLocation) string { return v.Value.ValueString() }),
 			},
-			TestIntervalInSeconds: int(tfPlan.TestDefinitions.TestIntervalInSeconds.ValueInt64()),
+			TestIntervalInSeconds: swoClientTypes.TestIntervalInSeconds(int(tfPlan.TestDefinitions.TestIntervalInSeconds.ValueInt64())),
 		},
 	}
 
@@ -85,12 +89,12 @@ func (r *uriResource) Create(ctx context.Context, req resource.CreateRequest, re
 func (r *uriResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var tfState uriResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &tfState)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// Read the Uri...
-	uri, err := r.client.UriService().Read(ctx, tfState.Id.ValueString())
+	uri, err := ReadRetry(ctx, tfState.Id.ValueString(), r.client.UriService().Read)
 
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error",
@@ -195,12 +199,83 @@ func (r *uriResource) Update(ctx context.Context, req resource.UpdateRequest, re
 				Values: convertArray(tfPlan.TestDefinitions.LocationOptions,
 					func(v uriResourceProbeLocation) string { return v.Value.ValueString() }),
 			},
-			TestIntervalInSeconds: int(tfPlan.TestDefinitions.TestIntervalInSeconds.ValueInt64()),
+
+			TestIntervalInSeconds: swoClientTypes.TestIntervalInSeconds(int(tfPlan.TestDefinitions.TestIntervalInSeconds.ValueInt64())),
 		},
 	}
 
+	bUriToMatch, err := json.Marshal(map[string]interface{}{
+		"id":   updateInput.Id,
+		"name": updateInput.Name,
+		"host": updateInput.IpOrDomain,
+		"options": map[string]interface{}{
+			"isPingEnabled": updateInput.PingOptions.Enabled,
+			"isTcpEnabled":  updateInput.TcpOptions.Enabled,
+		},
+		"tcpOptions": map[string]interface{}{
+			"port":           updateInput.TcpOptions.Port,
+			"stringToExpect": updateInput.TcpOptions.StringToExpect,
+			"stringToSend":   updateInput.TcpOptions.StringToSend,
+		},
+		"testDefinitions": map[string]interface{}{
+			"testFromLocation":      updateInput.TestDefinitions.TestFrom.Type,
+			"testIntervalInSeconds": updateInput.TestDefinitions.TestIntervalInSeconds,
+			"platformOptions": map[string]interface{}{
+				"testFromAll": tfPlan.TestDefinitions.PlatformOptions.TestFromAll.ValueBoolPointer(),
+				"platforms":   tfPlan.TestDefinitions.PlatformOptions.Platforms,
+			},
+		},
+	})
+
+	if err != nil {
+		resp.Diagnostics.AddError("Client Error",
+			fmt.Sprintf("error marshaling uri result to match %s - %s", tfState.Id, err))
+		return
+	}
+
+	var readUriResultToMatch swoClient.ReadUriResult
+
+	err = json.Unmarshal(bUriToMatch, &readUriResultToMatch)
+	if err != nil {
+		resp.Diagnostics.AddError("Client Error",
+			fmt.Sprintf("error unmarshaling uri result to match %s - %s", tfState.Id, err))
+		return
+	}
+
 	// Update the Uri...
-	err := r.client.UriService().Update(ctx, updateInput)
+	err = r.client.UriService().Update(ctx, updateInput)
+
+	if err != nil {
+		resp.Diagnostics.AddError("Client Error",
+			fmt.Sprintf("error updating uri %s. err: %s", tfState.Id, err))
+		return
+	}
+
+	// Updates are eventually consistant. Retry until the URI we read and the URI we are updating match.
+	_, err = BackoffRetry(func() (*swoClient.ReadUriResult, error) {
+		// Read the Uri...
+		uri, err := r.client.UriService().Read(ctx, tfState.Id.ValueString())
+
+		if err != nil {
+			return nil, backoff.Permanent(err)
+		}
+
+		//Set unsupported values
+		readUriResultToMatch.Typename = uri.Typename
+		readUriResultToMatch.Options.IsHttpEnabled = uri.Options.IsHttpEnabled
+		readUriResultToMatch.HttpOptions = uri.HttpOptions
+		readUriResultToMatch.Tags = uri.Tags
+		readUriResultToMatch.TestDefinitions.LocationOptions = uri.TestDefinitions.LocationOptions
+
+		match := reflect.DeepEqual(&readUriResultToMatch, uri)
+
+		// Updated entity properties don't match, retry
+		if !match {
+			return nil, ErrNonMatchingEntites
+		}
+
+		return uri, nil
+	})
 
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error",
