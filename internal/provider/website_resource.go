@@ -3,7 +3,6 @@ package provider
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"reflect"
 
@@ -107,7 +106,7 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
-	website, err := r.ReadRetry(ctx, result.Id)
+	website, err := ReadRetry(ctx, result.Id, r.client.WebsiteService().Read)
 
 	// Get the latest Website state from the server so we can get the 'snippet' field. Ideally we need to update
 	// the API to return the 'snippet' field in the create response.
@@ -130,7 +129,7 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
-	website, err := r.ReadRetry(ctx, tfState.Id.ValueString())
+	website, err := ReadRetry(ctx, tfState.Id.ValueString(), r.client.WebsiteService().Read)
 
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error",
@@ -305,8 +304,44 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 		},
 	}
 
+	bWebsiteToMatch, err := json.Marshal(map[string]interface{}{
+		"id":   updateInput.Id,
+		"name": updateInput.Name,
+		"url":  updateInput.Url,
+
+		"monitoring": map[string]interface{}{
+			"availability": map[string]interface{}{
+				"protocols":             updateInput.AvailabilityCheckSettings.Protocols,
+				"testIntervalInSeconds": updateInput.AvailabilityCheckSettings.TestIntervalInSeconds,
+				"testFromLocation":      updateInput.AvailabilityCheckSettings.TestFrom.Type,
+				"platformOptions": map[string]interface{}{
+					"testFromAll": updateInput.AvailabilityCheckSettings.PlatformOptions.TestFromAll,
+					"platforms":   updateInput.AvailabilityCheckSettings.PlatformOptions.ProbePlatforms,
+				},
+				"ssl": updateInput.AvailabilityCheckSettings.Ssl,
+			},
+			"rum":           updateInput.Rum,
+			"customHeaders": updateInput.AvailabilityCheckSettings.CustomHeaders,
+		},
+	})
+
+	if err != nil {
+		resp.Diagnostics.AddError("Client Error",
+			fmt.Sprintf("error marshaling website result to match %s - %s", tfState.Id, err))
+		return
+	}
+
+	var websiteToMatch swoClient.ReadWebsiteResult
+
+	err = json.Unmarshal(bWebsiteToMatch, &websiteToMatch)
+	if err != nil {
+		resp.Diagnostics.AddError("Client Error",
+			fmt.Sprintf("error unmarshaling uri result to match %s - %s", tfState.Id, err))
+		return
+	}
+
 	// Update the Website...
-	err := r.client.WebsiteService().Update(ctx, updateInput)
+	err = r.client.WebsiteService().Update(ctx, updateInput)
 
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error",
@@ -315,7 +350,7 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 	}
 
 	// Updates are eventually consistant. Retry until the Website we read and the Website we are updating match.
-	_, err = r.BackoffRetry(func() (*swoClient.ReadWebsiteResult, error) {
+	_, err = BackoffRetry(func() (*swoClient.ReadWebsiteResult, error) {
 		// Read the Uri...
 		website, err := r.client.WebsiteService().Read(ctx, tfState.Id.ValueString())
 
@@ -323,35 +358,13 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 			return nil, backoff.Permanent(err)
 		}
 
-		probePlatforms := convertArray(website.Monitoring.Availability.PlatformOptions.Platforms, func(s string) swoClient.ProbePlatform {
-			return swoClient.ProbePlatform(s)
-		})
+		websiteToMatch.Typename = website.Typename
+		websiteToMatch.Monitoring.Rum.Snippet = website.Monitoring.Rum.Snippet
+		websiteToMatch.Monitoring.Options = website.Monitoring.Options
+		websiteToMatch.Monitoring.Availability.LocationOptions = website.Monitoring.Availability.LocationOptions
+		websiteToMatch.Monitoring.Availability.CheckForString = website.Monitoring.Availability.CheckForString
 
-		bCustomHeader, err := json.Marshal(website.Monitoring.CustomHeaders)
-		if err != nil {
-			return nil, err
-		}
-
-		bUpdatedCustomHeader, err := json.Marshal(updateInput.AvailabilityCheckSettings.CustomHeaders)
-		if err != nil {
-			return nil, err
-		}
-
-		match :=
-			(updateInput.Name == *website.Name) &&
-				(updateInput.Url == website.Url) &&
-				(updateInput.AvailabilityCheckSettings.CheckForString == (*swoClient.CheckForStringInput)(website.Monitoring.Availability.CheckForString)) &&
-				(updateInput.AvailabilityCheckSettings.TestIntervalInSeconds == *website.Monitoring.Availability.TestIntervalInSeconds) &&
-				(reflect.DeepEqual(updateInput.AvailabilityCheckSettings.GetProtocols(), website.Monitoring.Availability.GetProtocols())) &&
-				(*updateInput.AvailabilityCheckSettings.PlatformOptions.TestFromAll == website.Monitoring.Availability.PlatformOptions.GetTestFromAll()) &&
-				(reflect.DeepEqual(updateInput.AvailabilityCheckSettings.PlatformOptions.GetProbePlatforms(), probePlatforms)) &&
-				(updateInput.AvailabilityCheckSettings.TestFrom.Type == *website.Monitoring.Availability.TestFromLocation) &&
-				(*updateInput.AvailabilityCheckSettings.Ssl.DaysPriorToExpiration == *website.Monitoring.Availability.Ssl.DaysPriorToExpiration) &&
-				(*updateInput.AvailabilityCheckSettings.Ssl.Enabled == website.Monitoring.Availability.Ssl.Enabled) &&
-				(*updateInput.AvailabilityCheckSettings.Ssl.IgnoreIntermediateCertificates == website.Monitoring.Availability.Ssl.IgnoreIntermediateCertificates) &&
-				(string(bCustomHeader) == string(bUpdatedCustomHeader)) &&
-				(*updateInput.Rum.Spa == website.Monitoring.Rum.Spa) &&
-				(*updateInput.Rum.ApdexTimeInSeconds == *website.Monitoring.Rum.ApdexTimeInSeconds)
+		match := reflect.DeepEqual(&websiteToMatch, website)
 
 		// Updated entity properties don't match, retry
 		if !match {
@@ -388,34 +401,4 @@ func (r *websiteResource) Delete(ctx context.Context, req resource.DeleteRequest
 
 func (r *websiteResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
-}
-
-func (r *websiteResource) BackoffRetry(operation func() (*swoClient.ReadWebsiteResult, error)) (*swoClient.ReadWebsiteResult, error) {
-	expBackoff := backoff.NewExponentialBackOff()
-	expBackoff.MaxInterval = expBackoffMaxInterval
-
-	return backoff.Retry(context.Background(), operation, backoff.WithBackOff(expBackoff), backoff.WithMaxElapsedTime(expBackoffMaxElapsed))
-}
-func (r *websiteResource) ReadRetry(ctx context.Context, id string) (*swoClient.ReadWebsiteResult, error) {
-	// Creates and Updates are eventually consistant. Retry until the URI's entity Id is returned.
-	website, err := r.BackoffRetry(func() (*swoClient.ReadWebsiteResult, error) {
-		website, err := r.client.WebsiteService().Read(ctx, id)
-
-		if err != nil {
-			// The entity is still being created, retry
-			if errors.Is(err, swoClient.ErrEntityIdNil) {
-				return nil, swoClient.ErrEntityIdNil
-			}
-
-			return nil, backoff.Permanent(err)
-		}
-
-		return website, nil
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	return website, nil
 }

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/cenkalti/backoff/v5"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
@@ -39,6 +40,8 @@ const (
 	expBackoffMaxInterval = 30 * time.Second
 	expBackoffMaxElapsed  = 2 * time.Minute
 )
+
+type ReadOperation[T any] func(context.Context, string) (T, error)
 
 // swoProvider defines the provider implementation.
 type swoProvider struct {
@@ -150,4 +153,35 @@ func New(version string, transport http.RoundTripper) func() provider.Provider {
 			transport: transport,
 		}
 	}
+}
+
+func BackoffRetry[T any](operation backoff.Operation[T]) (T, error) {
+	expBackoff := backoff.NewExponentialBackOff()
+	expBackoff.MaxInterval = expBackoffMaxInterval
+
+	return backoff.Retry(context.Background(), operation, backoff.WithBackOff(expBackoff), backoff.WithMaxElapsedTime(expBackoffMaxElapsed))
+}
+
+func ReadRetry[T any](ctx context.Context, id string, operation ReadOperation[T]) (T, error) {
+	var entity T
+	// Uri, and Website Creates and Updates are eventually consistant. Retry until the entity id is returned.
+	entity, err := BackoffRetry(func() (T, error) {
+		entity, err := operation(ctx, id)
+		if err != nil {
+			// The entity is still being created, retry
+			if errors.Is(err, swoClient.ErrEntityIdNil) {
+				return entity, swoClient.ErrEntityIdNil
+			}
+
+			return entity, backoff.Permanent(err)
+		}
+
+		return entity, nil
+	})
+
+	if err != nil {
+		return entity, err
+	}
+
+	return entity, nil
 }

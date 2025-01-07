@@ -2,7 +2,7 @@ package provider
 
 import (
 	"context"
-	"errors"
+	"encoding/json"
 	"fmt"
 	"reflect"
 
@@ -94,22 +94,7 @@ func (r *uriResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 		return
 	}
 
-	// Creates and Updates are eventually consistant. Retry until the URI's entity Id is returned.
-	uri, err := r.backoffRetry(func() (*swoClient.ReadUriResult, error) {
-		// Read the Uri...
-		uri, err := r.client.UriService().Read(ctx, tfState.Id.ValueString())
-
-		if err != nil {
-			// The entity is still being created, retry
-			if errors.Is(err, swoClient.ErrEntityIdNil) {
-				return nil, swoClient.ErrEntityIdNil
-			}
-
-			return nil, backoff.Permanent(err)
-		}
-
-		return uri, nil
-	})
+	uri, err := ReadRetry(ctx, tfState.Id.ValueString(), r.client.UriService().Read)
 
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error",
@@ -219,8 +204,46 @@ func (r *uriResource) Update(ctx context.Context, req resource.UpdateRequest, re
 		},
 	}
 
+	bUriToMatch, err := json.Marshal(map[string]interface{}{
+		"id":   updateInput.Id,
+		"name": updateInput.Name,
+		"host": updateInput.IpOrDomain,
+		"options": map[string]interface{}{
+			"isPingEnabled": updateInput.PingOptions.Enabled,
+			"isTcpEnabled":  updateInput.TcpOptions.Enabled,
+		},
+		"tcpOptions": map[string]interface{}{
+			"port":           updateInput.TcpOptions.Port,
+			"stringToExpect": updateInput.TcpOptions.StringToExpect,
+			"stringToSend":   updateInput.TcpOptions.StringToSend,
+		},
+		"testDefinitions": map[string]interface{}{
+			"testFromLocation":      updateInput.TestDefinitions.TestFrom.Type,
+			"testIntervalInSeconds": updateInput.TestDefinitions.TestIntervalInSeconds,
+			"platformOptions": map[string]interface{}{
+				"testFromAll": tfPlan.TestDefinitions.PlatformOptions.TestFromAll.ValueBoolPointer(),
+				"platforms":   tfPlan.TestDefinitions.PlatformOptions.Platforms,
+			},
+		},
+	})
+
+	if err != nil {
+		resp.Diagnostics.AddError("Client Error",
+			fmt.Sprintf("error marshaling uri result to match %s - %s", tfState.Id, err))
+		return
+	}
+
+	var readUriResultToMatch swoClient.ReadUriResult
+
+	err = json.Unmarshal(bUriToMatch, &readUriResultToMatch)
+	if err != nil {
+		resp.Diagnostics.AddError("Client Error",
+			fmt.Sprintf("error unmarshaling uri result to match %s - %s", tfState.Id, err))
+		return
+	}
+
 	// Update the Uri...
-	err := r.client.UriService().Update(ctx, updateInput)
+	err = r.client.UriService().Update(ctx, updateInput)
 
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error",
@@ -229,7 +252,7 @@ func (r *uriResource) Update(ctx context.Context, req resource.UpdateRequest, re
 	}
 
 	// Updates are eventually consistant. Retry until the URI we read and the URI we are updating match.
-	_, err = r.backoffRetry(func() (*swoClient.ReadUriResult, error) {
+	_, err = BackoffRetry(func() (*swoClient.ReadUriResult, error) {
 		// Read the Uri...
 		uri, err := r.client.UriService().Read(ctx, tfState.Id.ValueString())
 
@@ -237,18 +260,14 @@ func (r *uriResource) Update(ctx context.Context, req resource.UpdateRequest, re
 			return nil, backoff.Permanent(err)
 		}
 
-		match := (updateInput.Name == *uri.Name) &&
-			(updateInput.IpOrDomain == uri.Host) &&
-			(updateInput.PingOptions.Enabled == uri.Options.IsPingEnabled) &&
-			(updateInput.TcpOptions.Enabled == uri.Options.IsTcpEnabled) &&
-			(updateInput.TcpOptions.Port == uri.TcpOptions.Port) &&
-			(updateInput.TcpOptions.StringToExpect == uri.TcpOptions.StringToExpect) &&
-			(updateInput.TcpOptions.StringToSend == uri.TcpOptions.StringToSend) &&
-			(updateInput.TestDefinitions.TestIntervalInSeconds == *uri.TestDefinitions.TestIntervalInSeconds) &&
-			(updateInput.TestDefinitions.PlatformOptions.TestFromAll == &uri.TestDefinitions.PlatformOptions.TestFromAll) &&
-			(reflect.DeepEqual(updateInput.TestDefinitions.PlatformOptions.ProbePlatforms, uri.TestDefinitions.PlatformOptions.Platforms)) &&
-			(updateInput.TestDefinitions.TestFrom.GetType() == *uri.TestDefinitions.GetTestFromLocation()) &&
-			(reflect.DeepEqual(updateInput.TestDefinitions.TestFrom.GetValues(), uri.TestDefinitions.GetLocationOptions()))
+		//Set unsupported values
+		readUriResultToMatch.Typename = uri.Typename
+		readUriResultToMatch.Options.IsHttpEnabled = uri.Options.IsHttpEnabled
+		readUriResultToMatch.HttpOptions = uri.HttpOptions
+		readUriResultToMatch.Tags = uri.Tags
+		readUriResultToMatch.TestDefinitions.LocationOptions = uri.TestDefinitions.LocationOptions
+
+		match := reflect.DeepEqual(&readUriResultToMatch, uri)
 
 		// Updated entity properties don't match, retry
 		if !match {
@@ -285,11 +304,4 @@ func (r *uriResource) Delete(ctx context.Context, req resource.DeleteRequest, re
 
 func (r *uriResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
-}
-
-func (r *uriResource) backoffRetry(operation func() (*swoClient.ReadUriResult, error)) (*swoClient.ReadUriResult, error) {
-	expBackoff := backoff.NewExponentialBackOff()
-	expBackoff.MaxInterval = expBackoffMaxInterval
-
-	return backoff.Retry(context.Background(), operation, backoff.WithBackOff(expBackoff), backoff.WithMaxElapsedTime(expBackoffMaxElapsed))
 }
