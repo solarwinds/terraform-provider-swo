@@ -185,34 +185,35 @@ func (model *alertConditionModel) toMetricFieldConditionInput() swoClient.AlertC
 			}
 		}
 
-		for _, tag := range includeTags {
-			propertyName := tag.Name.ValueString()
-			metricFilter := swoClient.AlertFilterExpressionInput{
-				PropertyName:   &propertyName,
-				Operation:      swoClient.FilterOperationIn,
-				PropertyValues: tag.Values,
-			}
+		metricFieldCondition = SetTags(metricFieldCondition, includeTags, true)
+		metricFieldCondition = SetTags(metricFieldCondition, excludeTags, false)
+	}
 
-			metricFieldCondition.MetricFilter.Children = append(
-				metricFieldCondition.MetricFilter.Children,
-				metricFilter,
-			)
+	return metricFieldCondition
+}
 
+func SetTags(metricFieldCondition swoClient.AlertConditionNodeInput, tags []alertTagsModel, include bool) swoClient.AlertConditionNodeInput {
+	for _, tag := range tags {
+		propertyName := tag.Name.ValueString()
+		operation := swoClient.FilterOperationNe
+
+		if include {
+			operation = swoClient.FilterOperationIn
 		}
 
-		for _, tag := range excludeTags {
-			propertyName := tag.Name.ValueString()
-			metricFilter := swoClient.AlertFilterExpressionInput{
-				PropertyName:   &propertyName,
-				Operation:      swoClient.FilterOperationNe,
-				PropertyValues: tag.Values,
-			}
+		metricFilter := swoClient.AlertFilterExpressionInput{
+			PropertyName:   &propertyName,
+			Operation:      operation,
+			PropertyValues: tag.Values,
+		}
 
+		if metricFieldCondition.MetricFilter.PropertyValue == nil && metricFieldCondition.MetricFilter.PropertyValues == nil {
+			metricFieldCondition.MetricFilter = &metricFilter
+		} else {
 			metricFieldCondition.MetricFilter.Children = append(
 				metricFieldCondition.MetricFilter.Children,
 				metricFilter,
 			)
-
 		}
 	}
 

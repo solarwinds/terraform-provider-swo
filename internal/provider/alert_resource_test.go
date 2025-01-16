@@ -84,7 +84,15 @@ resource "swo_alert" "test" {
           ]
         }
       ],
-      exclude_tags = []
+      exclude_tags = [
+        {
+          name = "service.name"
+          values : [
+            "test-service-0",
+			"test-service-1"
+          ]
+        }
+      ],
     },
   ]
   notifications = ["123", "456"]
