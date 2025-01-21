@@ -11,6 +11,7 @@ func TestAccAlertResource(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		IsUnitTest:               true,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
@@ -34,6 +35,8 @@ func TestAccAlertResource(t *testing.T) {
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.include_tags.0.name", "probe.city"),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.include_tags.0.values.0", "Tokyo"),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.include_tags.0.values.1", "Sao Paulo"),
+					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.exclude_tags.0.name", "service.name"),
+					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.exclude_tags.0.values.0", "test-service"),
 					resource.TestCheckResourceAttr("swo_alert.test", "notifications.0", "123"),
 					resource.TestCheckResourceAttr("swo_alert.test", "notifications.1", "456"),
 				),
@@ -84,7 +87,12 @@ resource "swo_alert" "test" {
           ]
         }
       ],
-      exclude_tags = []
+      exclude_tags = [{
+          name = "service.name"
+          values : [
+            "test-service"
+          ]
+        }]
     },
   ]
   notifications = ["123", "456"]
