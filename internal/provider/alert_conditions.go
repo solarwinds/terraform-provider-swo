@@ -204,15 +204,20 @@ func (model *alertConditionModel) toMetricFieldConditionInput() swoClient.AlertC
 			propertyName := tag.Name.ValueString()
 			metricFilter := swoClient.AlertFilterExpressionInput{
 				PropertyName:   &propertyName,
-				Operation:      swoClient.FilterOperationNe,
+				Operation:      swoClient.FilterOperationIn,
 				PropertyValues: tag.Values,
 			}
 
+			metricFilterNotOp := swoClient.AlertFilterExpressionInput{
+				Operation: swoClient.FilterOperationNot,
+			}
+
+			metricFilterNotOp.Children = append(metricFilterNotOp.Children, metricFilter)
+
 			metricFieldCondition.MetricFilter.Children = append(
 				metricFieldCondition.MetricFilter.Children,
-				metricFilter,
+				metricFilterNotOp,
 			)
-
 		}
 	}
 
