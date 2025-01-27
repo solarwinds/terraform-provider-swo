@@ -39,6 +39,67 @@ func (r *websiteResource) Configure(ctx context.Context, req resource.ConfigureR
 	r.client = client
 }
 
+func getAvailabilityOrRum(monitoring *websiteMonitoring) (*swoClient.AvailabilityCheckSettingsInput, *swoClient.RumMonitoringInput) {
+
+	var checkForString *swoClient.CheckForStringInput
+	if monitoring.Availability.CheckForString != nil {
+		checkForString = &swoClient.CheckForStringInput{
+			Operator: swoClient.CheckStringOperator(monitoring.Availability.CheckForString.Operator.ValueString()),
+			Value:    monitoring.Availability.CheckForString.Value.ValueString(),
+		}
+	}
+
+	var availabilityCheckSettings *swoClient.AvailabilityCheckSettingsInput
+	if monitoring.Availability != nil {
+		var ssl *swoClient.SslMonitoringInput
+
+		if monitoring.Availability.SSL != nil {
+			ssl = &swoClient.SslMonitoringInput{
+				Enabled:                        monitoring.Availability.SSL.Enabled.ValueBoolPointer(),
+				DaysPriorToExpiration:          swoClient.Ptr(int(monitoring.Availability.SSL.DaysPriorToExpiration.ValueInt64())),
+				IgnoreIntermediateCertificates: monitoring.Availability.SSL.IgnoreIntermediateCertificates.ValueBoolPointer(),
+			}
+		}
+
+		availabilityCheckSettings = &swoClient.AvailabilityCheckSettingsInput{
+			CheckForString:        checkForString,
+			TestIntervalInSeconds: swoClientTypes.TestIntervalInSeconds(int(monitoring.Availability.TestIntervalInSeconds.ValueInt64())),
+			Protocols: convertArray(monitoring.Availability.Protocols, func(s string) swoClient.WebsiteProtocol {
+				return swoClient.WebsiteProtocol(s)
+			}),
+			PlatformOptions: &swoClient.ProbePlatformOptionsInput{
+				TestFromAll: monitoring.Availability.PlatformOptions.TestFromAll.ValueBoolPointer(),
+				ProbePlatforms: convertArray(monitoring.Availability.PlatformOptions.Platforms, func(s string) swoClient.ProbePlatform {
+					return swoClient.ProbePlatform(s)
+				}),
+			},
+			TestFrom: swoClient.ProbeLocationInput{
+				Type: swoClient.ProbeLocationType(monitoring.Availability.TestFromLocation.ValueString()),
+				Values: convertArray(monitoring.Availability.LocationOptions, func(p probeLocation) string {
+					return p.Value.ValueString()
+				}),
+			},
+			Ssl: ssl,
+			CustomHeaders: convertArray(monitoring.CustomHeaders, func(h customHeader) swoClient.CustomHeaderInput {
+				return swoClient.CustomHeaderInput{
+					Name:  h.Name.ValueString(),
+					Value: h.Value.ValueString(),
+				}
+			})}
+
+	}
+
+	var rum *swoClient.RumMonitoringInput
+	if monitoring.Rum != nil {
+		rum = &swoClient.RumMonitoringInput{
+			ApdexTimeInSeconds: swoClient.Ptr(int(monitoring.Rum.ApdexTimeInSeconds.ValueInt64())),
+			Spa:                swoClient.Ptr(monitoring.Rum.Spa.ValueBool()),
+		}
+	}
+
+	return availabilityCheckSettings, rum
+}
+
 func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var tfPlan websiteResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &tfPlan)...)
@@ -47,55 +108,13 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 	}
 
 	// Create our input request.
-	var checkForString *swoClient.CheckForStringInput
-	if tfPlan.Monitoring.Availability.CheckForString != nil {
-		checkForString = &swoClient.CheckForStringInput{
-			Operator: swoClient.CheckStringOperator(tfPlan.Monitoring.Availability.CheckForString.Operator.ValueString()),
-			Value:    tfPlan.Monitoring.Availability.CheckForString.Value.ValueString(),
-		}
-	}
-	var ssl *swoClient.SslMonitoringInput
-	if tfPlan.Monitoring.Availability.SSL != nil {
-		ssl = &swoClient.SslMonitoringInput{
-			Enabled:                        tfPlan.Monitoring.Availability.SSL.Enabled.ValueBoolPointer(),
-			DaysPriorToExpiration:          swoClient.Ptr(int(tfPlan.Monitoring.Availability.SSL.DaysPriorToExpiration.ValueInt64())),
-			IgnoreIntermediateCertificates: tfPlan.Monitoring.Availability.SSL.IgnoreIntermediateCertificates.ValueBoolPointer(),
-		}
-	}
+	availabilityCheckSettings, rum := getAvailabilityOrRum(tfPlan.Monitoring)
 
 	createInput := swoClient.CreateWebsiteInput{
-		Name: tfPlan.Name.ValueString(),
-		Url:  tfPlan.Url.ValueString(),
-		AvailabilityCheckSettings: &swoClient.AvailabilityCheckSettingsInput{
-			CheckForString:        checkForString,
-			TestIntervalInSeconds: swoClientTypes.TestIntervalInSeconds(int(tfPlan.Monitoring.Availability.TestIntervalInSeconds.ValueInt64())),
-			Protocols: convertArray(tfPlan.Monitoring.Availability.Protocols, func(s string) swoClient.WebsiteProtocol {
-				return swoClient.WebsiteProtocol(s)
-			}),
-			PlatformOptions: &swoClient.ProbePlatformOptionsInput{
-				TestFromAll: tfPlan.Monitoring.Availability.PlatformOptions.TestFromAll.ValueBoolPointer(),
-				ProbePlatforms: convertArray(tfPlan.Monitoring.Availability.PlatformOptions.Platforms, func(s string) swoClient.ProbePlatform {
-					return swoClient.ProbePlatform(s)
-				}),
-			},
-			TestFrom: swoClient.ProbeLocationInput{
-				Type: swoClient.ProbeLocationType(tfPlan.Monitoring.Availability.TestFromLocation.ValueString()),
-				Values: convertArray(tfPlan.Monitoring.Availability.LocationOptions, func(p probeLocation) string {
-					return p.Value.ValueString()
-				}),
-			},
-			Ssl: ssl,
-			CustomHeaders: convertArray(tfPlan.Monitoring.CustomHeaders, func(h customHeader) swoClient.CustomHeaderInput {
-				return swoClient.CustomHeaderInput{
-					Name:  h.Name.ValueString(),
-					Value: h.Value.ValueString(),
-				}
-			}),
-		},
-		Rum: &swoClient.RumMonitoringInput{
-			ApdexTimeInSeconds: swoClient.Ptr(int(tfPlan.Monitoring.Rum.ApdexTimeInSeconds.ValueInt64())),
-			Spa:                swoClient.Ptr(tfPlan.Monitoring.Rum.Spa.ValueBool()),
-		},
+		Name:                      tfPlan.Name.ValueString(),
+		Url:                       tfPlan.Url.ValueString(),
+		AvailabilityCheckSettings: availabilityCheckSettings,
+		Rum:                       rum,
 	}
 
 	// Create the Website...
@@ -146,7 +165,7 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 		tfState.Monitoring = &websiteMonitoring{}
 
 		if monitoring.Availability != nil {
-			tfState.Monitoring.Availability = availabilityMonitoring{}
+			tfState.Monitoring.Availability = &availabilityMonitoring{}
 			availability := monitoring.Availability
 
 			if availability.CheckForString != nil {
@@ -223,7 +242,7 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 		tfState.Monitoring.CustomHeaders = customHeaders
 
 		if monitoring.Rum != nil {
-			tfState.Monitoring.Rum = rumMonitoring{
+			tfState.Monitoring.Rum = &rumMonitoring{
 				Spa: types.BoolValue(monitoring.Rum.Spa),
 			}
 
@@ -235,7 +254,7 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 				tfState.Monitoring.Rum.Snippet = types.StringValue(*monitoring.Rum.Snippet)
 			}
 		} else {
-			tfState.Monitoring.Rum = rumMonitoring{}
+			tfState.Monitoring.Rum = &rumMonitoring{}
 		}
 	} else {
 		tfState.Monitoring = nil
@@ -252,56 +271,14 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
-	var checkForString *swoClient.CheckForStringInput
-	if tfPlan.Monitoring.Availability.CheckForString != nil {
-		checkForString = &swoClient.CheckForStringInput{
-			Operator: swoClient.CheckStringOperator(tfPlan.Monitoring.Availability.CheckForString.Operator.ValueString()),
-			Value:    tfPlan.Monitoring.Availability.CheckForString.Value.ValueString(),
-		}
-	}
-	var ssl *swoClient.SslMonitoringInput
-	if tfPlan.Monitoring.Availability.SSL != nil {
-		ssl = &swoClient.SslMonitoringInput{
-			Enabled:                        tfPlan.Monitoring.Availability.SSL.Enabled.ValueBoolPointer(),
-			DaysPriorToExpiration:          swoClient.Ptr(int(tfPlan.Monitoring.Availability.SSL.DaysPriorToExpiration.ValueInt64())),
-			IgnoreIntermediateCertificates: tfPlan.Monitoring.Availability.SSL.IgnoreIntermediateCertificates.ValueBoolPointer(),
-		}
-	}
+	availabilityCheckSettings, rum := getAvailabilityOrRum(tfPlan.Monitoring)
 
 	updateInput := swoClient.UpdateWebsiteInput{
-		Id:   tfState.Id.ValueString(),
-		Name: tfPlan.Name.ValueString(),
-		Url:  tfPlan.Url.ValueString(),
-		AvailabilityCheckSettings: &swoClient.AvailabilityCheckSettingsInput{
-			CheckForString:        checkForString,
-			TestIntervalInSeconds: swoClientTypes.TestIntervalInSeconds(int(tfPlan.Monitoring.Availability.TestIntervalInSeconds.ValueInt64())),
-			Protocols: convertArray(tfPlan.Monitoring.Availability.Protocols, func(s string) swoClient.WebsiteProtocol {
-				return swoClient.WebsiteProtocol(s)
-			}),
-			PlatformOptions: &swoClient.ProbePlatformOptionsInput{
-				TestFromAll: swoClient.Ptr(tfPlan.Monitoring.Availability.PlatformOptions.TestFromAll.ValueBool()),
-				ProbePlatforms: convertArray(tfPlan.Monitoring.Availability.PlatformOptions.Platforms, func(s string) swoClient.ProbePlatform {
-					return swoClient.ProbePlatform(s)
-				}),
-			},
-			TestFrom: swoClient.ProbeLocationInput{
-				Type: swoClient.ProbeLocationType(tfPlan.Monitoring.Availability.TestFromLocation.ValueString()),
-				Values: convertArray(tfPlan.Monitoring.Availability.LocationOptions, func(p probeLocation) string {
-					return p.Value.ValueString()
-				}),
-			},
-			Ssl: ssl,
-			CustomHeaders: convertArray(tfPlan.Monitoring.CustomHeaders, func(h customHeader) swoClient.CustomHeaderInput {
-				return swoClient.CustomHeaderInput{
-					Name:  h.Name.ValueString(),
-					Value: h.Value.ValueString(),
-				}
-			}),
-		},
-		Rum: &swoClient.RumMonitoringInput{
-			ApdexTimeInSeconds: swoClient.Ptr(int(tfPlan.Monitoring.Rum.ApdexTimeInSeconds.ValueInt64())),
-			Spa:                tfPlan.Monitoring.Rum.Spa.ValueBoolPointer(),
-		},
+		Id:                        tfState.Id.ValueString(),
+		Name:                      tfPlan.Name.ValueString(),
+		Url:                       tfPlan.Url.ValueString(),
+		AvailabilityCheckSettings: availabilityCheckSettings,
+		Rum:                       rum,
 	}
 
 	bWebsiteToMatch, err := json.Marshal(map[string]interface{}{

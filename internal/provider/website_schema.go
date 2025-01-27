@@ -40,10 +40,10 @@ type sslMonitoring struct {
 }
 
 type websiteMonitoring struct {
-	Options       *monitoringOptions     `tfsdk:"options"`
-	Availability  availabilityMonitoring `tfsdk:"availability"`
-	Rum           rumMonitoring          `tfsdk:"rum"`
-	CustomHeaders []customHeader         `tfsdk:"custom_headers"`
+	Options       *monitoringOptions      `tfsdk:"options"`
+	Availability  *availabilityMonitoring `tfsdk:"availability"`
+	Rum           *rumMonitoring          `tfsdk:"rum"`
+	CustomHeaders []customHeader          `tfsdk:"custom_headers"`
 }
 
 // Deprecated: Options are not used anymore
@@ -114,7 +114,7 @@ func (r *websiteResource) Schema(ctx context.Context, req resource.SchemaRequest
 					},
 					"availability": schema.SingleNestedAttribute{
 						Description: "The Website availability monitoring settings.",
-						Required:    true,
+						Required:    false,
 						Attributes: map[string]schema.Attribute{
 							"check_for_string": schema.SingleNestedAttribute{
 								Description: "The Website availability monitoring check for string settings.",
@@ -211,7 +211,7 @@ func (r *websiteResource) Schema(ctx context.Context, req resource.SchemaRequest
 					},
 					"rum": schema.SingleNestedAttribute{
 						Description: "The Website RUM monitoring settings.",
-						Required:    true,
+						Required:    false,
 						Attributes: map[string]schema.Attribute{
 							"apdex_time_in_seconds": schema.Int64Attribute{
 								Description: "The Website RUM monitoring apdex time in seconds.",
