@@ -92,7 +92,7 @@ func (r *websiteResource) Schema(ctx context.Context, req resource.SchemaRequest
 				Required:    true,
 			},
 			"monitoring": schema.SingleNestedAttribute{
-				Description: "The Website monitoring settings.",
+				Description: "The Website monitoring settings. You are required to configure at least availability monitoring or real user monitoring to create a website.",
 				Required:    true,
 				Attributes: map[string]schema.Attribute{
 					"options": schema.SingleNestedAttribute{
@@ -114,7 +114,7 @@ func (r *websiteResource) Schema(ctx context.Context, req resource.SchemaRequest
 					},
 					"availability": schema.SingleNestedAttribute{
 						Description: "The Website availability monitoring settings.",
-						Required:    false,
+						Optional:    true,
 						Attributes: map[string]schema.Attribute{
 							"check_for_string": schema.SingleNestedAttribute{
 								Description: "The Website availability monitoring check for string settings.",
@@ -211,7 +211,7 @@ func (r *websiteResource) Schema(ctx context.Context, req resource.SchemaRequest
 					},
 					"rum": schema.SingleNestedAttribute{
 						Description: "The Website RUM monitoring settings.",
-						Required:    false,
+						Optional:    true,
 						Attributes: map[string]schema.Attribute{
 							"apdex_time_in_seconds": schema.Int64Attribute{
 								Description: "The Website RUM monitoring apdex time in seconds.",

@@ -7,6 +7,7 @@ import (
 	"reflect"
 
 	"github.com/cenkalti/backoff/v5"
+	"github.com/hashicorp/terraform-plugin-framework-validators/resourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -16,9 +17,10 @@ import (
 
 // Ensure provider defined types fully satisfy framework interfaces.
 var (
-	_ resource.Resource                = &websiteResource{}
-	_ resource.ResourceWithConfigure   = &websiteResource{}
-	_ resource.ResourceWithImportState = &websiteResource{}
+	_ resource.Resource                     = &websiteResource{}
+	_ resource.ResourceWithConfigure        = &websiteResource{}
+	_ resource.ResourceWithImportState      = &websiteResource{}
+	_ resource.ResourceWithConfigValidators = &websiteResource{}
 )
 
 func NewWebsiteResource() resource.Resource {
@@ -41,18 +43,17 @@ func (r *websiteResource) Configure(ctx context.Context, req resource.ConfigureR
 
 func getAvailabilityOrRum(monitoring *websiteMonitoring) (*swoClient.AvailabilityCheckSettingsInput, *swoClient.RumMonitoringInput) {
 
-	var checkForString *swoClient.CheckForStringInput
-	if monitoring.Availability.CheckForString != nil {
-		checkForString = &swoClient.CheckForStringInput{
-			Operator: swoClient.CheckStringOperator(monitoring.Availability.CheckForString.Operator.ValueString()),
-			Value:    monitoring.Availability.CheckForString.Value.ValueString(),
-		}
-	}
-
 	var availabilityCheckSettings *swoClient.AvailabilityCheckSettingsInput
 	if monitoring.Availability != nil {
-		var ssl *swoClient.SslMonitoringInput
+		var checkForString *swoClient.CheckForStringInput
+		if monitoring.Availability.CheckForString != nil {
+			checkForString = &swoClient.CheckForStringInput{
+				Operator: swoClient.CheckStringOperator(monitoring.Availability.CheckForString.Operator.ValueString()),
+				Value:    monitoring.Availability.CheckForString.Value.ValueString(),
+			}
+		}
 
+		var ssl *swoClient.SslMonitoringInput
 		if monitoring.Availability.SSL != nil {
 			ssl = &swoClient.SslMonitoringInput{
 				Enabled:                        monitoring.Availability.SSL.Enabled.ValueBoolPointer(),
@@ -378,4 +379,13 @@ func (r *websiteResource) Delete(ctx context.Context, req resource.DeleteRequest
 
 func (r *websiteResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
+func (r *websiteResource) ConfigValidators(context.Context) []resource.ConfigValidator {
+	return []resource.ConfigValidator{
+		resourcevalidator.AtLeastOneOf(
+			path.MatchRoot("monitoring").AtName("availability"),
+			path.MatchRoot("monitoring").AtName("rum"),
+		),
+	}
 }
