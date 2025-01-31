@@ -133,7 +133,7 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 	if err != nil {
 		resp.Diagnostics.AddWarning("Client Error",
 			fmt.Sprintf("error capturing RUM snippit for Website '%s' - error: %s", tfPlan.Name, err))
-	} else {
+	} else if website.Monitoring.Rum != nil && tfPlan.Monitoring.Rum != nil {
 		tfPlan.Monitoring.Rum.Snippet = types.StringValue(*website.Monitoring.Rum.Snippet)
 	}
 
@@ -242,7 +242,7 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 		}
 		tfState.Monitoring.CustomHeaders = customHeaders
 
-		if monitoring.Rum != nil {
+		if tfState.Monitoring.Rum != nil && monitoring.Rum != nil {
 			tfState.Monitoring.Rum = &rumMonitoring{
 				Spa: types.BoolValue(monitoring.Rum.Spa),
 			}
@@ -254,8 +254,6 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 			if monitoring.Rum.Snippet != nil {
 				tfState.Monitoring.Rum.Snippet = types.StringValue(*monitoring.Rum.Snippet)
 			}
-		} else {
-			tfState.Monitoring.Rum = &rumMonitoring{}
 		}
 	} else {
 		tfState.Monitoring = nil
@@ -337,7 +335,11 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 		}
 
 		websiteToMatch.Typename = website.Typename
-		websiteToMatch.Monitoring.Rum.Snippet = website.Monitoring.Rum.Snippet
+		if websiteToMatch.Monitoring.Rum != nil {
+			websiteToMatch.Monitoring.Rum.Snippet = website.Monitoring.Rum.Snippet
+		} else {
+			websiteToMatch.Monitoring.Rum = website.Monitoring.Rum
+		}
 		websiteToMatch.Monitoring.Options = website.Monitoring.Options
 		websiteToMatch.Monitoring.Availability.LocationOptions = website.Monitoring.Availability.LocationOptions
 		websiteToMatch.Monitoring.Availability.CheckForString = website.Monitoring.Availability.CheckForString
