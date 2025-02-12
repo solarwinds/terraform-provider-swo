@@ -39,7 +39,7 @@ func TestAccAlertResource(t *testing.T) {
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.exclude_tags.0.values.0", "test-service"),
 					resource.TestCheckResourceAttr("swo_alert.test", "notifications.0", "123"),
 					resource.TestCheckResourceAttr("swo_alert.test", "notifications.1", "456"),
-					resource.TestCheckResourceAttr("swo_alert.test", "runbookLink", "https://www.runbooklink.com"),
+					resource.TestCheckResourceAttr("swo_alert.test", "runbook_link", "https://www.runbooklink.com"),
 				),
 			},
 			// ImportState testing
@@ -97,7 +97,7 @@ resource "swo_alert" "test" {
     },
   ]
   notifications = ["123", "456"]
-  runbookLink = "https://www.runbooklink.com"
+  runbook_link = "https://www.runbooklink.com"
 }
 `, name)
 }

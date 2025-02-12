@@ -22,7 +22,7 @@ type alertResourceModel struct {
 	Conditions          []alertConditionModel `tfsdk:"conditions"`
 	Notifications       []string              `tfsdk:"notifications"`
 	TriggerResetActions types.Bool            `tfsdk:"trigger_reset_actions"`
-	RunbookLink         types.String          `tfsdk:"runbookLink"`
+	RunbookLink         types.String          `tfsdk:"runbook_link"`
 }
 
 type alertConditionModel struct {
@@ -160,7 +160,7 @@ func (r *alertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 				Required:    true,
 				ElementType: types.StringType,
 			},
-			"runbookLink": schema.StringAttribute{
+			"runbook_link": schema.StringAttribute{
 				Description: "A runbook is documentation of what steps to follow when something goes wrong.",
 				Optional:    true,
 			},
