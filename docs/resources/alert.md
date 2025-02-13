@@ -62,6 +62,7 @@ resource "swo_alert" "https_response_time" {
 
 - `description` (String) Alert description.
 - `enabled` (Boolean) True if the Alert should be evaluated. Default is `true`.
+- `runbook_link` (String) A runbook is documentation of what steps to follow when something goes wrong.
 - `trigger_reset_actions` (Boolean) True if a notification should be sent when an active alert returns to normal. Default is false. Default is `false`.
 
 ### Read-Only

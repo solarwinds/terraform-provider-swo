@@ -145,6 +145,7 @@ func (model *alertResourceModel) toAlertDefinitionInput() swoClient.AlertDefinit
 		Actions:             model.toAlertActionInput(),
 		TriggerResetActions: model.TriggerResetActions.ValueBoolPointer(),
 		Condition:           conditions,
+		RunbookLink:         model.RunbookLink.ValueStringPointer(),
 	}
 }
 

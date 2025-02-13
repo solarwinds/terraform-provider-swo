@@ -117,7 +117,7 @@ Required:
 - `platform_options` (Attributes) The Website availability monitoring platform options. (see [below for nested schema](#nestedatt--monitoring--availability--platform_options))
 - `protocols` (List of String) The Website availability monitoring protocols.
 - `test_from_location` (String) The Website availability monitoring test from location. Valid values are [`REGION`|`COUNTRY`|`CITY`].
-- `test_interval_in_seconds` (Number) The Website availability monitoring test interval in seconds. Valid values are `60, 300, 600, 900, 1800, 3600, 7200, 14400`
+- `test_interval_in_seconds` (Number) The Website availability monitoring test interval in seconds. Valid values are 60, 300, 600, 900, 1800, 3600, 7200, 14400
 
 Optional:
 
