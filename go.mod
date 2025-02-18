@@ -13,7 +13,7 @@ require (
 	github.com/hashicorp/terraform-plugin-framework-validators v0.16.0
 	github.com/hashicorp/terraform-plugin-go v0.25.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.35.0
-	github.com/solarwinds/swo-client-go v0.0.12
+	github.com/solarwinds/swo-client-go v0.0.13-0.20250214214657-0869db5f015e
 	golang.org/x/exp v0.0.0-20230809150735-7b3493d9a819
 )
 
