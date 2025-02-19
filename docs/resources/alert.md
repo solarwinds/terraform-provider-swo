@@ -55,13 +55,14 @@ resource "swo_alert" "https_response_time" {
 
 - `conditions` (Attributes Set) One or more conditions that must be met to trigger the alert. These conditions are evaluated as a logical AND. (see [below for nested schema](#nestedatt--conditions))
 - `name` (String) Alert name.
-- `notifications` (List of String) A list of notifications that should be triggered for this alert.
 - `severity` (String) Alert severity. Valid values are [`INFO`|`WARNING`|`CRITICAL`].
 
 ### Optional
 
 - `description` (String) Alert description.
 - `enabled` (Boolean) True if the Alert should be evaluated. Default is `true`.
+- `notification_actions` (Attributes Set) List of alert notifications that are sent when an alert triggers. (see [below for nested schema](#nestedatt--notification_actions))
+- `notifications` (List of String, Deprecated) A list of notifications that should be triggered for this alert.
 - `runbook_link` (String) A runbook is documentation of what steps to follow when something goes wrong.
 - `trigger_reset_actions` (Boolean) True if a notification should be sent when an active alert returns to normal. Default is false. Default is `false`.
 
@@ -102,3 +103,17 @@ Optional:
 
 - `name` (String) Tag key to match.
 - `values` (List of String) Values to match.
+
+
+
+<a id="nestedatt--notification_actions"></a>
+### Nested Schema for `notification_actions`
+
+Required:
+
+- `configuration_ids` (List of String) A list of notifications ids that should be triggered for this alert.
+- `type` (String) Notification service type (email, MS Teams, Slack, webhook, ...). Valid values are [`email`|`amazonsns`|`msTeams`|`newRelic`|`opsGenie`|`pagerDuty`|`pushover`|`serviceNow`|`slack`|`webhook`|`zapier`|`swsd`].
+
+Optional:
+
+- `resend_interval_seconds` (Number) How often should the notification be resent in case alert keeps being triggered. Null means notification is sent only once. Valid values are 60, 600, 3600, 86400.
