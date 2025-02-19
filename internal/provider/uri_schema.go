@@ -137,7 +137,7 @@ func (r *uriResource) Schema(ctx context.Context, req resource.SchemaRequest, re
 						},
 					},
 					"test_interval_in_seconds": schema.Int64Attribute{
-						Description: "The interval to test in seconds.",
+						Description: "The interval to test in seconds. Valid values are 60, 300, 600, 900, 1800, 3600, 7200, 14400",
 						Required:    true,
 						Validators: []validator.Int64{
 							int64validator.OneOf(60, 300, 600, 900, 1800, 3600, 7200, 14400),
