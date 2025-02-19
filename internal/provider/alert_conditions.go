@@ -155,8 +155,9 @@ func (model *alertConditionModel) toMetricFieldConditionInput() swoClient.AlertC
 
 	if metricName != "" {
 		metricFieldCondition = swoClient.AlertConditionNodeInput{
-			Type:      string(swoClient.AlertMetricFieldType),
-			FieldName: &metricName,
+			Type:             string(swoClient.AlertMetricFieldType),
+			FieldName:        &metricName,
+			GroupByMetricTag: model.GroupByMetricTag,
 		}
 
 		if len(model.EntityIds) > 0 {
@@ -197,7 +198,6 @@ func (model *alertConditionModel) toMetricFieldConditionInput() swoClient.AlertC
 				metricFieldCondition.MetricFilter.Children,
 				metricFilter,
 			)
-
 		}
 
 		for _, tag := range excludeTags {
