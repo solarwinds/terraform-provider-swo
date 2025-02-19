@@ -34,6 +34,7 @@ type alertConditionModel struct {
 	TargetEntityTypes []string          `tfsdk:"target_entity_types"`
 	IncludeTags       *[]alertTagsModel `tfsdk:"include_tags"`
 	ExcludeTags       *[]alertTagsModel `tfsdk:"exclude_tags"`
+	GroupByMetricTag  []string          `tfsdk:"group_by_metric_tag"`
 }
 
 type alertTagsModel struct {
@@ -151,6 +152,11 @@ func (r *alertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 									},
 								},
 							},
+						},
+						"group_by_metric_tag": schema.ListAttribute{
+							Description: "Group alert data for selected attribute.",
+							Optional:    true,
+							ElementType: types.StringType,
 						},
 					},
 				},
