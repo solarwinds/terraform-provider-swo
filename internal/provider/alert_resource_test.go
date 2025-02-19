@@ -25,7 +25,7 @@ func TestAccAlertResource(t *testing.T) {
 					// Verify actions
 					resource.TestCheckResourceAttr("swo_alert.test", "notification_actions.0.type", "email"),
 					resource.TestCheckResourceAttr("swo_alert.test", "notification_actions.0.configuration_ids.0", "333"),
-					resource.TestCheckResourceAttr("swo_alert.test", "notification_actions.0.configuration_ids.0", "444"),
+					resource.TestCheckResourceAttr("swo_alert.test", "notification_actions.0.configuration_ids.1", "444"),
 					resource.TestCheckResourceAttr("swo_alert.test", "notification_actions.0.resend_interval_seconds", "600"),
 					// Verify number of conditions.
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.#", "1"),
