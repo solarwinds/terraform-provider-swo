@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"regexp"
 	"strings"
 
@@ -60,7 +62,13 @@ func (r *notificationResource) Schema(ctx context.Context, req resource.SchemaRe
 	resp.Schema = schema.Schema{
 		Description: "A terraform resource for managing notifications.",
 		Attributes: map[string]schema.Attribute{
-			"id": resourceIdAttribute(),
+			"id": schema.StringAttribute{
+				Description: "The Id of the resource provided by the backend in the format of `{id}:{type}`.",
+				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
 			"title": schema.StringAttribute{
 				Description: "The title of the notification.",
 				Required:    true,
