@@ -20,6 +20,7 @@ terraform {
       source  = "solarwinds/swo"
     }
   }
+  required_version = ">=1.0.7"
 }
 
 provider "swo" {
