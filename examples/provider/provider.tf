@@ -5,6 +5,7 @@ terraform {
       source  = "solarwinds/swo"
     }
   }
+  required_version = ">=1.0.7"
 }
 
 provider "swo" {
@@ -13,6 +14,6 @@ provider "swo" {
   api_token = "[UPDATE WITH SWO FULL ACCESS TOKEN]"
 
   # Base URL for your SWO instance. Be sure to include your specific datacenter.
-  # Datacenter options are one of [na-01, na-02, eu-01, apj-01].
+  # Datacenter options are one of [na-01, na-02, eu-01].
   base_url = "https://api.na-01.cloud.solarwinds.com/v1/tfproxy"
 }
