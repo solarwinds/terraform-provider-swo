@@ -3,7 +3,6 @@ package provider
 import (
 	"fmt"
 	"log"
-	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
@@ -11,12 +10,12 @@ import (
 )
 
 func providerConfig() string {
-	apiToken := os.Getenv("SWO_API_TOKEN")
+	apiToken := "Dp9O1klY3D_gY50jJur66uNx6_U1z1kpR3IGZ207cbQw6GaD6iIASJIpa5llUzNcTd-UpD0"
 	if apiToken == "" {
 		log.Fatal("SWO_API_TOKEN must be set for acceptance tests")
 	}
 
-	baseURL := os.Getenv("SWO_BASE_URL")
+	baseURL := "https://api.na-01.dev-ssp.solarwinds.com/v1/tfproxy"
 	if baseURL == "" {
 		log.Fatal("SWO_BASE_URL must be set for acceptance tests")
 	}

@@ -45,6 +45,7 @@ resource "swo_alert" "https_response_time" {
   ]
   notifications         = [swo_notification.msteams.id, swo_notification.opsgenie.id]
   trigger_reset_actions = true
+  runbookLink           = "https://www.runbook.com/highresponsetime"
 }
 ```
 
@@ -85,6 +86,7 @@ Optional:
 
 - `entity_ids` (List of String) A list of Entity IDs that will be used to filter on the alert. The alert will only trigger if the alert matches one or more of the entity IDs.
 - `exclude_tags` (Attributes Set) Tag key and values to match in order to not trigger an alert. (see [below for nested schema](#nestedatt--conditions--exclude_tags))
+- `group_by_metric_tag` (List of String) Group alert data for selected attribute.
 - `include_tags` (Attributes Set) Tag key and values to match in order to trigger an alert. (see [below for nested schema](#nestedatt--conditions--include_tags))
 
 <a id="nestedatt--conditions--exclude_tags"></a>
