@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	swoClient "github.com/solarwinds/swo-client-go/pkg/client"
 )
 
 var (
@@ -33,7 +32,8 @@ func (r *resourceWrapper) Configure(ctx context.Context, req resource.ConfigureR
 		if req.ProviderData == nil {
 			return
 		}
-		_, ok := req.ProviderData.(*swoClient.Client)
+		_, ok := req.ProviderData.(providerClients)
+
 		if !ok {
 			resp.Diagnostics.AddError("Unexpected Resource Configure Type", "")
 			return

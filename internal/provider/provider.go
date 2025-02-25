@@ -15,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	swoClient "github.com/solarwinds/swo-client-go/pkg/client"
+	"github.com/solarwinds/swo-sdk-go/swov1"
 	"github.com/solarwinds/terraform-provider-swo/internal/envvar"
 )
 
@@ -22,19 +23,20 @@ import (
 var (
 	_                     provider.Provider = &swoProvider{}
 	ErrNonMatchingEntites                   = errors.New("updated entity properties don't match")
+
+	dataSources = []func() datasource.DataSource{}
 )
 
 var resources = []func() resource.Resource{
 	NewAlertResource,
 	NewApiTokenResource,
-	NewLogFilterResource,
+	NewCompositeMetricResource,
 	NewDashboardResource,
+	NewLogFilterResource,
 	NewNotificationResource,
-	NewWebsiteResource,
 	NewUriResource,
+	NewWebsiteResource,
 }
-
-var dataSources = []func() datasource.DataSource{}
 
 const (
 	expBackoffMaxInterval = 30 * time.Second
@@ -48,7 +50,8 @@ type swoProvider struct {
 	// Version is set to the provider version on release, "dev" when the
 	// provider is built and ran locally, and "test" when running acceptance
 	// testing.
-	version   string
+	version string
+
 	transport http.RoundTripper
 }
 
@@ -58,6 +61,11 @@ type swoProviderModel struct {
 	RequestTimeout types.Int64  `tfsdk:"request_timeout"`
 	BaseURL        types.String `tfsdk:"base_url"`
 	DebugMode      types.Bool   `tfsdk:"debug_mode"`
+}
+
+type providerClients struct {
+	SwoClient   *swoClient.Client
+	SwoV1Client *swov1.Swo
 }
 
 func (p *swoProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
@@ -116,9 +124,11 @@ func (p *swoProvider) Configure(ctx context.Context, req provider.ConfigureReque
 		return
 	}
 
+	clientTimeout := time.Duration(config.RequestTimeout.ValueInt64()) * time.Second
+
 	// Client configuration for data sources and resources.
-	client, err := swoClient.New(config.ApiToken.ValueString(),
-		swoClient.RequestTimeoutOption(time.Duration(config.RequestTimeout.ValueInt64())*time.Second),
+	swoClient, err := swoClient.New(config.ApiToken.ValueString(),
+		swoClient.RequestTimeoutOption(clientTimeout),
 		swoClient.BaseUrlOption(config.BaseURL.ValueString()),
 		swoClient.TransportOption(p.transport),
 		swoClient.DebugOption(config.DebugMode.ValueBool()),
@@ -128,8 +138,26 @@ func (p *swoProvider) Configure(ctx context.Context, req provider.ConfigureReque
 		return
 	}
 
-	resp.DataSourceData = client
-	resp.ResourceData = client
+	baseUrl, err := StripURLToDomain(config.BaseURL.ValueString())
+
+	if err != nil {
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("invalid base url: %s err: %s", baseUrl, err))
+		return
+	}
+
+	swoV1Client := swov1.New(
+		swov1.WithServerURL(baseUrl),
+		swov1.WithSecurity(config.ApiToken.ValueString()),
+		swov1.WithClient(&http.Client{Timeout: clientTimeout}),
+	)
+
+	providerClients := providerClients{
+		SwoClient:   swoClient,
+		SwoV1Client: swoV1Client,
+	}
+
+	resp.DataSourceData = providerClients
+	resp.ResourceData = providerClients
 }
 
 func (p *swoProvider) Resources(ctx context.Context) []func() resource.Resource {

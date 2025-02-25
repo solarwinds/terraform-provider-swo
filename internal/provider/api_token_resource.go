@@ -31,8 +31,8 @@ func (r *apiTokenResource) Metadata(ctx context.Context, req resource.MetadataRe
 }
 
 func (r *apiTokenResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	client, _ := req.ProviderData.(*swoClient.Client)
-	r.client = client
+	client, _ := req.ProviderData.(providerClients)
+	r.client = client.SwoClient
 }
 
 func (r *apiTokenResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {

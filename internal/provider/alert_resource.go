@@ -31,8 +31,8 @@ func (r *alertResource) Metadata(ctx context.Context, req resource.MetadataReque
 }
 
 func (r *alertResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	client, _ := req.ProviderData.(*swoClient.Client)
-	r.client = client
+	clients, _ := req.ProviderData.(providerClients)
+	r.client = clients.SwoClient
 }
 
 func (r *alertResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
