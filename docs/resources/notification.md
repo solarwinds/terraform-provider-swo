@@ -134,7 +134,7 @@ resource "swo_notification" "email" {
 
 ### Read-Only
 
-- `id` (String) The Id of the resource provided by the backend.
+- `id` (String) The Id of the resource provided by the backend in the format of `{id}:{type}`.
 
 <a id="nestedatt--settings"></a>
 ### Nested Schema for `settings`

@@ -3,9 +3,9 @@ package provider
 import (
 	"context"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	swoClient "github.com/solarwinds/swo-client-go/pkg/client"
@@ -137,10 +137,11 @@ func (r *uriResource) Schema(ctx context.Context, req resource.SchemaRequest, re
 						},
 					},
 					"test_interval_in_seconds": schema.Int64Attribute{
-						Description: "The interval to test in seconds.",
-						Optional:    true,
-						Computed:    true,
-						Default:     int64default.StaticInt64(900),
+						Description: "The interval to test in seconds. Valid values are 60, 300, 600, 900, 1800, 3600, 7200, 14400",
+						Required:    true,
+						Validators: []validator.Int64{
+							int64validator.OneOf(60, 300, 600, 900, 1800, 3600, 7200, 14400),
+						},
 					},
 					"platform_options": schema.SingleNestedAttribute{
 						Description: "The platform options for this Uri check.",

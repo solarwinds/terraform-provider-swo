@@ -5,6 +5,7 @@ go 1.23
 toolchain go1.23.0
 
 require (
+	github.com/cenkalti/backoff/v5 v5.0.0
 	github.com/google/go-cmp v0.6.0
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/terraform-plugin-docs v0.20.1
@@ -12,7 +13,7 @@ require (
 	github.com/hashicorp/terraform-plugin-framework-validators v0.16.0
 	github.com/hashicorp/terraform-plugin-go v0.25.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.35.0
-	github.com/solarwinds/swo-client-go v0.0.9
+	github.com/solarwinds/swo-client-go v0.0.14
 	golang.org/x/exp v0.0.0-20230809150735-7b3493d9a819
 )
 
@@ -23,7 +24,7 @@ require (
 
 require (
 	github.com/BurntSushi/toml v1.2.1 // indirect
-	github.com/Khan/genqlient v0.6.0 // indirect
+	github.com/Khan/genqlient v0.7.0 // indirect
 	github.com/Kunde21/markdownfmt/v3 v3.1.0 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver/v3 v3.2.0 // indirect

@@ -145,30 +145,49 @@ func (model *alertResourceModel) toAlertDefinitionInput() swoClient.AlertDefinit
 		Actions:             model.toAlertActionInput(),
 		TriggerResetActions: model.TriggerResetActions.ValueBoolPointer(),
 		Condition:           conditions,
+		RunbookLink:         model.RunbookLink.ValueStringPointer(),
 	}
 }
 
 func (model *alertResourceModel) toAlertActionInput() []swoClient.AlertActionInput {
 	inputs := []swoClient.AlertActionInput{}
-	actionTypes := map[string][]string{}
 
-	for _, configId := range model.Notifications {
-		actionId, actionType, found := strings.Cut(configId, ":")
+	//Notifications is deprecated. NotificationActions should be used instead.
+	// This if/else maintains backwards compatability.
+	if len(model.NotificationActions) > 0 {
+		recivingType := swoClient.NotificationReceivingTypeNotSpecified
+		includeDetails := true
 
-		if found {
-			if actionTypes[actionType] == nil {
-				actionTypes[actionType] = []string{actionId}
-			} else {
-				actionTypes[actionType] = append(actionTypes[actionType], actionId)
+		for _, action := range model.NotificationActions {
+			resendInterval := int(action.ResendIntervalSeconds.ValueInt64())
+			inputs = append(inputs, swoClient.AlertActionInput{
+				Type:                  action.Type.ValueString(),
+				ConfigurationIds:      action.ConfigurationIds,
+				ResendIntervalSeconds: &resendInterval,
+				ReceivingType:         &recivingType,
+				IncludeDetails:        &includeDetails,
+			})
+		}
+	} else {
+		actionTypes := map[string][]string{}
+		for _, configId := range model.Notifications {
+			actionId, actionType, found := strings.Cut(configId, ":")
+
+			if found {
+				if actionTypes[actionType] == nil {
+					actionTypes[actionType] = []string{actionId}
+				} else {
+					actionTypes[actionType] = append(actionTypes[actionType], actionId)
+				}
 			}
 		}
-	}
 
-	for actionType, actionIds := range actionTypes {
-		inputs = append(inputs, swoClient.AlertActionInput{
-			Type:             actionType,
-			ConfigurationIds: actionIds,
-		})
+		for actionType, actionIds := range actionTypes {
+			inputs = append(inputs, swoClient.AlertActionInput{
+				Type:             actionType,
+				ConfigurationIds: actionIds,
+			})
+		}
 	}
 
 	return inputs

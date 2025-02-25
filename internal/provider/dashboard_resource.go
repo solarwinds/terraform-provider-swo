@@ -212,6 +212,7 @@ func (r *dashboardResource) Create(ctx context.Context, req resource.CreateReque
 			IsPrivate:  tfPlan.IsPrivate.ValueBoolPointer(),
 			Widgets:    widgets,
 			Layout:     layouts,
+			Version:    nil,
 		})
 
 	if err != nil {
@@ -286,6 +287,7 @@ func (r *dashboardResource) Update(ctx context.Context, req resource.UpdateReque
 			IsPrivate:  plan.IsPrivate.ValueBoolPointer(),
 			Widgets:    widgets,
 			Layout:     layouts,
+			Version:    nil,
 		})
 
 	if err != nil {

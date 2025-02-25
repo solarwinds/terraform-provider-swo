@@ -94,11 +94,11 @@ Required:
 
 - `location_options` (Attributes Set) The Website availability monitoring location options. (see [below for nested schema](#nestedatt--test_definitions--location_options))
 - `test_from_location` (String) The location type to test from. Valid values are [`REGION`|`COUNTRY`|`CITY`].
+- `test_interval_in_seconds` (Number) The interval to test in seconds. Valid values are 60, 300, 600, 900, 1800, 3600, 7200, 14400
 
 Optional:
 
 - `platform_options` (Attributes) The platform options for this Uri check. (see [below for nested schema](#nestedatt--test_definitions--platform_options))
-- `test_interval_in_seconds` (Number) The interval to test in seconds. Default is `900`.
 
 <a id="nestedatt--test_definitions--location_options"></a>
 ### Nested Schema for `test_definitions.location_options`

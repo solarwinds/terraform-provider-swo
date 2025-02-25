@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -14,14 +15,16 @@ import (
 
 // The main Alert Resource model that is derived from the schema.
 type alertResourceModel struct {
-	Id                  types.String          `tfsdk:"id"`
-	Name                types.String          `tfsdk:"name"`
-	Description         types.String          `tfsdk:"description"`
-	Severity            types.String          `tfsdk:"severity"`
-	Enabled             types.Bool            `tfsdk:"enabled"`
-	Conditions          []alertConditionModel `tfsdk:"conditions"`
-	Notifications       []string              `tfsdk:"notifications"`
-	TriggerResetActions types.Bool            `tfsdk:"trigger_reset_actions"`
+	Id                  types.String            `tfsdk:"id"`
+	Name                types.String            `tfsdk:"name"`
+	NotificationActions []alertActionInputModel `tfsdk:"notification_actions"`
+	Description         types.String            `tfsdk:"description"`
+	Severity            types.String            `tfsdk:"severity"`
+	Enabled             types.Bool              `tfsdk:"enabled"`
+	Conditions          []alertConditionModel   `tfsdk:"conditions"`
+	Notifications       []string                `tfsdk:"notifications"`
+	TriggerResetActions types.Bool              `tfsdk:"trigger_reset_actions"`
+	RunbookLink         types.String            `tfsdk:"runbook_link"`
 }
 
 type alertConditionModel struct {
@@ -33,11 +36,18 @@ type alertConditionModel struct {
 	TargetEntityTypes []string          `tfsdk:"target_entity_types"`
 	IncludeTags       *[]alertTagsModel `tfsdk:"include_tags"`
 	ExcludeTags       *[]alertTagsModel `tfsdk:"exclude_tags"`
+	GroupByMetricTag  []string          `tfsdk:"group_by_metric_tag"`
 }
 
 type alertTagsModel struct {
 	Name   types.String `tfsdk:"name"`
 	Values []*string    `tfsdk:"values"`
+}
+
+type alertActionInputModel struct {
+	Type                  types.String `tfsdk:"type"`
+	ConfigurationIds      []string     `tfsdk:"configuration_ids"`
+	ResendIntervalSeconds types.Int64  `tfsdk:"resend_interval_seconds"`
 }
 
 func (r *alertResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
@@ -48,6 +58,46 @@ func (r *alertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 			"name": schema.StringAttribute{
 				Description: "Alert name.",
 				Required:    true,
+			},
+			"notification_actions": schema.SetNestedAttribute{
+				Description: "List of alert notifications that are sent when an alert triggers.",
+				Optional:    true,
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"type": schema.StringAttribute{
+							Description: "Notification service type (email, MS Teams, Slack, webhook, ...).",
+							Required:    true,
+							Validators: []validator.String{
+								validators.SingleOption(
+									"email",
+									"amazonsns",
+									"msTeams",
+									"newRelic",
+									"opsGenie",
+									"pagerDuty",
+									"pushover",
+									"serviceNow",
+									"slack",
+									"webhook",
+									"zapier",
+									"swsd", // Solarwinds Service Desk
+								),
+							},
+						},
+						"configuration_ids": schema.ListAttribute{
+							Description: "A list of notifications ids that should be triggered for this alert.",
+							Required:    true,
+							ElementType: types.StringType,
+						},
+						"resend_interval_seconds": schema.Int64Attribute{
+							Description: "How often should the notification be resent in case alert keeps being triggered. Null means notification is sent only once. Valid values are 60, 600, 3600, 86400.",
+							Optional:    true,
+							Validators: []validator.Int64{
+								int64validator.OneOf(60, 600, 3600, 86400),
+							},
+						},
+					},
+				},
 			},
 			"description": schema.StringAttribute{
 				Description: "Alert description.",
@@ -151,13 +201,23 @@ func (r *alertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 								},
 							},
 						},
+						"group_by_metric_tag": schema.ListAttribute{
+							Description: "Group alert data for selected attribute.",
+							Optional:    true,
+							ElementType: types.StringType,
+						},
 					},
 				},
 			},
 			"notifications": schema.ListAttribute{
-				Description: "A list of notifications that should be triggered for this alert.",
-				Required:    true,
-				ElementType: types.StringType,
+				Description:        "A list of notifications that should be triggered for this alert.",
+				Optional:           true,
+				ElementType:        types.StringType,
+				DeprecationMessage: "This field is deprecated. Please use the notification_actions field instead.",
+			},
+			"runbook_link": schema.StringAttribute{
+				Description: "A runbook is documentation of what steps to follow when something goes wrong.",
+				Optional:    true,
 			},
 		},
 	}

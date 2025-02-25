@@ -21,7 +21,7 @@ Please report bugs and request enhancements in the [Issues area](https://github.
 
 ### Requirements
 
-- [Terraform](https://www.terraform.io/downloads.html) >= 1.0
+- [Terraform](https://www.terraform.io/downloads.html) >= 1.0.7
 - [Go](https://golang.org/doc/install) >= 1.22
 
 ### Building
