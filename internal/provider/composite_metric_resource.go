@@ -102,13 +102,13 @@ func (r *compositeMetricResource) Read(ctx context.Context, req resource.ReadReq
 
 	if err != nil {
 		resp.Diagnostics.AddError(clientErrSummary,
-			fmt.Sprintf("error creating composite metric '%s' - error: %s", tfPlan.Name, err))
+			fmt.Sprintf("error reading composite metric '%s' - error: %s", tfPlan.Name, err))
 		return
 	}
 
 	if compositeMetric == nil {
 		resp.Diagnostics.AddError("Empty Response",
-			fmt.Sprintf("create composite metric response was empty '%s'", tfPlan.Name))
+			fmt.Sprintf("read composite metric response was empty '%s'", tfPlan.Name))
 		return
 	}
 
@@ -141,13 +141,13 @@ func (r *compositeMetricResource) Update(ctx context.Context, req resource.Updat
 
 	if err != nil {
 		resp.Diagnostics.AddError(clientErrSummary,
-			fmt.Sprintf("error creating composite metric '%s' - error: %v", tfPlan.Name, err))
+			fmt.Sprintf("error updating composite metric '%s' - error: %v", tfPlan.Name, err))
 		return
 	}
 
 	if res == nil {
 		resp.Diagnostics.AddError("Empty Response",
-			fmt.Sprintf("create composite metric response was empty '%s'", tfPlan.Name))
+			fmt.Sprintf("update composite metric response was empty '%s'", tfPlan.Name))
 		return
 	}
 
@@ -176,7 +176,7 @@ func (r *compositeMetricResource) Delete(ctx context.Context, req resource.Delet
 
 	if err != nil {
 		resp.Diagnostics.AddError(clientErrSummary,
-			fmt.Sprintf("error creating composite metric '%s' - error: %s", tfPlan.Name, err))
+			fmt.Sprintf("error deleting composite metric '%s' - error: %s", tfPlan.Name, err))
 		return
 	}
 }
