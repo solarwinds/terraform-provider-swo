@@ -35,7 +35,7 @@ func (r *websiteResource) Metadata(ctx context.Context, req resource.MetadataReq
 }
 
 func (r *websiteResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	client, _ := req.ProviderData.(*providerClients)
+	client, _ := req.ProviderData.(providerClients)
 	r.client = client.SwoClient
 }
 

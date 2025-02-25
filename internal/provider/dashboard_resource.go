@@ -47,8 +47,8 @@ func (r *dashboardResource) Metadata(ctx context.Context, req resource.MetadataR
 }
 
 func (r *dashboardResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	client, _ := req.ProviderData.(*swoClient.Client)
-	r.client = client
+	client, _ := req.ProviderData.(providerClients)
+	r.client = client.SwoClient
 }
 
 // Creates new WidgetInputs and LayoutInputs from plan widget data.

@@ -31,7 +31,7 @@ func (r *notificationResource) Metadata(ctx context.Context, req resource.Metada
 }
 
 func (r *notificationResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	client, _ := req.ProviderData.(*providerClients)
+	client, _ := req.ProviderData.(providerClients)
 	r.client = client.SwoClient
 }
 

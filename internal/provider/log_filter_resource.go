@@ -31,7 +31,7 @@ func (r *logFilterResource) Metadata(ctx context.Context, req resource.MetadataR
 }
 
 func (r *logFilterResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	client, _ := req.ProviderData.(*providerClients)
+	client, _ := req.ProviderData.(providerClients)
 	r.client = client.SwoClient
 }
 
