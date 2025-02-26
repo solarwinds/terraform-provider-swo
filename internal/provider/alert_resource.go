@@ -155,7 +155,7 @@ func (model *alertResourceModel) toAlertActionInput() []swoClient.AlertActionInp
 	//Notifications is deprecated. NotificationActions should be used instead.
 	// This if/else maintains backwards compatability.
 	if len(model.NotificationActions) > 0 {
-		recivingType := swoClient.NotificationReceivingTypeNotSpecified
+		receivingType := swoClient.NotificationReceivingTypeNotSpecified
 		includeDetails := true
 
 		for _, action := range model.NotificationActions {
@@ -164,7 +164,7 @@ func (model *alertResourceModel) toAlertActionInput() []swoClient.AlertActionInp
 				Type:                  action.Type.ValueString(),
 				ConfigurationIds:      action.ConfigurationIds,
 				ResendIntervalSeconds: &resendInterval,
-				ReceivingType:         &recivingType,
+				ReceivingType:         &receivingType,
 				IncludeDetails:        &includeDetails,
 			})
 		}
