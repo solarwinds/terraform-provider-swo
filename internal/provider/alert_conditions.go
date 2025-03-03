@@ -12,11 +12,13 @@ import (
 type conditionType string
 
 const (
-	conditionTypeThresholdData     conditionType = "thresholdData"
-	conditionTypeDuration          conditionType = "duration"
-	conditionTypeMetric            conditionType = "metric"
-	conditionTypeAggregation       conditionType = "aggregation"
-	conditionTypeThresholdOperator conditionType = "thresholdOperator"
+	conditionTypeThresholdData        conditionType = "thresholdData"
+	conditionTypeDuration             conditionType = "duration"
+	conditionTypeMetric               conditionType = "metric"
+	conditionTypeAggregation          conditionType = "aggregation"
+	conditionTypeThresholdOperator    conditionType = "thresholdOperator"
+	conditionTypeNotReportingOperator conditionType = "notReportingOperator"
+	conditionTypeNotReportingData     conditionType = "notReportingData"
 )
 
 type ConditionMap struct {
@@ -25,9 +27,22 @@ type ConditionMap struct {
 }
 
 func (model alertConditionModel) toAlertConditionInputs(conditions []swoClient.AlertConditionNodeInput) []swoClient.AlertConditionNodeInput {
+
+	// Can't use threshold and not_reporting in the same condition
+	threshold := model.Threshold.ValueString()
+	notReporting := model.NotReporting.ValueBool()
+	if threshold != "" && notReporting {
+		log.Fatal("Cannot create condition with a threshold and not_reporting")
+	}
+
 	thresholdOperatorCondition, thresholdDataCondition := model.toThresholdConditionInputs()
+	notReportingOperatorCondition, notReportingDataCondition := model.toNotReportingConditionInput()
 
 	conditionMaps := []ConditionMap{
+		{
+			condition:     notReportingDataCondition,
+			conditionType: conditionTypeNotReportingData,
+		},
 		{
 			condition:     thresholdDataCondition,
 			conditionType: conditionTypeThresholdData,
@@ -45,14 +60,21 @@ func (model alertConditionModel) toAlertConditionInputs(conditions []swoClient.A
 			conditionType: conditionTypeAggregation,
 		},
 		{
+			condition:     notReportingOperatorCondition,
+			conditionType: conditionTypeNotReportingOperator,
+		},
+		{
 			condition:     thresholdOperatorCondition,
 			conditionType: conditionTypeThresholdOperator,
 		},
 	}
 
-	conditionsOrdered := []swoClient.AlertConditionNodeInput{}
+	var conditionsOrdered []swoClient.AlertConditionNodeInput
 	conditionsReturnedLen := len(conditionMaps)
 	lastId := len(conditions) + conditionsReturnedLen
+	thresholdOperatorKey := conditionsReturnedLen - 1
+	notReportingKey := conditionsReturnedLen - 2
+	aggregationKey := conditionsReturnedLen - 3
 
 	// Use the conditionsMaps to order our conditions, and assign the correct "OperandIds".
 	for _, conditionMap := range conditionMaps {
@@ -66,16 +88,29 @@ func (model alertConditionModel) toAlertConditionInputs(conditions []swoClient.A
 		condition.Id = lastId
 		conditionType := conditionMap.conditionType
 
-		if conditionType == conditionTypeThresholdData || conditionType == conditionTypeAggregation {
-			thresholdOperatorKey := conditionsReturnedLen - 1
+		if conditionType == conditionTypeThresholdData {
 			operandIds := append([]int{lastId}, conditionMaps[thresholdOperatorKey].condition.OperandIds...)
 			conditionMaps[thresholdOperatorKey].condition.OperandIds = operandIds
-		}
+		} else if conditionType == conditionTypeAggregation {
+			// If threshold condition is nil don't update
+			thresholdCondition := conditionMaps[thresholdOperatorKey].condition
+			if !reflect.DeepEqual(thresholdCondition, swoClient.AlertConditionNodeInput{}) {
+				operandIds := append([]int{lastId}, conditionMaps[thresholdOperatorKey].condition.OperandIds...)
+				conditionMaps[thresholdOperatorKey].condition.OperandIds = operandIds
+			}
 
-		if conditionType == conditionTypeMetric || conditionType == conditionTypeDuration {
-			aggregationKey := conditionsReturnedLen - 2
+			// If not_reporting condition is nil don't update
+			notReportingCondition := conditionMaps[notReportingKey].condition
+			if !reflect.DeepEqual(notReportingCondition, swoClient.AlertConditionNodeInput{}) {
+				operandIds2 := append([]int{lastId}, conditionMaps[notReportingKey].condition.OperandIds...)
+				conditionMaps[notReportingKey].condition.OperandIds = operandIds2
+			}
+		} else if conditionType == conditionTypeMetric || conditionType == conditionTypeDuration {
 			operandIds := append([]int{lastId}, conditionMaps[aggregationKey].condition.OperandIds...)
 			conditionMaps[aggregationKey].condition.OperandIds = operandIds
+		} else if conditionType == conditionTypeNotReportingData {
+			operandIds := append([]int{lastId}, conditionMaps[notReportingKey].condition.OperandIds...)
+			conditionMaps[notReportingKey].condition.OperandIds = operandIds
 		}
 
 		lastId--
@@ -93,7 +128,7 @@ func (model *alertConditionModel) toThresholdConditionInputs() (swoClient.AlertC
 	if threshold != "" {
 
 		regex := regexp.MustCompile(`[\W]+`)
-		operator := string(regex.FindString(threshold))
+		operator := regex.FindString(threshold)
 		//Parses threshold into an operator:(>, <, = ...).
 
 		operatorType, err := swoClient.GetAlertConditionType(operator)
@@ -102,7 +137,7 @@ func (model *alertConditionModel) toThresholdConditionInputs() (swoClient.AlertC
 			thresholdOperatorConditions.Operator = &operator
 		}
 		regex = regexp.MustCompile("[0-9]+")
-		thresholdValue := string(regex.FindString(threshold))
+		thresholdValue := regex.FindString(threshold)
 		//Parses threshold into numbers:(3000, 200, 10...).
 
 		if thresholdValue != "" {
@@ -130,6 +165,25 @@ func (model *alertConditionModel) toDurationConditionInput() swoClient.AlertCond
 	}
 
 	return durationCondition
+}
+
+func (model *alertConditionModel) toNotReportingConditionInput() (swoClient.AlertConditionNodeInput, swoClient.AlertConditionNodeInput) {
+	notReportingOperatorCondition := swoClient.AlertConditionNodeInput{}
+	notReportingDataCondition := swoClient.AlertConditionNodeInput{}
+
+	if model.NotReporting.ValueBool() {
+		operator := string(swoClient.AlertOperatorEq)
+		notReportingOperatorCondition.Type = string(swoClient.AlertBinaryOperatorType)
+		notReportingOperatorCondition.Operator = &operator
+
+		dataValue := "0"
+		dataType := GetStringDataType(dataValue)
+		notReportingDataCondition.Type = string(swoClient.AlertConstantValueType)
+		notReportingDataCondition.DataType = &dataType
+		notReportingDataCondition.Value = &dataValue
+	}
+
+	return notReportingOperatorCondition, notReportingDataCondition
 }
 
 func (model *alertConditionModel) toAggregationConditionInput() swoClient.AlertConditionNodeInput {
