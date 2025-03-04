@@ -37,6 +37,7 @@ type alertConditionModel struct {
 	IncludeTags       *[]alertTagsModel `tfsdk:"include_tags"`
 	ExcludeTags       *[]alertTagsModel `tfsdk:"exclude_tags"`
 	GroupByMetricTag  []string          `tfsdk:"group_by_metric_tag"`
+	NotReporting      types.Bool        `tfsdk:"not_reporting"`
 }
 
 type alertTagsModel struct {
@@ -205,6 +206,12 @@ func (r *alertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 							Description: "Group alert data for selected attribute.",
 							Optional:    true,
 							ElementType: types.StringType,
+						},
+						"not_reporting": schema.BoolAttribute{
+							Description: "True if the alert should trigger when the metric is not reporting. If true, threshold must be '' and aggregation_type must be 'COUNT'.",
+							Computed:    true,
+							Optional:    true,
+							Default:     booldefault.StaticBool(false),
 						},
 					},
 				},
