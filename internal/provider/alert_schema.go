@@ -208,7 +208,7 @@ func (r *alertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 							ElementType: types.StringType,
 						},
 						"not_reporting": schema.BoolAttribute{
-							Description: "True if the alert should trigger when the metric is not reporting.",
+							Description: "True if the alert should trigger when the metric is not reporting. If true, threshold must be '' and aggregation_type must be 'COUNT'.",
 							Computed:    true,
 							Optional:    true,
 							Default:     booldefault.StaticBool(false),

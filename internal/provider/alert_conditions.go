@@ -28,11 +28,21 @@ type ConditionMap struct {
 
 func (model alertConditionModel) toAlertConditionInputs(conditions []swoClient.AlertConditionNodeInput) []swoClient.AlertConditionNodeInput {
 
-	// Can't use threshold and not_reporting in the same condition
-	threshold := model.Threshold.ValueString()
+	// Validation if not_reporting = true
 	notReporting := model.NotReporting.ValueBool()
-	if threshold != "" && notReporting {
-		log.Fatal("Cannot create condition with a threshold and not_reporting")
+	if notReporting {
+		// Can't use threshold in the same condition
+		threshold := model.Threshold.ValueString()
+		if threshold != "" {
+			log.Fatal("Cannot create condition when not_reporting=true AND threshold!=''")
+		}
+
+		// Aggregation must be count
+		operator := model.AggregationType.ValueString()
+		operatorType, _ := swoClient.GetAlertConditionType(operator)
+		if operatorType != string(swoClient.AlertOperatorCount) {
+			log.Fatal("Cannot create condition when not_reporting=true AND aggregationType!=COUNT")
+		}
 	}
 
 	thresholdOperatorCondition, thresholdDataCondition := model.toThresholdConditionInputs()
