@@ -95,8 +95,8 @@ func TestAccAlertResourceNotReporting(t *testing.T) {
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.metric_name", "synthetics.https.response.time"),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.threshold", ""),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.not_reporting", "true"),
-					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.duration", "5m"),
-					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.aggregation_type", "AVG"),
+					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.duration", "10m"),
+					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.aggregation_type", "COUNT"),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.entity_ids.0", "e-1521946194448543744"),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.entity_ids.1", "e-1521947552186691584"),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.group_by_metric_tag.0", "host.name"),
@@ -127,59 +127,6 @@ func TestAccAlertResourceNotReporting(t *testing.T) {
 			// Delete testing automatically occurs in TestCase
 		},
 	})
-}
-
-func testAccAlertResourceNotReportingConfig(name string) string {
-	return providerConfig() + fmt.Sprintf(`
-
-resource "swo_alert" "test" {
-  name        = %[1]q
-  description = "Mock alert description."
-  severity    = "CRITICAL"
-  enabled     = true
-  notification_actions = [
-    {
-	  type = "email"
-	  configuration_ids = [333, 444]
-	  resend_interval_seconds = 600
-    },
-  ]
-  conditions = [
-	{
-	  metric_name      = "synthetics.https.response.time"
-	  threshold        = ""
-      not_reporting    = true
-	  duration         = "5m"
-	  aggregation_type = "AVG"
-	  target_entity_types = ["Website"]
-	  entity_ids = [
-		"e-1521946194448543744",
-		"e-1521947552186691584"
-	  ]
-	  group_by_metric_tag = [
-		"host.name"
-	  ]
-	  include_tags = [
-		{
-		  name = "probe.city"
-		  values : [
-			"Tokyo",
-			"Sao Paulo"
-		  ]
-		}
-	  ],
-	  exclude_tags = [{
-		  name = "service.name"
-		  values : [
-			"test-service"
-		  ]
-		}]
-	},
-  ]
-  notifications = ["123", "456"]
-  runbook_link = "https://www.runbooklink.com"
-}
-`, name)
 }
 
 func testAccAlertResourceConfig(name string) string {
@@ -230,6 +177,59 @@ resource "swo_alert" "test" {
  ]
  notifications = ["123", "456"]
  runbook_link = "https://www.runbooklink.com"
+}
+`, name)
+}
+
+func testAccAlertResourceNotReportingConfig(name string) string {
+	return providerConfig() + fmt.Sprintf(`
+
+resource "swo_alert" "test" {
+  name        = %[1]q
+  description = "Mock alert description."
+  severity    = "CRITICAL"
+  enabled     = true
+  notification_actions = [
+    {
+	  type = "email"
+	  configuration_ids = [333, 444]
+	  resend_interval_seconds = 600
+    },
+  ]
+  conditions = [
+	{
+	  metric_name      = "synthetics.https.response.time"
+	  threshold        = ""
+      not_reporting    = true
+	  duration         = "10m"
+	  aggregation_type = "COUNT"
+	  target_entity_types = ["Website"]
+	  entity_ids = [
+		"e-1521946194448543744",
+		"e-1521947552186691584"
+	  ]
+	  group_by_metric_tag = [
+		"host.name"
+	  ]
+	  include_tags = [
+		{
+		  name = "probe.city"
+		  values : [
+			"Tokyo",
+			"Sao Paulo"
+		  ]
+		}
+	  ],
+	  exclude_tags = [{
+		  name = "service.name"
+		  values : [
+			"test-service"
+		  ]
+		}]
+	},
+  ]
+  notifications = ["123", "456"]
+  runbook_link = "https://www.runbooklink.com"
 }
 `, name)
 }
