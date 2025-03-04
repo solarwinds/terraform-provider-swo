@@ -3,7 +3,6 @@ package provider
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -133,10 +132,6 @@ func (r *alertResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 
 func (model *alertResourceModel) toAlertDefinitionInput() swoClient.AlertDefinitionInput {
 	conditions := []swoClient.AlertConditionNodeInput{}
-
-	if len(model.Conditions) > 1 {
-		log.Fatal("Cannot support more than one condition at this time.")
-	}
 
 	for _, condition := range model.Conditions {
 		conditions = condition.toAlertConditionInputs(conditions)
