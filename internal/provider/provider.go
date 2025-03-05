@@ -94,17 +94,17 @@ func (p *swoProvider) Schema(ctx context.Context, req provider.SchemaRequest, re
 }
 
 func (p *swoProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
-	var conf swoProviderModel
+	var model swoProviderModel
 
-	resp.Diagnostics.Append(req.Config.Get(ctx, &conf)...)
+	resp.Diagnostics.Append(req.Config.Get(ctx, &model)...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	config, configErr := p.ConfigureClientVars(conf, resp)
+	config, hasErr := p.ConfigureClientVars(model, resp)
 
-	if configErr {
+	if hasErr {
 		return
 	}
 
