@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -33,6 +34,51 @@ func (r *alertResource) Metadata(ctx context.Context, req resource.MetadataReque
 func (r *alertResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	client, _ := req.ProviderData.(*swoClient.Client)
 	r.client = client
+}
+
+func (r *alertResource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
+	var data alertResourceModel
+
+	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if len(data.Conditions) > 1 {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("conditions"),
+			"More than one condition.",
+			"Cannot support more than one condition at this time.",
+		)
+	}
+
+	for _, condition := range data.Conditions {
+		// Validation if not_reporting = true
+		notReporting := condition.NotReporting.ValueBool()
+		if notReporting {
+			// Can't use threshold in the same condition
+			threshold := condition.Threshold.ValueString()
+			if threshold != "" {
+				resp.Diagnostics.AddAttributeError(
+					path.Root("threshold"),
+					"Cannot set threshold when not_reporting is set to true.",
+					"Cannot set threshold when not_reporting is set to true.",
+				)
+			}
+
+			// Aggregation must be count
+			operator := condition.AggregationType.ValueString()
+			operatorType, _ := swoClient.GetAlertConditionType(operator)
+			if operatorType != string(swoClient.AlertOperatorCount) {
+				resp.Diagnostics.AddAttributeError(
+					path.Root("aggregationType"),
+					"Aggregation type must be COUNT when not_reporting is set to true.",
+					"Aggregation type must be COUNT when not_reporting is set to true.",
+				)
+			}
+		}
+	}
 }
 
 func (r *alertResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -155,7 +201,7 @@ func (model *alertResourceModel) toAlertActionInput() []swoClient.AlertActionInp
 	//Notifications is deprecated. NotificationActions should be used instead.
 	// This if/else maintains backwards compatability.
 	if len(model.NotificationActions) > 0 {
-		recivingType := swoClient.NotificationReceivingTypeNotSpecified
+		receivingType := swoClient.NotificationReceivingTypeNotSpecified
 		includeDetails := true
 
 		for _, action := range model.NotificationActions {
@@ -164,7 +210,7 @@ func (model *alertResourceModel) toAlertActionInput() []swoClient.AlertActionInp
 				Type:                  action.Type.ValueString(),
 				ConfigurationIds:      action.ConfigurationIds,
 				ResendIntervalSeconds: &resendInterval,
-				ReceivingType:         &recivingType,
+				ReceivingType:         &receivingType,
 				IncludeDetails:        &includeDetails,
 			})
 		}

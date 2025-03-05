@@ -21,6 +21,7 @@ resource "swo_alert" "https_response_time" {
   conditions = [
     {
       metric_name      = "synthetics.https.response.time"
+      not_reporting    = false
       threshold        = ">=3000"
       duration         = "5m"
       aggregation_type = "AVG"
@@ -88,6 +89,7 @@ Optional:
 - `exclude_tags` (Attributes Set) Tag key and values to match in order to not trigger an alert. (see [below for nested schema](#nestedatt--conditions--exclude_tags))
 - `group_by_metric_tag` (List of String) Group alert data for selected attribute.
 - `include_tags` (Attributes Set) Tag key and values to match in order to trigger an alert. (see [below for nested schema](#nestedatt--conditions--include_tags))
+- `not_reporting` (Boolean) True if the alert should trigger when the metric is not reporting. If true, threshold must be '' and aggregation_type must be 'COUNT'. Default is `false`.
 
 <a id="nestedatt--conditions--exclude_tags"></a>
 ### Nested Schema for `conditions.exclude_tags`
