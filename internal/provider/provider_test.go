@@ -13,16 +13,15 @@ import (
 
 func providerConfig() string {
 	//Source the .env file in the root dir if it exists.
+	//Set SWO_API_TOKEN, SWO_BASE_URL in the .env
 	envPath := filepath.Join("..", "..", ".env")
 	if err := godotenv.Load(envPath); err != nil {
 		log.Printf("Warning: Couldn't load .env file: %v", err)
 	}
 
 	return fmt.Sprintln(`provider "swo" {
-	api_token_env_name = "SWO_API_TOKEN"
-	request_timeout = 10
-	base_url_env_name = "SWO_BASE_URL"
-}`)
+		request_timeout = 10
+	}`)
 }
 
 // testAccProtoV6ProviderFactories are used to instantiate a provider during

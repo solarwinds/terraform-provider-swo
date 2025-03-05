@@ -26,17 +26,15 @@ terraform {
 provider "swo" {
   # API token. Tokens can be created in your SWO account settings under API tokens.
   # The token type should be Full Access. Overwrites api_token_env_name.
+  # The 'SWO_API_TOKEN' environment variable can be set as an alternative to using this field.
+  # If 'api_token' is not provided, The provider attempt to use the 'SWO_API_TOKEN' environment variable.
   api_token = "[UPDATE WITH SWO FULL ACCESS TOKEN]"
 
   # Base URL for your SWO instance. Be sure to include your specific datacenter.
   # Datacenter options are one of [na-01, na-02, eu-01]. Overwrites base_url_env_name.
+  # The 'SWO_BASE_URL' environment variable can be set as an alternative to using this field.
+  # If 'base_url' is not provided, The provider will attempt to use the 'SWO_BASE_URL' environment variable.
   base_url = "https://api.na-01.cloud.solarwinds.com/v1/tfproxy"
-
-  # API token environment variable name. This variable should reference a Full Access SWO API token.  
-  api_token_env_name = "SWO_API_TOKEN"
-
-  # Base URL environment variable name. This variable should reference a base URL for your SWO instance.  
-  base_url_env_name = "SWO_BASE_URL"
 }
 ```
 
@@ -46,8 +44,6 @@ provider "swo" {
 ### Optional
 
 - `api_token` (String, Sensitive) The api token for the SWO account.
-- `api_token_env_name` (String) Name of the environment variable containing the API token
 - `base_url` (String) The base url to use for requests to the server.
-- `base_url_env_name` (String) Name of the environment variable containing the URL
 - `debug_mode` (Boolean) Setting to true will provide additional logging details.
 - `request_timeout` (Number) The request timeout period in seconds. Default is 30 seconds.
