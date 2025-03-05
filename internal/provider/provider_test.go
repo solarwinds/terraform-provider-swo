@@ -2,30 +2,24 @@ package provider
 
 import (
 	"fmt"
-	"log"
-	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+	"github.com/joho/godotenv"
 )
 
 func providerConfig() string {
-	apiToken := os.Getenv("SWO_API_TOKEN")
-	if apiToken == "" {
-		log.Fatal("SWO_API_TOKEN must be set for acceptance tests")
-	}
+	//Source the .env file in the root dir if it exists.
+	envPath := filepath.Join("..", "..", ".env")
+	godotenv.Load(envPath)
 
-	baseURL := os.Getenv("SWO_BASE_URL")
-	if baseURL == "" {
-		log.Fatal("SWO_BASE_URL must be set for acceptance tests")
-	}
-
-	return fmt.Sprintf(`provider "swo" {
-	api_token = "%s"
+	return fmt.Sprintln(`provider "swo" {
+	api_token_env_name = "SWO_API_TOKEN"
 	request_timeout = 10
-	base_url = "%s"
-}`, apiToken, baseURL)
+	base_url_env_name = "SWO_BASE_URL"
+}`)
 }
 
 // testAccProtoV6ProviderFactories are used to instantiate a provider during

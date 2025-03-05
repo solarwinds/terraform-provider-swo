@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/cenkalti/backoff/v5"
@@ -54,10 +55,12 @@ type swoProvider struct {
 
 // swoProviderModel describes the provider data model.
 type swoProviderModel struct {
-	ApiToken       types.String `tfsdk:"api_token"`
-	RequestTimeout types.Int64  `tfsdk:"request_timeout"`
-	BaseURL        types.String `tfsdk:"base_url"`
-	DebugMode      types.Bool   `tfsdk:"debug_mode"`
+	ApiToken        types.String `tfsdk:"api_token"`
+	RequestTimeout  types.Int64  `tfsdk:"request_timeout"`
+	BaseURL         types.String `tfsdk:"base_url"`
+	DebugMode       types.Bool   `tfsdk:"debug_mode"`
+	ApiTokenEnvName types.String `tfsdk:"api_token_env_name"`
+	BaseURLEnvName  types.String `tfsdk:"base_url_env_name"`
 }
 
 func (p *swoProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
@@ -68,14 +71,22 @@ func (p *swoProvider) Metadata(ctx context.Context, req provider.MetadataRequest
 func (p *swoProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
+			"api_token_env_name": schema.StringAttribute{
+				Optional:    true,
+				Description: "Name of the environment variable containing the API token",
+			},
+			"base_url_env_name": schema.StringAttribute{
+				Optional:    true,
+				Description: "Name of the environment variable containing the URL",
+			},
 			"api_token": schema.StringAttribute{
 				Description: fmt.Sprintf("The api token for the %s account.", envvar.AppName),
-				Required:    true,
+				Optional:    true,
 				Sensitive:   true,
 			},
 			"base_url": schema.StringAttribute{
 				Description: "The base url to use for requests to the server.",
-				Required:    true,
+				Optional:    true,
 			},
 			"request_timeout": schema.Int64Attribute{
 				Description: "The request timeout period in seconds. Default is 30 seconds.",
@@ -90,29 +101,17 @@ func (p *swoProvider) Schema(ctx context.Context, req provider.SchemaRequest, re
 }
 
 func (p *swoProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
-	var config swoProviderModel
+	var conf swoProviderModel
 
-	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	resp.Diagnostics.Append(req.Config.Get(ctx, &conf)...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	if config.ApiToken.IsUnknown() {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("api_token"),
-			"api_token required",
-			"The api_token configuration parameter was not provided and is required. Please provide a public API token for the SolarWinds Observability API.",
-		)
-		return
-	}
+	config, configErr := p.ConfigureClientVars(conf, resp)
 
-	if config.BaseURL.IsUnknown() {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("base_url"),
-			"base_url required",
-			"The base_url configuration parameter was not provided and is required. Please provide the URL of the SolarWinds Observability API.",
-		)
+	if configErr {
 		return
 	}
 
@@ -130,6 +129,59 @@ func (p *swoProvider) Configure(ctx context.Context, req provider.ConfigureReque
 
 	resp.DataSourceData = client
 	resp.ResourceData = client
+}
+
+func (p *swoProvider) ConfigureClientVars(config swoProviderModel, resp *provider.ConfigureResponse) (*swoProviderModel, bool) {
+	// favor using api_token/base_url over using api_token_env_name/base_url_env_name.
+	if config.ApiToken.ValueString() == "" {
+		if config.ApiTokenEnvName.ValueString() != "" {
+			apiTokenEnvName := config.ApiTokenEnvName.ValueString()
+			apiToken, exists := os.LookupEnv(apiTokenEnvName)
+
+			if !exists {
+				resp.Diagnostics.AddAttributeError(
+					path.Root("api_token_env_name"),
+					"api_token_env_name doesn't exist",
+					fmt.Sprintf("The api_token_env_name URL environment variable '%s' does not exist. Please provide a vilid environment variable.", apiTokenEnvName),
+				)
+				return nil, true
+			}
+			config.ApiToken = types.StringValue(apiToken)
+		} else {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("api_token"),
+				"api_token required",
+				"The api_token configuration parameter was not provided and is required. Please provide a public API token for the SolarWinds Observability API.",
+			)
+			return nil, true
+		}
+	}
+
+	if config.BaseURL.ValueString() == "" {
+		if config.BaseURLEnvName.ValueString() != "" {
+			baseUrlEnvName := config.BaseURLEnvName.ValueString()
+			baseUrl, exists := os.LookupEnv(baseUrlEnvName)
+
+			if !exists {
+				resp.Diagnostics.AddAttributeError(
+					path.Root("base_url_env_name"),
+					"base_url_env_name doesn't exist",
+					fmt.Sprintf("The base_url_env_name environment variable %s does not exist. Please provide a vilid environment variable.", baseUrlEnvName),
+				)
+				return nil, true
+			}
+			config.BaseURL = types.StringValue(baseUrl)
+		} else {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("base_url"),
+				"base_url required",
+				"The base_url configuration parameter was not provided and is required. Please provide the URL of the SolarWinds Observability API.",
+			)
+			return nil, true
+		}
+	}
+
+	return &config, false
 }
 
 func (p *swoProvider) Resources(ctx context.Context) []func() resource.Resource {
