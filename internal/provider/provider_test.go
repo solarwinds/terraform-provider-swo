@@ -2,6 +2,7 @@ package provider
 
 import (
 	"fmt"
+	"log"
 	"path/filepath"
 	"testing"
 
@@ -13,7 +14,9 @@ import (
 func providerConfig() string {
 	//Source the .env file in the root dir if it exists.
 	envPath := filepath.Join("..", "..", ".env")
-	godotenv.Load(envPath)
+	if err := godotenv.Load(envPath); err != nil {
+		log.Printf("Warning: Couldn't load .env file: %v", err)
+	}
 
 	return fmt.Sprintln(`provider "swo" {
 	api_token_env_name = "SWO_API_TOKEN"
