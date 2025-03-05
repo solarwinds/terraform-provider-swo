@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/cenkalti/backoff/v5"
@@ -39,6 +40,11 @@ var dataSources = []func() datasource.DataSource{}
 const (
 	expBackoffMaxInterval = 30 * time.Second
 	expBackoffMaxElapsed  = 2 * time.Minute
+
+	// #nosec G101: Potential hardcoded credentials
+	apiTokenEnv = "SWO_API_TOKEN"
+	// #nosec G101: Potential hardcoded credentials
+	baseUrlEnv = "SWO_BASE_URL"
 )
 
 type ReadOperation[T any] func(context.Context, string) (T, error)
@@ -70,12 +76,12 @@ func (p *swoProvider) Schema(ctx context.Context, req provider.SchemaRequest, re
 		Attributes: map[string]schema.Attribute{
 			"api_token": schema.StringAttribute{
 				Description: fmt.Sprintf("The api token for the %s account.", envvar.AppName),
-				Required:    true,
+				Optional:    true,
 				Sensitive:   true,
 			},
 			"base_url": schema.StringAttribute{
 				Description: "The base url to use for requests to the server.",
-				Required:    true,
+				Optional:    true,
 			},
 			"request_timeout": schema.Int64Attribute{
 				Description: "The request timeout period in seconds. Default is 30 seconds.",
@@ -90,29 +96,17 @@ func (p *swoProvider) Schema(ctx context.Context, req provider.SchemaRequest, re
 }
 
 func (p *swoProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
-	var config swoProviderModel
+	var model swoProviderModel
 
-	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	resp.Diagnostics.Append(req.Config.Get(ctx, &model)...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	if config.ApiToken.IsUnknown() {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("api_token"),
-			"api_token required",
-			"The api_token configuration parameter was not provided and is required. Please provide a public API token for the SolarWinds Observability API.",
-		)
-		return
-	}
+	config, hasErr := p.ConfigureClientVars(model, resp)
 
-	if config.BaseURL.IsUnknown() {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("base_url"),
-			"base_url required",
-			"The base_url configuration parameter was not provided and is required. Please provide the URL of the SolarWinds Observability API.",
-		)
+	if hasErr {
 		return
 	}
 
@@ -130,6 +124,40 @@ func (p *swoProvider) Configure(ctx context.Context, req provider.ConfigureReque
 
 	resp.DataSourceData = client
 	resp.ResourceData = client
+}
+
+func (p *swoProvider) ConfigureClientVars(config swoProviderModel, resp *provider.ConfigureResponse) (*swoProviderModel, bool) {
+	if config.ApiToken.ValueString() == "" {
+		apiToken, exists := os.LookupEnv(apiTokenEnv)
+
+		if !exists {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("api_token"),
+				"No API token provided",
+				fmt.Sprintf("Please set either the 'api_token' parameter or the '%s' environment variable.", apiTokenEnv),
+			)
+			return nil, true
+		}
+
+		config.ApiToken = types.StringValue(apiToken)
+	}
+
+	if config.BaseURL.ValueString() == "" {
+		baseUrl, exists := os.LookupEnv(baseUrlEnv)
+
+		if !exists {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("api_token"),
+				"No Base URL provided",
+				fmt.Sprintf("Please set either the 'base_url' parameter or the '%s' environment variable.", baseUrlEnv),
+			)
+			return nil, true
+		}
+
+		config.BaseURL = types.StringValue(baseUrl)
+	}
+
+	return &config, false
 }
 
 func (p *swoProvider) Resources(ctx context.Context) []func() resource.Resource {

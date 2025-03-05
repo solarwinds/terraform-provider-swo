@@ -30,6 +30,8 @@ To compile the provider, run `go install`. This will build the provider and put 
 
 To generate or update documentation, run `go generate`.
 
+Before running Acceptance tests, create a .env file in the root directory and set SWO_BASE_URL and SWO_API_TOKEN.
+
 In order to run the full suite of Acceptance tests, run `make testacc`.
 
 _Note:_ Acceptance tests create real resources, and often cost money to run.
