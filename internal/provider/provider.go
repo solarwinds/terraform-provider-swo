@@ -41,8 +41,10 @@ const (
 	expBackoffMaxInterval = 30 * time.Second
 	expBackoffMaxElapsed  = 2 * time.Minute
 
+	// #nosec G101: Potential hardcoded credentials
 	apiTokenEnv = "SWO_API_TOKEN"
-	baseUrlEnv  = "SWO_BASE_URL"
+	// #nosec G101: Potential hardcoded credentials
+	baseUrlEnv = "SWO_BASE_URL"
 )
 
 type ReadOperation[T any] func(context.Context, string) (T, error)
