@@ -35,8 +35,8 @@ func (r *uriResource) Metadata(ctx context.Context, req resource.MetadataRequest
 }
 
 func (r *uriResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	client, _ := req.ProviderData.(*swoClient.Client)
-	r.client = client
+	client, _ := req.ProviderData.(providerClients)
+	r.client = client.SwoClient
 }
 
 func (r *uriResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
