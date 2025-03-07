@@ -71,7 +71,7 @@ func (r *alertResource) ValidateConfig(ctx context.Context, req resource.Validat
 			// Aggregation must be count
 			operator := condition.AggregationType.ValueString()
 			operatorType, _ := swoClient.GetAlertConditionType(operator)
-			if operatorType != string(swoClient.AlertOperatorCount) {
+			if operatorType == string(swoClient.AlertAggregationOperatorType) && operator != string(swoClient.AlertOperatorCount) {
 				resp.Diagnostics.AddAttributeError(
 					path.Root("aggregationType"),
 					"Aggregation type must be COUNT when not_reporting is set to true.",
