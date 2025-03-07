@@ -61,6 +61,7 @@ func TestAccAlertResource(t *testing.T) {
 				Config: testAccAlertResourceConfig("test-acc test_two"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("swo_alert.test", "name", "test-acc test_two"),
+					resource.TestCheckResourceAttr("swo_alert.test", "notification_actions.0.type", "servicenow"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
