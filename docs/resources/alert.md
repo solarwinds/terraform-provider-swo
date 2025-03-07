@@ -18,6 +18,13 @@ resource "swo_alert" "https_response_time" {
   description = "A high response time has been identified."
   severity    = "INFO"
   enabled     = true
+  notification_actions = [
+    {
+      type                    = "msteams"
+      configuration_ids       = [swo_notification.msteams.id, swo_notification.opsgenie.id]
+      resend_interval_seconds = 600
+    },
+  ]
   conditions = [
     {
       metric_name      = "synthetics.https.response.time"
@@ -116,7 +123,7 @@ Optional:
 Required:
 
 - `configuration_ids` (List of String) A list of notifications ids that should be triggered for this alert.
-- `type` (String) Notification service type (email, MS Teams, Slack, webhook, ...). Valid values are [`email`|`amazonsns`|`msTeams`|`newRelic`|`opsGenie`|`pagerDuty`|`pushover`|`serviceNow`|`slack`|`webhook`|`zapier`|`swsd`].
+- `type` (String) Notification service type (email, MS Teams, Slack, webhook, ...). Valid values are [`email`|`amazonsns`|`msTeams`|`newRelic`|`opsgenie`|`pagerduty`|`pushover`|`serviceNow`|`slack`|`webhook`|`zapier`|`swsd`].
 
 Optional:
 
