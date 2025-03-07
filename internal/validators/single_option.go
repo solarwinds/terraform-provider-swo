@@ -11,7 +11,8 @@ import (
 
 // singleOptionValidator validates that the value matches one of expected values.
 type singleOptionValidator[T any] struct {
-	ValidValues []T
+	ValidValues     []T
+	CaseInsensitive bool
 }
 
 func (v singleOptionValidator[T]) Description(ctx context.Context) string {
@@ -33,23 +34,38 @@ func SingleOption[T any](validValues ...T) singleOptionValidator[T] {
 	}
 }
 
+// CaseInsensitiveSingleOption checks that the value specified in the attribute is one of the ValidValues without being case sensitive.
+func CaseInsensitiveSingleOption[T any](validValues ...T) validator.String {
+	return singleOptionValidator[T]{
+		ValidValues:     validValues,
+		CaseInsensitive: true,
+	}
+}
+
 func (v singleOptionValidator[T]) ValidateString(ctx context.Context, req validator.StringRequest, resp *validator.StringResponse) {
 	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
 		return
 	}
 
-	value := req.ConfigValue
+	value := req.ConfigValue.ValueString()
 
-	for _, valid := range v.ValidValues {
-		if strings.Compare(value.ValueString(), getStringValue(valid)) == 0 {
-			return
+	for _, validValue := range v.ValidValues {
+		validStr := fmt.Sprint(validValue)
+		if v.CaseInsensitive {
+			if strings.EqualFold(value, validStr) {
+				return
+			}
+		} else {
+			if value == validStr {
+				return
+			}
 		}
 	}
 
 	resp.Diagnostics.Append(validatordiag.InvalidAttributeValueMatchDiagnostic(
 		req.Path,
 		v.Description(ctx),
-		value.String(),
+		value,
 	))
 }
 

@@ -2,6 +2,7 @@ package provider
 
 import (
 	"encoding/json"
+	"strings"
 )
 
 func IIf[T any](condition bool, trueValue T, falseValue T) T {
@@ -36,4 +37,13 @@ func convertObject[T any](from any) (*T, error) {
 	}
 
 	return &result, err
+}
+
+func findCaseInsensitiveMatch(slice []string, target string) string {
+	for _, str := range slice {
+		if strings.EqualFold(str, target) {
+			return str
+		}
+	}
+	return ""
 }

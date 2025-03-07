@@ -3,8 +3,9 @@ package provider
 import (
 	"context"
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"strings"
+
+	"github.com/hashicorp/terraform-plugin-framework/path"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -205,9 +206,11 @@ func (model *alertResourceModel) toAlertActionInput() []swoClient.AlertActionInp
 		includeDetails := true
 
 		for _, action := range model.NotificationActions {
+			actionType := findCaseInsensitiveMatch(notificationActionTypes, action.Type.ValueString())
+
 			resendInterval := int(action.ResendIntervalSeconds.ValueInt64())
 			inputs = append(inputs, swoClient.AlertActionInput{
-				Type:                  action.Type.ValueString(),
+				Type:                  actionType,
 				ConfigurationIds:      action.ConfigurationIds,
 				ResendIntervalSeconds: &resendInterval,
 				ReceivingType:         &receivingType,

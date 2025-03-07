@@ -23,7 +23,7 @@ func TestAccAlertResource(t *testing.T) {
 					resource.TestCheckResourceAttr("swo_alert.test", "severity", "CRITICAL"),
 					resource.TestCheckResourceAttr("swo_alert.test", "trigger_reset_actions", "false"),
 					// Verify actions
-					resource.TestCheckResourceAttr("swo_alert.test", "notification_actions.0.type", "email"),
+					resource.TestCheckResourceAttr("swo_alert.test", "notification_actions.0.type", "msteams"),
 					resource.TestCheckResourceAttr("swo_alert.test", "notification_actions.0.configuration_ids.0", "333"),
 					resource.TestCheckResourceAttr("swo_alert.test", "notification_actions.0.configuration_ids.1", "444"),
 					resource.TestCheckResourceAttr("swo_alert.test", "notification_actions.0.resend_interval_seconds", "600"),
@@ -84,7 +84,7 @@ func TestAccAlertResourceNotReporting(t *testing.T) {
 					resource.TestCheckResourceAttr("swo_alert.test", "severity", "CRITICAL"),
 					resource.TestCheckResourceAttr("swo_alert.test", "trigger_reset_actions", "false"),
 					// Verify actions
-					resource.TestCheckResourceAttr("swo_alert.test", "notification_actions.0.type", "email"),
+					resource.TestCheckResourceAttr("swo_alert.test", "notification_actions.0.type", "msteams"),
 					resource.TestCheckResourceAttr("swo_alert.test", "notification_actions.0.configuration_ids.0", "333"),
 					resource.TestCheckResourceAttr("swo_alert.test", "notification_actions.0.configuration_ids.1", "444"),
 					resource.TestCheckResourceAttr("swo_alert.test", "notification_actions.0.resend_interval_seconds", "600"),
@@ -122,6 +122,7 @@ func TestAccAlertResourceNotReporting(t *testing.T) {
 				Config: testAccAlertResourceNotReportingConfig("test-acc test_two_not_reporting"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("swo_alert.test", "name", "test-acc test_two_not_reporting"),
+					resource.TestCheckResourceAttr("swo_alert.test", "notification_actions.0.type", "servicenow"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
@@ -139,7 +140,7 @@ resource "swo_alert" "test" {
  enabled     = true
  notification_actions = [
    {
-	  type = "email"
+	  type = "msteams"
 	  configuration_ids = [333, 444]
 	  resend_interval_seconds = 600
    },
@@ -191,7 +192,7 @@ resource "swo_alert" "test" {
   enabled     = true
   notification_actions = [
     {
-	  type = "email"
+	  type = "servicenow"
 	  configuration_ids = [333, 444]
 	  resend_interval_seconds = 600
     },
@@ -228,7 +229,6 @@ resource "swo_alert" "test" {
 		}]
 	},
   ]
-  notifications = ["123", "456"]
   runbook_link = "https://www.runbooklink.com"
 }
 `, name)
