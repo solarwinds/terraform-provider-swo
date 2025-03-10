@@ -3,8 +3,9 @@ package provider
 import (
 	"context"
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"strings"
+
+	"github.com/hashicorp/terraform-plugin-framework/path"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -70,7 +71,7 @@ func (r *alertResource) ValidateConfig(ctx context.Context, req resource.Validat
 			// Aggregation must be count
 			operator := condition.AggregationType.ValueString()
 			operatorType, _ := swoClient.GetAlertConditionType(operator)
-			if operatorType != string(swoClient.AlertOperatorCount) {
+			if operatorType == string(swoClient.AlertAggregationOperatorType) && operator != string(swoClient.AlertOperatorCount) {
 				resp.Diagnostics.AddAttributeError(
 					path.Root("aggregationType"),
 					"Aggregation type must be COUNT when not_reporting is set to true.",
@@ -205,9 +206,11 @@ func (model *alertResourceModel) toAlertActionInput() []swoClient.AlertActionInp
 		includeDetails := true
 
 		for _, action := range model.NotificationActions {
+			actionType := findCaseInsensitiveMatch(notificationActionTypes, action.Type.ValueString())
+
 			resendInterval := int(action.ResendIntervalSeconds.ValueInt64())
 			inputs = append(inputs, swoClient.AlertActionInput{
-				Type:                  action.Type.ValueString(),
+				Type:                  actionType,
 				ConfigurationIds:      action.ConfigurationIds,
 				ResendIntervalSeconds: &resendInterval,
 				ReceivingType:         &receivingType,

@@ -51,6 +51,21 @@ type alertActionInputModel struct {
 	ResendIntervalSeconds types.Int64  `tfsdk:"resend_interval_seconds"`
 }
 
+var notificationActionTypes = []string{
+	"email",
+	"amazonsns",
+	"msTeams",
+	"newRelic",
+	"opsgenie",
+	"pagerduty",
+	"pushover",
+	"serviceNow",
+	"slack",
+	"webhook",
+	"zapier",
+	"swsd",
+}
+
 func (r *alertResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: "A Terraform resource for managing alerts.",
@@ -66,23 +81,10 @@ func (r *alertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"type": schema.StringAttribute{
-							Description: "Notification service type (email, MS Teams, Slack, webhook, ...).",
+							Description: "Notification service type (email, msteams, amazonsns, webhook, ...).",
 							Required:    true,
 							Validators: []validator.String{
-								validators.SingleOption(
-									"email",
-									"amazonsns",
-									"msTeams",
-									"newRelic",
-									"opsGenie",
-									"pagerDuty",
-									"pushover",
-									"serviceNow",
-									"slack",
-									"webhook",
-									"zapier",
-									"swsd", // Solarwinds Service Desk
-								),
+								validators.CaseInsensitiveSingleOption(lowerCaseSlice(notificationActionTypes)...),
 							},
 						},
 						"configuration_ids": schema.ListAttribute{
