@@ -123,7 +123,7 @@ Optional:
 Required:
 
 - `configuration_ids` (List of String) A list of notifications ids that should be triggered for this alert.
-- `type` (String) Notification service type (email, MS Teams, Slack, webhook, ...). Valid values are [`email`|`amazonsns`|`msTeams`|`newRelic`|`opsgenie`|`pagerduty`|`pushover`|`serviceNow`|`slack`|`webhook`|`zapier`|`swsd`].
+- `type` (String) Notification service type (email, msteams, amazonsns, webhook, ...). Valid values are [`email`|`amazonsns`|`msteams`|`newrelic`|`opsgenie`|`pagerduty`|`pushover`|`servicenow`|`slack`|`webhook`|`zapier`|`swsd`].
 
 Optional:
 

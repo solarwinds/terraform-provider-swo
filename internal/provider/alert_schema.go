@@ -81,10 +81,10 @@ func (r *alertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"type": schema.StringAttribute{
-							Description: "Notification service type (email, MS Teams, Slack, webhook, ...).",
+							Description: "Notification service type (email, msteams, amazonsns, webhook, ...).",
 							Required:    true,
 							Validators: []validator.String{
-								validators.CaseInsensitiveSingleOption(notificationActionTypes...),
+								validators.CaseInsensitiveSingleOption(lowerCaseSlice(notificationActionTypes)...),
 							},
 						},
 						"configuration_ids": schema.ListAttribute{

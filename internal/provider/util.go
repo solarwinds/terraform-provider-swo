@@ -47,3 +47,10 @@ func findCaseInsensitiveMatch(slice []string, target string) string {
 	}
 	return ""
 }
+
+func lowerCaseSlice(input []string) []string {
+	for i, v := range input {
+		input[i] = strings.ToLower(v)
+	}
+	return input
+}
