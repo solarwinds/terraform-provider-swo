@@ -189,7 +189,6 @@ resource "swo_alert" "test" {
   enabled     = true
   notification_actions = [
     {
-	  type = "newrelic"
 	  configuration_ids = ["333:email", "444:msteams"]
 	  resend_interval_seconds = 600
     },

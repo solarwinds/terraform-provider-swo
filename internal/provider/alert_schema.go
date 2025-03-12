@@ -80,13 +80,12 @@ func (r *alertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"configuration_ids": schema.ListAttribute{
-							Description: "A list of notifications ids combined with type(id:type) that should be triggered for this alert.",
+							Description: "List of configuration_ids in `id:type` format. Example: `[\"4661:email\", \"8112:webhook\", \"2456:newrelic\"]`. Valid `type` values are [`email`|`amazonsns`|`msteams`|`newrelic`|`opsgenie`|`pagerduty`|`pushover`|`servicenow`|`slack`|`webhook`|`zapier`|`swsd`].",
 							Required:    true,
 							ElementType: types.StringType,
 							Validators: []validator.List{
 								validators.ListOptions(lowerCaseSlice(notificationActionTypes)...),
 							},
-							MarkdownDescription: "List of configuration_ids in `id:type` format. Example: `[\"4661:email\", \"8112:webhook\", \"2456:newrelic\"]`. Valid `type` values are [`email`|`amazonsns`|`msteams`|`newrelic`|`opsgenie`|`pagerduty`|`pushover`|`servicenow`|`slack`|`webhook`|`zapier`|`swsd`].",
 						},
 						"resend_interval_seconds": schema.Int64Attribute{
 							Description: "How often should the notification be resent in case alert keeps being triggered. Null means notification is sent only once. Valid values are 60, 600, 3600, 86400.",
