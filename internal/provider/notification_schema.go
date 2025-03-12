@@ -49,7 +49,7 @@ type notificationResourceModel struct {
 func ParseNotificationId(id types.String) (idValue string, notificationType string, err error) {
 	idParts := strings.Split(id.ValueString(), ":")
 	if len(idParts) != 2 || idParts[0] == "" || idParts[1] == "" {
-		err = fmt.Errorf("expected identifier with format id:type. got: %q", id.ValueString())
+		err = newParseError(fmt.Sprintf("expected identifier with format id:type. got: %q", id.ValueString()))
 	} else {
 		idValue = idParts[0]
 		notificationType = idParts[1]
