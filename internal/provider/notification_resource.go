@@ -72,7 +72,7 @@ func (r *notificationResource) Read(ctx context.Context, req resource.ReadReques
 		return
 	}
 
-	nId, nType, err := tfState.ParseId()
+	nId, nType, err := ParseNotificationId(tfState.Id)
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error",
 			fmt.Sprintf("error parsing notification id. got: %s. error: %s", tfState.Id, err))
@@ -110,7 +110,7 @@ func (r *notificationResource) Update(ctx context.Context, req resource.UpdateRe
 		return
 	}
 
-	nId, _, err := tfState.ParseId()
+	nId, _, err := ParseNotificationId(tfState.Id)
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error",
 			fmt.Sprintf("error parsing notification id. got %s. err: %s", tfState.Id, err))
@@ -145,7 +145,7 @@ func (r *notificationResource) Delete(ctx context.Context, req resource.DeleteRe
 		return
 	}
 
-	nId, _, err := tfState.ParseId()
+	nId, _, err := ParseNotificationId(tfState.Id)
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error",
 			fmt.Sprintf("error deleting notification %s. err: %s", nId, err))

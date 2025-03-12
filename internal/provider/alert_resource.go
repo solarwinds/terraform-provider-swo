@@ -206,16 +206,28 @@ func (model *alertResourceModel) toAlertActionInput() []swoClient.AlertActionInp
 		includeDetails := true
 
 		for _, action := range model.NotificationActions {
-			actionType := findCaseInsensitiveMatch(notificationActionTypes, action.Type.ValueString())
+			configurationIdsList := make(map[string][]string)
 
-			resendInterval := int(action.ResendIntervalSeconds.ValueInt64())
-			inputs = append(inputs, swoClient.AlertActionInput{
-				Type:                  actionType,
-				ConfigurationIds:      action.ConfigurationIds,
-				ResendIntervalSeconds: &resendInterval,
-				ReceivingType:         &receivingType,
-				IncludeDetails:        &includeDetails,
-			})
+			for _, id := range action.ConfigurationIds {
+				// Notification Id's are formatted as id:type.
+				// This is to accomidate ImportState needing a single Id to import a resource.
+				notificationId, notificationType, _ := ParseNotificationId(types.StringValue(id))
+				actionType := findCaseInsensitiveMatch(notificationActionTypes, notificationType)
+
+				configurationIdsList[actionType] = append(configurationIdsList[actionType], notificationId)
+			}
+
+			for notificationType, notifcationIds := range configurationIdsList {
+				resendInterval := int(action.ResendIntervalSeconds.ValueInt64())
+				inputs = append(inputs, swoClient.AlertActionInput{
+					Type:                  notificationType,
+					ConfigurationIds:      notifcationIds,
+					ResendIntervalSeconds: &resendInterval,
+					ReceivingType:         &receivingType,
+					IncludeDetails:        &includeDetails,
+				})
+			}
+
 		}
 	} else {
 		actionTypes := map[string][]string{}

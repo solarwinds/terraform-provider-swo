@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"regexp"
 	"strings"
+
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -45,17 +46,15 @@ type notificationResourceModel struct {
 	Settings    *notificationSettings `tfsdk:"settings"`
 }
 
-func (m *notificationResourceModel) ParseId() (id string, notificationType string, err error) {
-	idParts := strings.Split(m.Id.ValueString(), ":")
-
+func ParseNotificationId(id types.String) (idValue string, notificationType string, err error) {
+	idParts := strings.Split(id.ValueString(), ":")
 	if len(idParts) != 2 || idParts[0] == "" || idParts[1] == "" {
-		err = newParseError(fmt.Sprintf("expected identifier with format id:type. got: %q", m.Id))
+		err = fmt.Errorf("expected identifier with format id:type. got: %q", id.ValueString())
 	} else {
-		id = idParts[0]
+		idValue = idParts[0]
 		notificationType = idParts[1]
 	}
-
-	return id, notificationType, err
+	return idValue, notificationType, err
 }
 
 func (r *notificationResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {

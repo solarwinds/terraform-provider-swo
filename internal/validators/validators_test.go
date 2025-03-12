@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -68,6 +69,27 @@ func TestCaseInsensitiveValidateString(t *testing.T) {
 	validateTestString(t, testInputs, singleOptionValidator)
 }
 
+func TestValidateList(t *testing.T) {
+	listOptionsValidator := ListOptions(notificationActionTypes...)
+	testInputs := []string{"1234:email", "456:amazonSns", "6785:newRelic"}
+
+	validateTestList(t, testInputs, true, listOptionsValidator)
+}
+
+func TestValidateListWithInvalidId(t *testing.T) {
+	listOptionsValidator := ListOptions(notificationActionTypes...)
+	testInputs := []string{"invalid:email", "456:amazonSns", "6785:newRelic"}
+
+	validateTestList(t, testInputs, false, listOptionsValidator)
+}
+
+func TestValidateListWithInvalidType(t *testing.T) {
+	listOptionsValidator := ListOptions(notificationActionTypes...)
+	testInputs := []string{"1234:email", "456:amazonSns", "6785:invalid"}
+
+	validateTestList(t, testInputs, false, listOptionsValidator)
+}
+
 func validateTestString(t *testing.T, tests []validationTestInput, singleOptionValidator validator.String) {
 	for _, test := range tests {
 
@@ -80,5 +102,28 @@ func validateTestString(t *testing.T, tests []validationTestInput, singleOptionV
 		if (len(resp.Diagnostics) == 0) != test.Expected {
 			t.Errorf("ValidateString(%q) = %v, expected %v", test.Input, len(resp.Diagnostics) == 0, test.Expected)
 		}
+	}
+}
+
+func validateTestList(t *testing.T, tests []string, expected bool, listOptionsValidator validator.List) {
+	var elements []attr.Value
+	for _, test := range tests {
+		elements = append(elements, types.StringValue(test))
+	}
+	listValue, diag := types.ListValue(types.StringType, elements)
+
+	if diag.HasError() {
+		t.Errorf("Diagnostic errors. %s", diag.Errors())
+	}
+
+	req := validator.ListRequest{
+		ConfigValue: listValue,
+	}
+
+	resp := &validator.ListResponse{}
+	listOptionsValidator.ValidateList(context.Background(), req, resp)
+
+	if (len(resp.Diagnostics) == 0) != expected {
+		t.Errorf("ValidateList(%q) = %v, expected %v", tests, len(resp.Diagnostics) == 0, expected)
 	}
 }

@@ -51,14 +51,10 @@ func (v singleOptionValidator[T]) ValidateString(ctx context.Context, req valida
 
 	for _, validValue := range v.ValidValues {
 		validStr := fmt.Sprint(validValue)
-		if v.CaseInsensitive {
-			if strings.EqualFold(value, validStr) {
-				return
-			}
-		} else {
-			if value == validStr {
-				return
-			}
+		if v.CaseInsensitive && strings.EqualFold(value, validStr) {
+			return
+		} else if value == validStr {
+			return
 		}
 	}
 
