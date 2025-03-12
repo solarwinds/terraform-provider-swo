@@ -20,7 +20,6 @@ resource "swo_alert" "https_response_time" {
   enabled     = true
   notification_actions = [
     {
-      type                    = "msteams"
       configuration_ids       = [swo_notification.msteams.id, swo_notification.opsgenie.id]
       resend_interval_seconds = 600
     },
@@ -122,7 +121,7 @@ Optional:
 
 Required:
 
-- `configuration_ids` (List of String) List of example configuration_ids. Example: `["4661:email", "8112:webhook", "2456:newrelic"]`
+- `configuration_ids` (List of String) List of configuration_ids in `id:type` format. Example: `["4661:email", "8112:webhook", "2456:newrelic"]`
 
 Optional:
 
