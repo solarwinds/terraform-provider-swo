@@ -2,6 +2,7 @@ package validators
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -95,7 +96,7 @@ func (v listOptionsValidator[T]) ValidateList(ctx context.Context, req validator
 func SplitStringByDelimiter(stringToSplit string, delimiter string) (string, string, error) {
 	parts := strings.Split(stringToSplit, delimiter)
 	if len(parts) != 2 {
-		return "", "", fmt.Errorf("invalid ID format")
+		return "", "", errors.New("invalid ID format")
 	}
 	return parts[0], parts[1], nil
 }
