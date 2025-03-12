@@ -5,7 +5,7 @@ resource "swo_alert" "https_response_time" {
   enabled     = true
   notification_actions = [
     {
-      configuration_ids       = [swo_notification.msteams.id, swo_notification.opsgenie.id]
+      configuration_ids       = ["4661:email", "8112:webhook", "2456:newrelic"]
       resend_interval_seconds = 600
     },
   ]
@@ -35,7 +35,7 @@ resource "swo_alert" "https_response_time" {
       exclude_tags = []
     },
   ]
-  notifications         = [swo_notification.msteams.id, swo_notification.opsgenie.id]
+  notifications         = ["4661:email", "8112:webhook", "2456:newrelic"]
   trigger_reset_actions = true
   runbookLink           = "https://www.runbook.com/highresponsetime"
 }
