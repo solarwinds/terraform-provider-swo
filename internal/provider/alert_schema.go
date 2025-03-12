@@ -86,7 +86,7 @@ func (r *alertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 							Validators: []validator.List{
 								validators.ListOptions(lowerCaseSlice(notificationActionTypes)...),
 							},
-							MarkdownDescription: "List of configuration_ids in `id:type` format. Example: `[\"4661:email\", \"8112:webhook\", \"2456:newrelic\"]`",
+							MarkdownDescription: "List of configuration_ids in `id:type` format. Example: `[\"4661:email\", \"8112:webhook\", \"2456:newrelic\"]`. Valid `type` values are [`email`|`amazonsns`|`msteams`|`newrelic`|`opsgenie`|`pagerduty`|`pushover`|`servicenow`|`slack`|`webhook`|`zapier`|`swsd`].",
 						},
 						"resend_interval_seconds": schema.Int64Attribute{
 							Description: "How often should the notification be resent in case alert keeps being triggered. Null means notification is sent only once. Valid values are 60, 600, 3600, 86400.",

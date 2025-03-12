@@ -121,7 +121,7 @@ Optional:
 
 Required:
 
-- `configuration_ids` (List of String) List of configuration_ids in `id:type` format. Example: `["4661:email", "8112:webhook", "2456:newrelic"]`
+- `configuration_ids` (List of String) List of configuration_ids in `id:type` format. Example: `["4661:email", "8112:webhook", "2456:newrelic"]`. Valid `type` values are [`email`|`amazonsns`|`msteams`|`newrelic`|`opsgenie`|`pagerduty`|`pushover`|`servicenow`|`slack`|`webhook`|`zapier`|`swsd`].
 
 Optional:
 
