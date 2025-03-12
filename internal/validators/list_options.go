@@ -18,6 +18,8 @@ type listOptionsValidator[T any] struct {
 	SplitString     bool
 }
 
+var invalidIdFormatErr = errors.New("invalid ID format")
+
 func (v listOptionsValidator[T]) Description(ctx context.Context) string {
 	return v.MarkdownDescription(ctx)
 }
@@ -96,7 +98,7 @@ func (v listOptionsValidator[T]) ValidateList(ctx context.Context, req validator
 func SplitStringByDelimiter(stringToSplit string, delimiter string) (string, string, error) {
 	parts := strings.Split(stringToSplit, delimiter)
 	if len(parts) != 2 {
-		return "", "", errors.New("invalid ID format")
+		return "", "", invalidIdFormatErr
 	}
 	return parts[0], parts[1], nil
 }
