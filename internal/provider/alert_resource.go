@@ -3,7 +3,6 @@ package provider
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 
@@ -206,22 +205,22 @@ func (model *alertResourceModel) toAlertActionInput() []swoClient.AlertActionInp
 		includeDetails := true
 
 		for _, action := range model.NotificationActions {
-			configurationIdsList := make(map[string][]string)
+			actionsList := make(map[string][]string)
 
-			for _, id := range action.ConfigurationIds {
+			for _, configId := range action.ConfigurationIds {
 				// Notification Id's are formatted as id:type.
 				// This is to accomidate ImportState needing a single Id to import a resource.
-				notificationId, notificationType, _ := ParseNotificationId(types.StringValue(id))
+				actionId, notificationType, _ := ParseNotificationId(types.StringValue(configId))
 				actionType := findCaseInsensitiveMatch(notificationActionTypes, notificationType)
 
-				configurationIdsList[actionType] = append(configurationIdsList[actionType], notificationId)
+				actionsList[actionType] = append(actionsList[actionType], actionId)
 			}
 
-			for notificationType, notifcationIds := range configurationIdsList {
+			for actionType, actionIds := range actionsList {
 				resendInterval := int(action.ResendIntervalSeconds.ValueInt64())
 				inputs = append(inputs, swoClient.AlertActionInput{
-					Type:                  notificationType,
-					ConfigurationIds:      notifcationIds,
+					Type:                  actionType,
+					ConfigurationIds:      actionIds,
 					ResendIntervalSeconds: &resendInterval,
 					ReceivingType:         &receivingType,
 					IncludeDetails:        &includeDetails,
@@ -232,9 +231,10 @@ func (model *alertResourceModel) toAlertActionInput() []swoClient.AlertActionInp
 	} else {
 		actionTypes := map[string][]string{}
 		for _, configId := range model.Notifications {
-			actionId, actionType, found := strings.Cut(configId, ":")
+			actionId, notificationType, err := ParseNotificationId(types.StringValue(configId))
+			actionType := findCaseInsensitiveMatch(notificationActionTypes, notificationType)
 
-			if found {
+			if err == nil {
 				if actionTypes[actionType] == nil {
 					actionTypes[actionType] = []string{actionId}
 				} else {

@@ -5,7 +5,6 @@ resource "swo_alert" "https_response_time" {
   enabled     = true
   notification_actions = [
     {
-      type                    = "msteams"
       configuration_ids       = [swo_notification.msteams.id, swo_notification.opsgenie.id]
       resend_interval_seconds = 600
     },
