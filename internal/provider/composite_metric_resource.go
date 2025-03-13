@@ -42,7 +42,7 @@ func (r *compositeMetricResource) Configure(ctx context.Context, req resource.Co
 }
 
 func (r *compositeMetricResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var tfPlan compositeMetircResourceModel
+	var tfPlan compositeMetricResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &tfPlan)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -83,7 +83,7 @@ func (r *compositeMetricResource) Create(ctx context.Context, req resource.Creat
 }
 
 func (r *compositeMetricResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var tfPlan compositeMetircResourceModel
+	var tfPlan compositeMetricResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &tfPlan)...)
 
 	res, err := r.client.Metrics.GetMetricByName(ctx, operations.GetMetricByNameRequest{
@@ -109,7 +109,7 @@ func (r *compositeMetricResource) Read(ctx context.Context, req resource.ReadReq
 }
 
 func (r *compositeMetricResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var tfPlan compositeMetircResourceModel
+	var tfPlan compositeMetricResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &tfPlan)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -144,7 +144,7 @@ func (r *compositeMetricResource) Update(ctx context.Context, req resource.Updat
 }
 
 func (r *compositeMetricResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var tfPlan compositeMetircResourceModel
+	var tfPlan compositeMetricResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &tfPlan)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -165,7 +165,7 @@ func (r *compositeMetricResource) ImportState(ctx context.Context, req resource.
 	resource.ImportStatePassthroughID(ctx, path.Root("name"), req, resp)
 }
 
-func (r *compositeMetricResource) updatePlanMetricInfo(tfPlan compositeMetircResourceModel, compositeMetric *components.CompositeMetric) compositeMetircResourceModel {
+func (r *compositeMetricResource) updatePlanMetricInfo(tfPlan compositeMetricResourceModel, compositeMetric *components.CompositeMetric) compositeMetricResourceModel {
 	tfPlan.Name = types.StringValue(compositeMetric.Name)
 	tfPlan.Id = tfPlan.Name
 	tfPlan.DisplayName = types.StringValue(*compositeMetric.DisplayName)
@@ -176,7 +176,7 @@ func (r *compositeMetricResource) updatePlanMetricInfo(tfPlan compositeMetircRes
 	return tfPlan
 }
 
-func (r *compositeMetricResource) updatePlanCommonMetricInfo(tfPlan compositeMetircResourceModel, compositeMetric *components.CommonMetricInfo) compositeMetircResourceModel {
+func (r *compositeMetricResource) updatePlanCommonMetricInfo(tfPlan compositeMetricResourceModel, compositeMetric *components.CommonMetricInfo) compositeMetricResourceModel {
 	tfPlan.Name = types.StringValue(compositeMetric.Name)
 	tfPlan.Id = tfPlan.Name
 	tfPlan.DisplayName = types.StringValue(*compositeMetric.DisplayName)
