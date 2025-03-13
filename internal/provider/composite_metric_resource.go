@@ -90,21 +90,19 @@ func (r *compositeMetricResource) Read(ctx context.Context, req resource.ReadReq
 		Name: tfPlan.Name.ValueString(),
 	})
 
-	compositeMetric := res.CommonMetricInfo
-
 	if err != nil {
 		resp.Diagnostics.AddError(clientErrSummary,
 			fmt.Sprintf("error reading composite metric '%s' - error: %s", tfPlan.Name, err))
 		return
 	}
 
-	if compositeMetric == nil {
+	if res.CommonMetricInfo == nil {
 		resp.Diagnostics.AddError("Empty Response",
 			fmt.Sprintf("read composite metric response was empty '%s'", tfPlan.Name))
 		return
 	}
 
-	tfPlan = r.updatePlanCommonMetricInfo(tfPlan, compositeMetric)
+	tfPlan = r.updatePlanCommonMetricInfo(tfPlan, res.CommonMetricInfo)
 	resp.Diagnostics.Append(resp.State.Set(ctx, tfPlan)...)
 }
 
