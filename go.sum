@@ -188,8 +188,8 @@ github.com/skeema/knownhosts v1.2.2 h1:Iug2P4fLmDw9f41PB6thxUkNUkJzB5i+1/exaj40L
 github.com/skeema/knownhosts v1.2.2/go.mod h1:xYbVRSPxqBZFrdmDyMmsOs+uX1UZC3nTN3ThzgDxUwo=
 github.com/solarwinds/swo-client-go v0.0.14 h1:C6WBnZYZtvwMNdhVg2SmiHvwSWgTj/K8EK0bPdUdipg=
 github.com/solarwinds/swo-client-go v0.0.14/go.mod h1:qwmAfdCcUbpX1euHV2DziKwgGVnGw8obvOb8/JCStqM=
-github.com/solarwinds/swo-sdk-go/swov1 v0.1.2 h1:B4kUUMdy5Sqbm8ow5qd120NbmVKzUMVsO6FWjVR6bAw=
-github.com/solarwinds/swo-sdk-go/swov1 v0.1.2/go.mod h1:a9bcHRcye1qBz3vyZGTlcDg0qndxo9wt9nAuFZhiKrI=
+github.com/solarwinds/swo-sdk-go/swov1 v0.1.3 h1:MigEXIhSjED5qUKCOWV61XDjqw2Sb72KG/AxfD6YDms=
+github.com/solarwinds/swo-sdk-go/swov1 v0.1.3/go.mod h1:a9bcHRcye1qBz3vyZGTlcDg0qndxo9wt9nAuFZhiKrI=
 github.com/spf13/cast v1.3.1/go.mod h1:Qx5cxh0v+4UWYiBimWS+eyWzqEqokIECu5etghLkUJE=
 github.com/spf13/cast v1.5.0 h1:rj3WzYc11XZaIZMPKmwP96zkFEnnAmV8s6XbB2aY32w=
 github.com/spf13/cast v1.5.0/go.mod h1:SpXXQ5YoyJw6s3/6cMTQuxvgRl3PCJiyaX9p6b155UU=

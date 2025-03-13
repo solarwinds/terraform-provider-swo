@@ -58,10 +58,10 @@ func (r *compositeMetricResource) Create(ctx context.Context, req resource.Creat
 
 	input := &components.CompositeMetric{
 		Name:        tfPlan.Name.ValueString(),
-		DisplayName: tfPlan.DisplayName.ValueString(),
-		Description: tfPlan.Description.ValueString(),
+		DisplayName: tfPlan.DisplayName.ValueStringPointer(),
+		Description: tfPlan.Description.ValueStringPointer(),
 		Formula:     tfPlan.Formula.ValueString(),
-		Units:       tfPlan.Unit.ValueString(),
+		Units:       tfPlan.Unit.ValueStringPointer(),
 	}
 
 	res, err := r.client.Metrics.CreateCompositeMetric(ctx, *input)
@@ -78,15 +78,7 @@ func (r *compositeMetricResource) Create(ctx context.Context, req resource.Creat
 		return
 	}
 
-	compositeMetric := res.CompositeMetric
-
-	tfPlan.Name = types.StringValue(compositeMetric.Name)
-	tfPlan.Id = tfPlan.Name
-	tfPlan.Description = types.StringValue(compositeMetric.Description)
-	tfPlan.Formula = types.StringValue(compositeMetric.Formula)
-	tfPlan.Unit = types.StringValue(compositeMetric.Units)
-	tfPlan.DisplayName = types.StringValue(compositeMetric.DisplayName)
-
+	tfPlan = r.updatePlanMetricInfo(tfPlan, res.CompositeMetric)
 	resp.Diagnostics.Append(resp.State.Set(ctx, tfPlan)...)
 }
 
@@ -112,11 +104,7 @@ func (r *compositeMetricResource) Read(ctx context.Context, req resource.ReadReq
 		return
 	}
 
-	tfPlan.Name = types.StringValue(compositeMetric.Name)
-	tfPlan.Id = tfPlan.Name
-	tfPlan.Formula = types.StringPointerValue(compositeMetric.Formula)
-	tfPlan.Unit = types.StringValue(compositeMetric.Units)
-
+	tfPlan = r.updatePlanCommonMetricInfo(tfPlan, compositeMetric)
 	resp.Diagnostics.Append(resp.State.Set(ctx, tfPlan)...)
 }
 
@@ -130,10 +118,10 @@ func (r *compositeMetricResource) Update(ctx context.Context, req resource.Updat
 	input := operations.UpdateCompositeMetricRequest{
 		Name: tfPlan.Name.ValueString(),
 		UpdateCompositeMetric: components.UpdateCompositeMetric{
-			DisplayName: tfPlan.DisplayName.ValueString(),
-			Description: tfPlan.Description.ValueString(),
+			DisplayName: tfPlan.DisplayName.ValueStringPointer(),
+			Description: tfPlan.Description.ValueStringPointer(),
 			Formula:     tfPlan.Formula.ValueString(),
-			Units:       tfPlan.Unit.ValueString(),
+			Units:       tfPlan.Unit.ValueStringPointer(),
 		},
 	}
 
@@ -151,15 +139,7 @@ func (r *compositeMetricResource) Update(ctx context.Context, req resource.Updat
 		return
 	}
 
-	compositeMetric := res.CompositeMetric
-
-	tfPlan.Name = types.StringValue(compositeMetric.Name)
-	tfPlan.Id = tfPlan.Name
-	tfPlan.DisplayName = types.StringValue(compositeMetric.DisplayName)
-	tfPlan.Description = types.StringValue(compositeMetric.Description)
-	tfPlan.Formula = types.StringValue(compositeMetric.Formula)
-	tfPlan.Unit = types.StringValue(compositeMetric.Units)
-
+	tfPlan = r.updatePlanMetricInfo(tfPlan, res.CompositeMetric)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &tfPlan)...)
 }
 
@@ -183,4 +163,26 @@ func (r *compositeMetricResource) Delete(ctx context.Context, req resource.Delet
 
 func (r *compositeMetricResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("name"), req, resp)
+}
+
+func (r *compositeMetricResource) updatePlanMetricInfo(tfPlan compositeMetircResourceModel, compositeMetric *components.CompositeMetric) compositeMetircResourceModel {
+	tfPlan.Name = types.StringValue(compositeMetric.Name)
+	tfPlan.Id = tfPlan.Name
+	tfPlan.DisplayName = types.StringValue(*compositeMetric.DisplayName)
+	tfPlan.Description = types.StringValue(*compositeMetric.Description)
+	tfPlan.Formula = types.StringValue(compositeMetric.Formula)
+	tfPlan.Unit = types.StringValue(*compositeMetric.Units)
+
+	return tfPlan
+}
+
+func (r *compositeMetricResource) updatePlanCommonMetricInfo(tfPlan compositeMetircResourceModel, compositeMetric *components.CommonMetricInfo) compositeMetircResourceModel {
+	tfPlan.Name = types.StringValue(compositeMetric.Name)
+	tfPlan.Id = tfPlan.Name
+	tfPlan.DisplayName = types.StringValue(*compositeMetric.DisplayName)
+	tfPlan.Description = types.StringValue(*compositeMetric.Description)
+	tfPlan.Formula = types.StringValue(*compositeMetric.Formula)
+	tfPlan.Unit = types.StringValue(*compositeMetric.Units)
+
+	return tfPlan
 }
