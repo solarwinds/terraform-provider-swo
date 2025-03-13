@@ -27,6 +27,7 @@ website/node_modules
 *.test
 *.iml
 __debug_bin
+.env
 
 website/vendor
 
@@ -36,3 +37,9 @@ website/vendor
 
 # Keep windows files with windows line endings
 *.winfile eol=crlf
+
+# Binary exclusion
+terraform-provider-swo
+
+# Terraform lock exclusion
+.terraform.lock.hcl

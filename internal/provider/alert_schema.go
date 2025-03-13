@@ -37,6 +37,7 @@ type alertConditionModel struct {
 	IncludeTags       *[]alertTagsModel `tfsdk:"include_tags"`
 	ExcludeTags       *[]alertTagsModel `tfsdk:"exclude_tags"`
 	GroupByMetricTag  []string          `tfsdk:"group_by_metric_tag"`
+	NotReporting      types.Bool        `tfsdk:"not_reporting"`
 }
 
 type alertTagsModel struct {
@@ -48,6 +49,21 @@ type alertActionInputModel struct {
 	Type                  types.String `tfsdk:"type"`
 	ConfigurationIds      []string     `tfsdk:"configuration_ids"`
 	ResendIntervalSeconds types.Int64  `tfsdk:"resend_interval_seconds"`
+}
+
+var notificationActionTypes = []string{
+	"email",
+	"amazonsns",
+	"msTeams",
+	"newRelic",
+	"opsgenie",
+	"pagerduty",
+	"pushover",
+	"serviceNow",
+	"slack",
+	"webhook",
+	"zapier",
+	"swsd",
 }
 
 func (r *alertResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
@@ -65,23 +81,10 @@ func (r *alertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"type": schema.StringAttribute{
-							Description: "Notification service type (email, MS Teams, Slack, webhook, ...).",
+							Description: "Notification service type (email, msteams, amazonsns, webhook, ...).",
 							Required:    true,
 							Validators: []validator.String{
-								validators.SingleOption(
-									"email",
-									"amazonsns",
-									"msTeams",
-									"newRelic",
-									"opsGenie",
-									"pagerDuty",
-									"pushover",
-									"serviceNow",
-									"slack",
-									"webhook",
-									"zapier",
-									"swsd", // Solarwinds Service Desk
-								),
+								validators.CaseInsensitiveSingleOption(lowerCaseSlice(notificationActionTypes)...),
 							},
 						},
 						"configuration_ids": schema.ListAttribute{
@@ -205,6 +208,12 @@ func (r *alertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 							Description: "Group alert data for selected attribute.",
 							Optional:    true,
 							ElementType: types.StringType,
+						},
+						"not_reporting": schema.BoolAttribute{
+							Description: "True if the alert should trigger when the metric is not reporting. If true, threshold must be '' and aggregation_type must be 'COUNT'.",
+							Computed:    true,
+							Optional:    true,
+							Default:     booldefault.StaticBool(false),
 						},
 					},
 				},

@@ -18,9 +18,17 @@ resource "swo_alert" "https_response_time" {
   description = "A high response time has been identified."
   severity    = "INFO"
   enabled     = true
+  notification_actions = [
+    {
+      type                    = "msteams"
+      configuration_ids       = [swo_notification.msteams.id, swo_notification.opsgenie.id]
+      resend_interval_seconds = 600
+    },
+  ]
   conditions = [
     {
       metric_name      = "synthetics.https.response.time"
+      not_reporting    = false
       threshold        = ">=3000"
       duration         = "5m"
       aggregation_type = "AVG"
@@ -88,6 +96,7 @@ Optional:
 - `exclude_tags` (Attributes Set) Tag key and values to match in order to not trigger an alert. (see [below for nested schema](#nestedatt--conditions--exclude_tags))
 - `group_by_metric_tag` (List of String) Group alert data for selected attribute.
 - `include_tags` (Attributes Set) Tag key and values to match in order to trigger an alert. (see [below for nested schema](#nestedatt--conditions--include_tags))
+- `not_reporting` (Boolean) True if the alert should trigger when the metric is not reporting. If true, threshold must be '' and aggregation_type must be 'COUNT'. Default is `false`.
 
 <a id="nestedatt--conditions--exclude_tags"></a>
 ### Nested Schema for `conditions.exclude_tags`
@@ -114,7 +123,7 @@ Optional:
 Required:
 
 - `configuration_ids` (List of String) A list of notifications ids that should be triggered for this alert.
-- `type` (String) Notification service type (email, MS Teams, Slack, webhook, ...). Valid values are [`email`|`amazonsns`|`msTeams`|`newRelic`|`opsGenie`|`pagerDuty`|`pushover`|`serviceNow`|`slack`|`webhook`|`zapier`|`swsd`].
+- `type` (String) Notification service type (email, msteams, amazonsns, webhook, ...). Valid values are [`email`|`amazonsns`|`msteams`|`newrelic`|`opsgenie`|`pagerduty`|`pushover`|`servicenow`|`slack`|`webhook`|`zapier`|`swsd`].
 
 Optional:
 

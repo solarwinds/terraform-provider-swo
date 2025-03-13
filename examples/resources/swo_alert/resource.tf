@@ -3,9 +3,17 @@ resource "swo_alert" "https_response_time" {
   description = "A high response time has been identified."
   severity    = "INFO"
   enabled     = true
+  notification_actions = [
+    {
+      type                    = "msteams"
+      configuration_ids       = [swo_notification.msteams.id, swo_notification.opsgenie.id]
+      resend_interval_seconds = 600
+    },
+  ]
   conditions = [
     {
       metric_name      = "synthetics.https.response.time"
+      not_reporting    = false
       threshold        = ">=3000"
       duration         = "5m"
       aggregation_type = "AVG"

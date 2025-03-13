@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+  "strings"
 )
 
 func IIf[T any](condition bool, trueValue T, falseValue T) T {
@@ -47,4 +48,20 @@ func StripURLToDomain(rawURL string) (string, error) {
 		return "", err
 	}
 	return fmt.Sprintf("%s://%s", parsedURL.Scheme, parsedURL.Host), nil
+}
+
+func findCaseInsensitiveMatch(slice []string, target string) string {
+	for _, str := range slice {
+		if strings.EqualFold(str, target) {
+			return str
+		}
+	}
+	return ""
+}
+
+func lowerCaseSlice(input []string) []string {
+	for i, v := range input {
+		input[i] = strings.ToLower(v)
+	}
+	return input
 }
