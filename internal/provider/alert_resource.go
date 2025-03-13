@@ -3,7 +3,6 @@ package provider
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 
@@ -206,23 +205,36 @@ func (model *alertResourceModel) toAlertActionInput() []swoClient.AlertActionInp
 		includeDetails := true
 
 		for _, action := range model.NotificationActions {
-			actionType := findCaseInsensitiveMatch(notificationActionTypes, action.Type.ValueString())
+			actionsList := make(map[string][]string)
 
-			resendInterval := int(action.ResendIntervalSeconds.ValueInt64())
-			inputs = append(inputs, swoClient.AlertActionInput{
-				Type:                  actionType,
-				ConfigurationIds:      action.ConfigurationIds,
-				ResendIntervalSeconds: &resendInterval,
-				ReceivingType:         &receivingType,
-				IncludeDetails:        &includeDetails,
-			})
+			for _, configId := range action.ConfigurationIds {
+				// Notification Id's are formatted as id:type.
+				// This is to accomidate ImportState needing a single Id to import a resource.
+				actionId, notificationType, _ := ParseNotificationId(types.StringValue(configId))
+				actionType := findCaseInsensitiveMatch(notificationActionTypes, notificationType)
+
+				actionsList[actionType] = append(actionsList[actionType], actionId)
+			}
+
+			for actionType, actionIds := range actionsList {
+				resendInterval := int(action.ResendIntervalSeconds.ValueInt64())
+				inputs = append(inputs, swoClient.AlertActionInput{
+					Type:                  actionType,
+					ConfigurationIds:      actionIds,
+					ResendIntervalSeconds: &resendInterval,
+					ReceivingType:         &receivingType,
+					IncludeDetails:        &includeDetails,
+				})
+			}
+
 		}
 	} else {
 		actionTypes := map[string][]string{}
 		for _, configId := range model.Notifications {
-			actionId, actionType, found := strings.Cut(configId, ":")
+			actionId, notificationType, err := ParseNotificationId(types.StringValue(configId))
+			actionType := findCaseInsensitiveMatch(notificationActionTypes, notificationType)
 
-			if found {
+			if err == nil {
 				if actionTypes[actionType] == nil {
 					actionTypes[actionType] = []string{actionId}
 				} else {
