@@ -2,7 +2,9 @@ package provider
 
 import (
 	"encoding/json"
-	"strings"
+	"fmt"
+	"net/url"
+  "strings"
 )
 
 func IIf[T any](condition bool, trueValue T, falseValue T) T {
@@ -37,6 +39,15 @@ func convertObject[T any](from any) (*T, error) {
 	}
 
 	return &result, err
+}
+
+// Removes everything after the domain of a URL.
+func StripURLToDomain(rawURL string) (string, error) {
+	parsedURL, err := url.Parse(rawURL)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%s://%s", parsedURL.Scheme, parsedURL.Host), nil
 }
 
 func findCaseInsensitiveMatch(slice []string, target string) string {
