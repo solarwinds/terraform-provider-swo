@@ -77,6 +77,16 @@ func (r *alertResource) ValidateConfig(ctx context.Context, req resource.Validat
 					"Aggregation type must be COUNT when not_reporting is set to true.",
 				)
 			}
+		} else {
+			threshold := condition.Threshold.ValueString()
+			if threshold == "" {
+				resp.Diagnostics.AddAttributeError(
+					path.Root("threshold"),
+					"Required field when not_reporting is set to false.",
+					"Required field when not_reporting is set to false.",
+				)
+			}
+
 		}
 	}
 }
