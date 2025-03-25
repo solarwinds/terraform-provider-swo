@@ -35,8 +35,9 @@ type ConditionMap struct {
 //	         /    \
 //	Metric Field   10m
 //	    (id=2)    (duration, id=3)
-func (model alertConditionModel) toAlertConditionInputs(conditions []swoClient.AlertConditionNodeInput, rootNodeId int) []swoClient.AlertConditionNodeInput {
+func (model alertConditionModel) toAlertConditionInputs(conditions []swoClient.AlertConditionNodeInput) []swoClient.AlertConditionNodeInput {
 
+	rootNodeId := 0
 	thresholdOperatorCondition, thresholdDataCondition := model.toThresholdConditionInputs()
 	thresholdOperatorCondition.Id = rootNodeId
 	thresholdOperatorCondition.OperandIds = []int{rootNodeId + 1, rootNodeId + 4}
