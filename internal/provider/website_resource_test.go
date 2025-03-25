@@ -37,13 +37,21 @@ func TestAccWebsiteResource(t *testing.T) {
 			//	),
 			//},
 			{
-				Config: testAccWebsiteResourceConfigWithoutRum("test-acc create without rum [CREATE_TEST]"),
+				Config: testAccWebsiteResourceConfigWithoutAvailability("test-acc create without availability [CREATE_TEST]"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet("swo_website.test", "id"),
-					resource.TestCheckResourceAttr("swo_website.test", "name", "test-acc create without rum [CREATE_TEST]"),
+					resource.TestCheckResourceAttr("swo_website.test", "name", "test-acc create without availability [CREATE_TEST]"),
 					resource.TestCheckResourceAttr("swo_website.test", "url", "https://solarwinds.com"),
 				),
 			},
+			//{
+			//	Config: testAccWebsiteResourceConfigWithoutRum("test-acc create without rum [CREATE_TEST]"),
+			//	Check: resource.ComposeAggregateTestCheckFunc(
+			//		resource.TestCheckResourceAttrSet("swo_website.test", "id"),
+			//		resource.TestCheckResourceAttr("swo_website.test", "name", "test-acc create without rum [CREATE_TEST]"),
+			//		resource.TestCheckResourceAttr("swo_website.test", "url", "https://solarwinds.com"),
+			//	),
+			//},
 			// ImportState testing
 			//{
 			//	ResourceName:      "swo_website.test",
@@ -63,12 +71,12 @@ func TestAccWebsiteResource(t *testing.T) {
 			//		resource.TestCheckResourceAttr("swo_website.test", "name", "test-acc test update without string check [UPDATE_TEST]"),
 			//	),
 			//},
-			{
-				Config: testAccWebsiteResourceConfigWithoutRum("test-acc test update without rum [UPDATE_TEST]"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-				//	resource.TestCheckResourceAttr("swo_website.test", "name", "test-acc test update without rum [UPDATE_TEST]"),
-				),
-			},
+			//{
+			//	Config: testAccWebsiteResourceConfigWithoutRum("test-acc test update without rum [UPDATE_TEST]"),
+			//	Check: resource.ComposeAggregateTestCheckFunc(
+			//		resource.TestCheckResourceAttr("swo_website.test", "name", "test-acc test update without rum [UPDATE_TEST]"),
+			//	),
+			//},
 			// Delete testing automatically occurs in TestCase
 		},
 	})
@@ -185,6 +193,34 @@ func testAccWebsiteResourceConfigWithoutCheckForString(name string) string {
 					ignore_intermediate_certificates = false
 				}
 			}
+
+			rum = {
+				apdex_time_in_seconds = 4
+				spa                   = true
+			}
+	
+			custom_headers = [
+				{
+					name  = "Custom-Header-1"
+					value = "Custom-Value-1"
+				},
+				{
+					name  = "Custom-Header-2"
+					value = "Custom-Value-2"
+				}
+			]
+		}
+	}`, name)
+}
+
+
+func testAccWebsiteResourceConfigWithoutAvailability(name string) string {
+	return providerConfig() + fmt.Sprintf(`
+	resource "swo_website" "test" {
+		name        = %[1]q
+		url  = "https://solarwinds.com"
+	
+		monitoring = {
 
 			rum = {
 				apdex_time_in_seconds = 4

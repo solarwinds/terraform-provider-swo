@@ -87,9 +87,7 @@ func getAvailabilityOrRum(monitoring *websiteMonitoring) (*swoClient.Availabilit
 					Value: h.Value.ValueString(),
 				}
 			})}
-
 	}
-
 	var rum *swoClient.RumMonitoringInput
 	if monitoring.Rum != nil {
 		rum = &swoClient.RumMonitoringInput{
@@ -165,7 +163,7 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 		monitoring := website.Monitoring
 		tfState.Monitoring = &websiteMonitoring{}
 
-		if monitoring.Availability != nil {
+		if tfState.Monitoring.Availability != nil && monitoring.Availability != nil {
 			tfState.Monitoring.Availability = &availabilityMonitoring{}
 			availability := monitoring.Availability
 
