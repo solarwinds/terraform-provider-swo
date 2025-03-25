@@ -2,6 +2,7 @@ package provider
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -15,27 +16,27 @@ func TestAccWebsiteResource(t *testing.T) {
 		IsUnitTest:               true,
 		Steps: []resource.TestStep{
 			// Validation Testing
-			//{
-			//	Config:      testAccWebsiteInvalidConfig("invalid"),
-			//	ExpectError: regexp.MustCompile(".*At least one of.*"),
-			//},
+			{
+				Config:      testAccWebsiteInvalidConfig("invalid"),
+				ExpectError: regexp.MustCompile(".*At least one of.*"),
+			},
 			// Create and Read testing
-			//{
-			//	Config: testAccWebsiteResourceConfig("test-acc test one [CREATE_TEST]"),
-			//	Check: resource.ComposeAggregateTestCheckFunc(
-			//		resource.TestCheckResourceAttrSet("swo_website.test", "id"),
-			//		resource.TestCheckResourceAttr("swo_website.test", "name", "test-acc test one [CREATE_TEST]"),
-			//		resource.TestCheckResourceAttr("swo_website.test", "url", "https://example.com"),
-			//	),
-			//},
-			//{
-			//	Config: testAccWebsiteResourceConfigWithoutCheckForString("test-acc create without string check [CREATE_TEST]"),
-			//	Check: resource.ComposeAggregateTestCheckFunc(
-			//		resource.TestCheckResourceAttrSet("swo_website.test", "id"),
-			//		resource.TestCheckResourceAttr("swo_website.test", "name", "test-acc create without string check [CREATE_TEST]"),
-			//		resource.TestCheckResourceAttr("swo_website.test", "url", "https://solarwinds.com"),
-			//	),
-			//},
+			{
+				Config: testAccWebsiteResourceConfig("test-acc test one [CREATE_TEST]"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet("swo_website.test", "id"),
+					resource.TestCheckResourceAttr("swo_website.test", "name", "test-acc test one [CREATE_TEST]"),
+					resource.TestCheckResourceAttr("swo_website.test", "url", "https://example.com"),
+				),
+			},
+			{
+				Config: testAccWebsiteResourceConfigWithoutCheckForString("test-acc create without string check [CREATE_TEST]"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet("swo_website.test", "id"),
+					resource.TestCheckResourceAttr("swo_website.test", "name", "test-acc create without string check [CREATE_TEST]"),
+					resource.TestCheckResourceAttr("swo_website.test", "url", "https://solarwinds.com"),
+				),
+			},
 			{
 				Config: testAccWebsiteResourceConfigWithoutAvailability("test-acc create without availability [CREATE_TEST]"),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -44,39 +45,39 @@ func TestAccWebsiteResource(t *testing.T) {
 					resource.TestCheckResourceAttr("swo_website.test", "url", "https://solarwinds.com"),
 				),
 			},
-			//{
-			//	Config: testAccWebsiteResourceConfigWithoutRum("test-acc create without rum [CREATE_TEST]"),
-			//	Check: resource.ComposeAggregateTestCheckFunc(
-			//		resource.TestCheckResourceAttrSet("swo_website.test", "id"),
-			//		resource.TestCheckResourceAttr("swo_website.test", "name", "test-acc create without rum [CREATE_TEST]"),
-			//		resource.TestCheckResourceAttr("swo_website.test", "url", "https://solarwinds.com"),
-			//	),
-			//},
+			{
+				Config: testAccWebsiteResourceConfigWithoutRum("test-acc create without rum [CREATE_TEST]"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet("swo_website.test", "id"),
+					resource.TestCheckResourceAttr("swo_website.test", "name", "test-acc create without rum [CREATE_TEST]"),
+					resource.TestCheckResourceAttr("swo_website.test", "url", "https://solarwinds.com"),
+				),
+			},
 			// ImportState testing
-			//{
-			//	ResourceName:      "swo_website.test",
-			//	ImportState:       true,
-			//	ImportStateVerify: true,
-			//},
+			{
+				ResourceName:      "swo_website.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
 			// Update and Read testing
-			//{
-			//	Config: testAccWebsiteResourceConfig("test-acc test two [UPDATE_TEST]"),
-			//	Check: resource.ComposeAggregateTestCheckFunc(
-			//		resource.TestCheckResourceAttr("swo_website.test", "name", "test-acc test two [UPDATE_TEST]"),
-			//	),
-			//},
-			//{
-			//	Config: testAccWebsiteResourceConfigWithoutCheckForString("test-acc test update without string check [UPDATE_TEST]"),
-			//	Check: resource.ComposeAggregateTestCheckFunc(
-			//		resource.TestCheckResourceAttr("swo_website.test", "name", "test-acc test update without string check [UPDATE_TEST]"),
-			//	),
-			//},
-			//{
-			//	Config: testAccWebsiteResourceConfigWithoutRum("test-acc test update without rum [UPDATE_TEST]"),
-			//	Check: resource.ComposeAggregateTestCheckFunc(
-			//		resource.TestCheckResourceAttr("swo_website.test", "name", "test-acc test update without rum [UPDATE_TEST]"),
-			//	),
-			//},
+			{
+				Config: testAccWebsiteResourceConfig("test-acc test two [UPDATE_TEST]"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("swo_website.test", "name", "test-acc test two [UPDATE_TEST]"),
+				),
+			},
+			{
+				Config: testAccWebsiteResourceConfigWithoutCheckForString("test-acc test update without string check [UPDATE_TEST]"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("swo_website.test", "name", "test-acc test update without string check [UPDATE_TEST]"),
+				),
+			},
+			{
+				Config: testAccWebsiteResourceConfigWithoutRum("test-acc test update without rum [UPDATE_TEST]"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("swo_website.test", "name", "test-acc test update without rum [UPDATE_TEST]"),
+				),
+			},
 			// Delete testing automatically occurs in TestCase
 		},
 	})
