@@ -8,6 +8,10 @@ import (
 	swoClient "github.com/solarwinds/swo-client-go/pkg/client"
 )
 
+var thresholdOperatorError = errors.New("threshold operation not found")
+var thresholdValueError = errors.New("threshold value not found")
+var aggregationError = errors.New("aggregation operation not found")
+
 // Builds a simple metric condition.
 //
 // An example of a simple metric condition tree:
@@ -85,7 +89,8 @@ func (model alertConditionModel) toThresholdConditionInputs() (swoClient.AlertCo
 
 		operatorType, err := swoClient.GetAlertConditionType(operator)
 		if err != nil {
-			return thresholdOperatorConditions, thresholdDataConditions, errors.New("threshold operation not found")
+
+			return thresholdOperatorConditions, thresholdDataConditions, thresholdOperatorError
 		}
 		thresholdOperatorConditions.Type = operatorType
 		thresholdOperatorConditions.Operator = &operator
@@ -101,7 +106,7 @@ func (model alertConditionModel) toThresholdConditionInputs() (swoClient.AlertCo
 			thresholdDataConditions.DataType = &dataType
 			thresholdDataConditions.Value = &thresholdValue
 		} else {
-			return thresholdOperatorConditions, thresholdDataConditions, errors.New("threshold value not found")
+			return thresholdOperatorConditions, thresholdDataConditions, thresholdValueError
 		}
 	}
 
@@ -126,7 +131,7 @@ func (model alertConditionModel) toAggregationConditionInput() (swoClient.AlertC
 	operator := model.AggregationType.ValueString()
 	operatorType, err := swoClient.GetAlertConditionType(operator)
 	if err != nil {
-		return swoClient.AlertConditionNodeInput{}, errors.New("aggregation operation not found")
+		return swoClient.AlertConditionNodeInput{}, aggregationError
 	}
 
 	aggregationCondition := swoClient.AlertConditionNodeInput{
