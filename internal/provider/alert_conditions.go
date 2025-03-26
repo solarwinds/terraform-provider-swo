@@ -27,7 +27,7 @@ type ConditionMap struct {
 //	         /    \
 //	Metric Field   10m
 //	    (id=2)    (duration, id=3)
-func (model alertConditionModel) toAlertConditionInputs(conditions []swoClient.AlertConditionNodeInput, rootNodeId int) []swoClient.AlertConditionNodeInput {
+func (model alertConditionModel) toAlertConditionInputs(rootNodeId int) []swoClient.AlertConditionNodeInput {
 
 	thresholdOperatorCondition, thresholdDataCondition := model.toThresholdConditionInputs()
 	thresholdOperatorCondition.Id = rootNodeId
@@ -45,7 +45,7 @@ func (model alertConditionModel) toAlertConditionInputs(conditions []swoClient.A
 
 	thresholdDataCondition.Id = rootNodeId + 4
 
-	conditionsOrdered := []swoClient.AlertConditionNodeInput{
+	conditions := []swoClient.AlertConditionNodeInput{
 		thresholdOperatorCondition,
 		aggregationCondition,
 		metricFieldCondition,
@@ -53,7 +53,7 @@ func (model alertConditionModel) toAlertConditionInputs(conditions []swoClient.A
 		thresholdDataCondition,
 	}
 
-	return append(conditions, conditionsOrdered...)
+	return conditions
 }
 
 // Creates the threshold operation and threshold data nodes by either:

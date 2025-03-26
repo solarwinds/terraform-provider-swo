@@ -93,18 +93,33 @@ func (r *alertResource) ValidateConfig(ctx context.Context, req resource.Validat
 				)
 			}
 		}
-		//todo check for all required fields -> tree code is dependent on this
 		if condition.MetricName.ValueString() == "" {
-
+			resp.Diagnostics.AddAttributeError(
+				path.Root("metricName"),
+				"Required field.",
+				"Required field for alerting condition.",
+			)
 		}
 		if condition.Duration.ValueString() == "" {
-
+			resp.Diagnostics.AddAttributeError(
+				path.Root("duration"),
+				"Required field.",
+				"Required field for alerting condition.",
+			)
 		}
 		if len(condition.TargetEntityTypes) == 0 {
-
+			resp.Diagnostics.AddAttributeError(
+				path.Root("targetEntityTypes"),
+				"Required field.",
+				"Required field for alerting condition.",
+			)
 		}
 		if condition.AggregationType.ValueString() == "" {
-
+			resp.Diagnostics.AddAttributeError(
+				path.Root("aggregationType"),
+				"Required field.",
+				"Required field for alerting condition.",
+			)
 		}
 	}
 }
@@ -213,52 +228,48 @@ func (r *alertResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 //	  /   |   \
 //	Con  Con  Con
 //
-// AND - Binary logical operator (OR also available)
+// AND - Binary logical operator
 // Con. - Simple condition (comparison operator, metric, threshold, ...)
 //
 // The function will first create the required number of logical operator nodes with
 // pre-computed operator IDs. Then it'll transform all condition items to alert conditions.
 func (model *alertResourceModel) toAlertDefinitionInput() swoClient.AlertDefinitionInput {
-	// We need to create 5 flat tree nodes to build a simple condition:
-	// - binaryOperator (comparisonOperator)
-	// - aggregationOperator
-	// - constantValue (threshold)
-	// - metricField
-	// - constantValue (time frame)
-	// and condition limit is 5 (for nested conditions). Total 30 = parent condition(10 = 2:relationship operator & scopefield + remaining for logical operators) + nested conditions max(5)(5*5 = 25)
-	simpleAlertConditionsCount := 65
 
-	// Currently we only allow one AND logical operator type on the top level
-	// These logical operators can be n-ary, so we just need one logicalOperator
-	logicalOperator := string(swoClient.AlertOperatorAnd)
-	rootNodeId := 0
-	conditions := []swoClient.AlertConditionNodeInput{}
+	var conditions []swoClient.AlertConditionNodeInput
 
 	if len(model.Conditions) == 1 {
-		conditions = model.Conditions[0].toAlertConditionInputs(conditions, rootNodeId)
+		conditions = model.Conditions[0].toAlertConditionInputs(0)
 	} else {
 
-		//todo make root AND logical operator, move this into its own method?
+		// Currently we only allow one AND logical operator type on the top level
+		// These logical operators can be n-ary, so we just need one logicalOperator
 		rootLogicalOperator := swoClient.AlertConditionNodeInput{}
-		rootLogicalOperator.Id = rootNodeId
+		rootLogicalOperator.Id = 0
 		rootLogicalOperator.Type = string(swoClient.AlertLogicalOperatorType)
+		logicalOperator := string(swoClient.AlertOperatorAnd)
 		rootLogicalOperator.Operator = &logicalOperator
 
-		// calculate operator ids, all conditions go into ONE operand
-		size := len(model.Conditions)
-		arr := make([]int, size)
-
-		for i := 0; i < size; i++ {
-			arr[i] = (simpleAlertConditionsCount * i) + 1
+		// Pre-computed child operator IDs
+		numConditions := len(model.Conditions)
+		rootOperandIds := make([]int, numConditions)
+		// We need to create 5 flat tree nodes to build an alert condition:
+		// - binaryOperator (comparisonOperator)
+		// - aggregationOperator
+		// - constantValue (threshold)
+		// - metricField
+		// - constantValue (time frame)
+		// and condition limit is 5 (for nested conditions). Total 30 = parent condition(10 = 2:relationship operator & scope-field + remaining for logical operators) + nested conditions max(5)(5*5 = 25)
+		alertConditionCountBuffer := 65
+		for i := 0; i < numConditions; i++ {
+			rootOperandIds[i] = (alertConditionCountBuffer * i) + 1
 		}
+		rootLogicalOperator.OperandIds = rootOperandIds
+		conditions = []swoClient.AlertConditionNodeInput{rootLogicalOperator}
 
-		rootLogicalOperator.OperandIds = arr
-		conditions = append([]swoClient.AlertConditionNodeInput{rootLogicalOperator}, conditions...)
-
-		for i := 0; i < size; i++ {
-			rootNodeId = (simpleAlertConditionsCount * i) + 1
-			conditions = model.Conditions[i].toAlertConditionInputs(conditions, rootNodeId)
-			//todo does it make more sense to append the returned conditions here?
+		// Create an alert condition for each
+		for i := 0; i < numConditions; i++ {
+			childRootNodeId := rootOperandIds[i]
+			conditions = append(conditions, model.Conditions[i].toAlertConditionInputs(childRootNodeId)...)
 		}
 	}
 
