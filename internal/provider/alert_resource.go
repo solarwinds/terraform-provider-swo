@@ -45,11 +45,17 @@ func (r *alertResource) ValidateConfig(ctx context.Context, req resource.Validat
 		return
 	}
 
-	if len(data.Conditions) > 1 {
+	if len(data.Conditions) > 5 {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("conditions"),
-			"More than one condition.",
-			"Cannot support more than one condition at this time.",
+			"More than five conditions.",
+			"Cannot support more than five conditions at this time.",
+		)
+	} else if len(data.Conditions) < 1 {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("conditions"),
+			"No conditions.",
+			"One or more conditions are required to trigger the alert.",
 		)
 	}
 
@@ -86,6 +92,18 @@ func (r *alertResource) ValidateConfig(ctx context.Context, req resource.Validat
 					"Required field when not_reporting is set to false.",
 				)
 			}
+		}
+		//todo check for all required fields -> tree code is dependent on this
+		if condition.MetricName.ValueString() == "" {
+
+		}
+		if condition.Duration.ValueString() == "" {
+
+		}
+		if len(condition.TargetEntityTypes) == 0 {
+
+		}
+		if condition.AggregationType.ValueString() == "" {
 
 		}
 	}
@@ -186,11 +204,62 @@ func (r *alertResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 // func (r *alertResource) updateState(state *alertResourceModel, data *swoClient.ReadAlertDefinitionResult) {
 // }
 
+// Transforms a full Alert condition (with logical operators if needed) from
+// form values to a flat condition tree format that is accepted by the API.
+//
+// An example of a resulting condition tree (displayed as a nested tree):
+//
+//	     AND
+//	  /   |   \
+//	Con  Con  Con
+//
+// AND - Binary logical operator (OR also available)
+// Con. - Simple condition (comparison operator, metric, threshold, ...)
+//
+// The function will first create the required number of logical operator nodes with
+// pre-computed operator IDs. Then it'll transform all condition items to alert conditions.
 func (model *alertResourceModel) toAlertDefinitionInput() swoClient.AlertDefinitionInput {
+	// We need to create 5 flat tree nodes to build a simple condition:
+	// - binaryOperator (comparisonOperator)
+	// - aggregationOperator
+	// - constantValue (threshold)
+	// - metricField
+	// - constantValue (time frame)
+	// and condition limit is 5 (for nested conditions). Total 30 = parent condition(10 = 2:relationship operator & scopefield + remaining for logical operators) + nested conditions max(5)(5*5 = 25)
+	simpleAlertConditionsCount := 65
+
+	// Currently we only allow one AND logical operator type on the top level
+	// These logical operators can be n-ary, so we just need one logicalOperator
+	logicalOperator := string(swoClient.AlertOperatorAnd)
+	rootNodeId := 0
 	conditions := []swoClient.AlertConditionNodeInput{}
 
-	for _, condition := range model.Conditions {
-		conditions = condition.toAlertConditionInputs(conditions)
+	if len(model.Conditions) == 1 {
+		conditions = model.Conditions[0].toAlertConditionInputs(conditions, rootNodeId)
+	} else {
+
+		//todo make root AND logical operator, move this into its own method?
+		rootLogicalOperator := swoClient.AlertConditionNodeInput{}
+		rootLogicalOperator.Id = rootNodeId
+		rootLogicalOperator.Type = string(swoClient.AlertLogicalOperatorType)
+		rootLogicalOperator.Operator = &logicalOperator
+
+		// calculate operator ids, all conditions go into ONE operand
+		size := len(model.Conditions)
+		arr := make([]int, size)
+
+		for i := 0; i < size; i++ {
+			arr[i] = (simpleAlertConditionsCount * i) + 1
+		}
+
+		rootLogicalOperator.OperandIds = arr
+		conditions = append([]swoClient.AlertConditionNodeInput{rootLogicalOperator}, conditions...)
+
+		for i := 0; i < size; i++ {
+			rootNodeId = (simpleAlertConditionsCount * i) + 1
+			conditions = model.Conditions[i].toAlertConditionInputs(conditions, rootNodeId)
+			//todo does it make more sense to append the returned conditions here?
+		}
 	}
 
 	return swoClient.AlertDefinitionInput{
@@ -219,7 +288,7 @@ func (model *alertResourceModel) toAlertActionInput() []swoClient.AlertActionInp
 
 			for _, configId := range action.ConfigurationIds {
 				// Notification Id's are formatted as id:type.
-				// This is to accomidate ImportState needing a single Id to import a resource.
+				// This is to accommodate ImportState needing a single Id to import a resource.
 				actionId, notificationType, _ := ParseNotificationId(types.StringValue(configId))
 				actionType := findCaseInsensitiveMatch(notificationActionTypes, notificationType)
 

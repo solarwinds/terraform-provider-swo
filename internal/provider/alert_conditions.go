@@ -10,14 +10,6 @@ import (
 
 type conditionType string
 
-const (
-	conditionTypeThresholdData     conditionType = "thresholdData"
-	conditionTypeDuration          conditionType = "duration"
-	conditionTypeMetric            conditionType = "metric"
-	conditionTypeAggregation       conditionType = "aggregation"
-	conditionTypeThresholdOperator conditionType = "thresholdOperator"
-)
-
 type ConditionMap struct {
 	condition     swoClient.AlertConditionNodeInput
 	conditionType conditionType
@@ -27,35 +19,31 @@ type ConditionMap struct {
 //
 // An example of a simple metric condition tree:
 //
-//	  							>=
-//					(threshold operator, id=0)
-//	       						/  \
-//	       		 			AVG  	42
-//			(aggregation, id=1)   (threshold data, id=4)
-//	     			/  	\
-//		Metric Field    10m
-//		(id=2) 		   (duration, id=3)
-func (model alertConditionModel) toAlertConditionInputs(conditions []swoClient.AlertConditionNodeInput) []swoClient.AlertConditionNodeInput {
+//	                       >=
+//	            (threshold operator, id=0)
+//	                      /  \
+//	                    AVG    42
+//	     (aggregation, id=1)   (threshold data, id=4)
+//	         /    \
+//	Metric Field   10m
+//	    (id=2)    (duration, id=3)
+func (model alertConditionModel) toAlertConditionInputs(conditions []swoClient.AlertConditionNodeInput, rootNodeId int) []swoClient.AlertConditionNodeInput {
 
-	rootNode := 0
-	// todo  possible reuse for multi conditions
-	//conditionsReturnedLen := len(conditionMaps)
-	//lastId := len(conditions) + conditionsReturnedLen
 	thresholdOperatorCondition, thresholdDataCondition := model.toThresholdConditionInputs()
-	thresholdOperatorCondition.Id = rootNode
-	thresholdOperatorCondition.OperandIds = []int{rootNode + 1, rootNode + 4}
+	thresholdOperatorCondition.Id = rootNodeId
+	thresholdOperatorCondition.OperandIds = []int{rootNodeId + 1, rootNodeId + 4}
 
 	aggregationCondition := model.toAggregationConditionInput()
-	aggregationCondition.Id = rootNode + 1
-	aggregationCondition.OperandIds = []int{rootNode + 2, rootNode + 3}
+	aggregationCondition.Id = rootNodeId + 1
+	aggregationCondition.OperandIds = []int{rootNodeId + 2, rootNodeId + 3}
 
 	metricFieldCondition := model.toMetricFieldConditionInput()
-	metricFieldCondition.Id = rootNode + 2
+	metricFieldCondition.Id = rootNodeId + 2
 
 	durationCondition := model.toDurationConditionInput()
-	durationCondition.Id = rootNode + 3
+	durationCondition.Id = rootNodeId + 3
 
-	thresholdDataCondition.Id = rootNode + 4
+	thresholdDataCondition.Id = rootNodeId + 4
 
 	conditionsOrdered := []swoClient.AlertConditionNodeInput{
 		thresholdOperatorCondition,
@@ -64,7 +52,7 @@ func (model alertConditionModel) toAlertConditionInputs(conditions []swoClient.A
 		durationCondition,
 		thresholdDataCondition,
 	}
-	// todo keep append to master list we can re-use for multi conditions...
+
 	return append(conditions, conditionsOrdered...)
 }
 
@@ -116,6 +104,8 @@ func (model *alertConditionModel) toThresholdConditionInputs() (swoClient.AlertC
 		} else {
 			log.Fatal("Threshold value not found")
 		}
+	} else {
+		log.Fatal("Unable to create threshold operation and value")
 	}
 
 	return thresholdOperatorConditions, thresholdDataConditions
