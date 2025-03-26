@@ -132,15 +132,10 @@ func (r *alertResource) Create(ctx context.Context, req resource.CreateRequest, 
 	}
 
 	// Create the alert from the provided Terraform model...
-	input, err := tfPlan.toAlertDefinitionInput()
-	if err != nil {
-		//	resp.Diagnostics.AddError(
-		//		create.ProblemStandardMessage(names.{{ .Service }}, create.ErrActionCreating, ResName{{ .Resource }}, plan.Name.String(), err),
-		//	err.Error(),
-		//)
-
-		resp.Diagnostics.AddError("Client Error",
-			fmt.Sprintf("error creating alert definition '%s'. error: %s", input.Name, err))
+	input, defError := tfPlan.toAlertDefinitionInput()
+	if defError != nil {
+		resp.Diagnostics.AddError("Bad input in terraform resource",
+			fmt.Sprintf("error parsing terraform resource: %s", defError))
 		return
 	}
 
@@ -190,8 +185,8 @@ func (r *alertResource) Update(ctx context.Context, req resource.UpdateRequest, 
 	alertId := tfState.Id.ValueString()
 	input, defError := tfPlan.toAlertDefinitionInput()
 	if defError != nil {
-		resp.Diagnostics.AddError("Client Error",
-			fmt.Sprintf("error creating alert definition '%s'. error: %s", input.Name, defError))
+		resp.Diagnostics.AddError("Bad input in terraform resource",
+			fmt.Sprintf("error parsing terraform resource: %s", defError))
 		return
 	}
 
