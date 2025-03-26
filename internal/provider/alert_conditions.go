@@ -112,22 +112,19 @@ func (model *alertConditionModel) toThresholdConditionInputs() (swoClient.AlertC
 }
 
 func (model *alertConditionModel) toDurationConditionInput() swoClient.AlertConditionNodeInput {
-	durationCondition := swoClient.AlertConditionNodeInput{}
 
 	duration := model.Duration.ValueString()
 	dataType := GetStringDataType(duration)
-
-	if duration != "" {
-		durationCondition.Type = string(swoClient.AlertConstantValueType)
-		durationCondition.DataType = &dataType
-		durationCondition.Value = &duration
+	durationCondition := swoClient.AlertConditionNodeInput{
+		Type:     string(swoClient.AlertConstantValueType),
+		DataType: &dataType,
+		Value:    &duration,
 	}
 
 	return durationCondition
 }
 
 func (model *alertConditionModel) toAggregationConditionInput() swoClient.AlertConditionNodeInput {
-	aggregationCondition := swoClient.AlertConditionNodeInput{}
 
 	operator := model.AggregationType.ValueString()
 	operatorType, err := swoClient.GetAlertConditionType(operator)
@@ -135,84 +132,81 @@ func (model *alertConditionModel) toAggregationConditionInput() swoClient.AlertC
 		log.Fatal("Aggregation operation not found")
 	}
 
-	if operator != "" {
-		aggregationCondition.Type = operatorType
-		aggregationCondition.Operator = &operator
+	aggregationCondition := swoClient.AlertConditionNodeInput{
+		Type:     operatorType,
+		Operator: &operator,
 	}
 
 	return aggregationCondition
 }
 
 func (model *alertConditionModel) toMetricFieldConditionInput() swoClient.AlertConditionNodeInput {
-	metricFieldCondition := swoClient.AlertConditionNodeInput{}
+
 	metricName := model.MetricName.ValueString()
+	metricFieldCondition := swoClient.AlertConditionNodeInput{
+		Type:             string(swoClient.AlertMetricFieldType),
+		FieldName:        &metricName,
+		GroupByMetricTag: model.GroupByMetricTag,
+	}
 
-	if metricName != "" {
-		metricFieldCondition = swoClient.AlertConditionNodeInput{
-			Type:             string(swoClient.AlertMetricFieldType),
-			FieldName:        &metricName,
-			GroupByMetricTag: model.GroupByMetricTag,
+	if len(model.EntityIds) > 0 {
+		entityFilter := &swoClient.AlertConditionNodeEntityFilterInput{
+			Types: model.TargetEntityTypes,
+			Ids:   model.EntityIds,
 		}
 
-		if len(model.EntityIds) > 0 {
-			entityFilter := &swoClient.AlertConditionNodeEntityFilterInput{
-				Types: model.TargetEntityTypes,
-				Ids:   model.EntityIds,
-			}
+		metricFieldCondition.EntityFilter = entityFilter
+	}
 
-			metricFieldCondition.EntityFilter = entityFilter
+	var includeTags []alertTagsModel
+	var excludeTags []alertTagsModel
+
+	if model.IncludeTags != nil {
+		includeTags = *model.IncludeTags
+	}
+
+	if model.ExcludeTags != nil {
+		excludeTags = *model.ExcludeTags
+	}
+
+	if len(includeTags) > 0 || len(excludeTags) > 0 {
+		metricFieldCondition.MetricFilter = &swoClient.AlertFilterExpressionInput{
+			Operation: swoClient.FilterOperationAnd,
+		}
+	}
+
+	for _, tag := range includeTags {
+		propertyName := tag.Name.ValueString()
+		metricFilter := swoClient.AlertFilterExpressionInput{
+			PropertyName:   &propertyName,
+			Operation:      swoClient.FilterOperationIn,
+			PropertyValues: tag.Values,
 		}
 
-		var includeTags []alertTagsModel
-		var excludeTags []alertTagsModel
+		metricFieldCondition.MetricFilter.Children = append(
+			metricFieldCondition.MetricFilter.Children,
+			metricFilter,
+		)
+	}
 
-		if model.IncludeTags != nil {
-			includeTags = *model.IncludeTags
+	for _, tag := range excludeTags {
+		propertyName := tag.Name.ValueString()
+		metricFilter := swoClient.AlertFilterExpressionInput{
+			PropertyName:   &propertyName,
+			Operation:      swoClient.FilterOperationIn,
+			PropertyValues: tag.Values,
 		}
 
-		if model.ExcludeTags != nil {
-			excludeTags = *model.ExcludeTags
+		metricFilterNotOp := swoClient.AlertFilterExpressionInput{
+			Operation: swoClient.FilterOperationNot,
 		}
 
-		if len(includeTags) > 0 || len(excludeTags) > 0 {
-			metricFieldCondition.MetricFilter = &swoClient.AlertFilterExpressionInput{
-				Operation: swoClient.FilterOperationAnd,
-			}
-		}
+		metricFilterNotOp.Children = append(metricFilterNotOp.Children, metricFilter)
 
-		for _, tag := range includeTags {
-			propertyName := tag.Name.ValueString()
-			metricFilter := swoClient.AlertFilterExpressionInput{
-				PropertyName:   &propertyName,
-				Operation:      swoClient.FilterOperationIn,
-				PropertyValues: tag.Values,
-			}
-
-			metricFieldCondition.MetricFilter.Children = append(
-				metricFieldCondition.MetricFilter.Children,
-				metricFilter,
-			)
-		}
-
-		for _, tag := range excludeTags {
-			propertyName := tag.Name.ValueString()
-			metricFilter := swoClient.AlertFilterExpressionInput{
-				PropertyName:   &propertyName,
-				Operation:      swoClient.FilterOperationIn,
-				PropertyValues: tag.Values,
-			}
-
-			metricFilterNotOp := swoClient.AlertFilterExpressionInput{
-				Operation: swoClient.FilterOperationNot,
-			}
-
-			metricFilterNotOp.Children = append(metricFilterNotOp.Children, metricFilter)
-
-			metricFieldCondition.MetricFilter.Children = append(
-				metricFieldCondition.MetricFilter.Children,
-				metricFilterNotOp,
-			)
-		}
+		metricFieldCondition.MetricFilter.Children = append(
+			metricFieldCondition.MetricFilter.Children,
+			metricFilterNotOp,
+		)
 	}
 
 	return metricFieldCondition
