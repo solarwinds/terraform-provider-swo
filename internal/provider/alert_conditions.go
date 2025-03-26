@@ -1,19 +1,12 @@
 package provider
 
 import (
-	"log"
+	"errors"
 	"regexp"
 	"strconv"
 
 	swoClient "github.com/solarwinds/swo-client-go/pkg/client"
 )
-
-type conditionType string
-
-type ConditionMap struct {
-	condition     swoClient.AlertConditionNodeInput
-	conditionType conditionType
-}
 
 // Builds a simple metric condition.
 //
@@ -27,13 +20,19 @@ type ConditionMap struct {
 //	         /    \
 //	Metric Field   10m
 //	    (id=2)    (duration, id=3)
-func (model alertConditionModel) toAlertConditionInputs(rootNodeId int) []swoClient.AlertConditionNodeInput {
+func (model alertConditionModel) toAlertConditionInputs(rootNodeId int) ([]swoClient.AlertConditionNodeInput, error) {
 
-	thresholdOperatorCondition, thresholdDataCondition := model.toThresholdConditionInputs()
+	thresholdOperatorCondition, thresholdDataCondition, err := model.toThresholdConditionInputs()
+	if err != nil {
+		return []swoClient.AlertConditionNodeInput{}, err
+	}
 	thresholdOperatorCondition.Id = rootNodeId
 	thresholdOperatorCondition.OperandIds = []int{rootNodeId + 1, rootNodeId + 4}
 
-	aggregationCondition := model.toAggregationConditionInput()
+	aggregationCondition, err := model.toAggregationConditionInput()
+	if err != nil {
+		return []swoClient.AlertConditionNodeInput{}, err
+	}
 	aggregationCondition.Id = rootNodeId + 1
 	aggregationCondition.OperandIds = []int{rootNodeId + 2, rootNodeId + 3}
 
@@ -53,14 +52,14 @@ func (model alertConditionModel) toAlertConditionInputs(rootNodeId int) []swoCli
 		thresholdDataCondition,
 	}
 
-	return conditions
+	return conditions, nil
 }
 
 // Creates the threshold operation and threshold data nodes by either:
 //  1. If model.not_reporting=true, operator is set to '=' and value to '0'
 //  2. Else, parse the model.threshold string into operator and value
 //     Ex:">=3000" -> operator '>=' and value '3000'
-func (model *alertConditionModel) toThresholdConditionInputs() (swoClient.AlertConditionNodeInput, swoClient.AlertConditionNodeInput) {
+func (model alertConditionModel) toThresholdConditionInputs() (swoClient.AlertConditionNodeInput, swoClient.AlertConditionNodeInput, error) {
 	threshold := model.Threshold.ValueString()
 	thresholdOperatorConditions := swoClient.AlertConditionNodeInput{}
 	thresholdDataConditions := swoClient.AlertConditionNodeInput{}
@@ -78,15 +77,15 @@ func (model *alertConditionModel) toThresholdConditionInputs() (swoClient.AlertC
 		thresholdDataConditions.DataType = &dataType
 		thresholdDataConditions.Value = &dataValue
 
-	} else if threshold != "" {
+	} else {
 
-		regex := regexp.MustCompile(`[\W]+`)
+		regex := regexp.MustCompile(`\W+`)
 		operator := regex.FindString(threshold)
 		//Parses threshold into an operator:(>, <, = ...).
 
 		operatorType, err := swoClient.GetAlertConditionType(operator)
 		if err != nil {
-			log.Fatal("Threshold operation not found")
+			return thresholdOperatorConditions, thresholdDataConditions, errors.New("threshold operation not found")
 		}
 		thresholdOperatorConditions.Type = operatorType
 		thresholdOperatorConditions.Operator = &operator
@@ -102,16 +101,14 @@ func (model *alertConditionModel) toThresholdConditionInputs() (swoClient.AlertC
 			thresholdDataConditions.DataType = &dataType
 			thresholdDataConditions.Value = &thresholdValue
 		} else {
-			log.Fatal("Threshold value not found")
+			return thresholdOperatorConditions, thresholdDataConditions, errors.New("threshold value not found")
 		}
-	} else {
-		log.Fatal("Unable to create threshold operation and value")
 	}
 
-	return thresholdOperatorConditions, thresholdDataConditions
+	return thresholdOperatorConditions, thresholdDataConditions, nil
 }
 
-func (model *alertConditionModel) toDurationConditionInput() swoClient.AlertConditionNodeInput {
+func (model alertConditionModel) toDurationConditionInput() swoClient.AlertConditionNodeInput {
 
 	duration := model.Duration.ValueString()
 	dataType := GetStringDataType(duration)
@@ -124,12 +121,12 @@ func (model *alertConditionModel) toDurationConditionInput() swoClient.AlertCond
 	return durationCondition
 }
 
-func (model *alertConditionModel) toAggregationConditionInput() swoClient.AlertConditionNodeInput {
+func (model alertConditionModel) toAggregationConditionInput() (swoClient.AlertConditionNodeInput, error) {
 
 	operator := model.AggregationType.ValueString()
 	operatorType, err := swoClient.GetAlertConditionType(operator)
 	if err != nil {
-		log.Fatal("Aggregation operation not found")
+		return swoClient.AlertConditionNodeInput{}, errors.New("aggregation operation not found")
 	}
 
 	aggregationCondition := swoClient.AlertConditionNodeInput{
@@ -137,10 +134,10 @@ func (model *alertConditionModel) toAggregationConditionInput() swoClient.AlertC
 		Operator: &operator,
 	}
 
-	return aggregationCondition
+	return aggregationCondition, nil
 }
 
-func (model *alertConditionModel) toMetricFieldConditionInput() swoClient.AlertConditionNodeInput {
+func (model alertConditionModel) toMetricFieldConditionInput() swoClient.AlertConditionNodeInput {
 
 	metricName := model.MetricName.ValueString()
 	metricFieldCondition := swoClient.AlertConditionNodeInput{
