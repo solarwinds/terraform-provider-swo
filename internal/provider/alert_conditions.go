@@ -10,14 +10,6 @@ import (
 
 type conditionType string
 
-const (
-	conditionTypeThresholdData     conditionType = "thresholdData"
-	conditionTypeDuration          conditionType = "duration"
-	conditionTypeMetric            conditionType = "metric"
-	conditionTypeAggregation       conditionType = "aggregation"
-	conditionTypeThresholdOperator conditionType = "thresholdOperator"
-)
-
 type ConditionMap struct {
 	condition     swoClient.AlertConditionNodeInput
 	conditionType conditionType
@@ -35,9 +27,8 @@ type ConditionMap struct {
 //	         /    \
 //	Metric Field   10m
 //	    (id=2)    (duration, id=3)
-func (model alertConditionModel) toAlertConditionInputs(conditions []swoClient.AlertConditionNodeInput) []swoClient.AlertConditionNodeInput {
+func (model alertConditionModel) toAlertConditionInputs(rootNodeId int) []swoClient.AlertConditionNodeInput {
 
-	rootNodeId := 0
 	thresholdOperatorCondition, thresholdDataCondition := model.toThresholdConditionInputs()
 	thresholdOperatorCondition.Id = rootNodeId
 	thresholdOperatorCondition.OperandIds = []int{rootNodeId + 1, rootNodeId + 4}
@@ -54,7 +45,7 @@ func (model alertConditionModel) toAlertConditionInputs(conditions []swoClient.A
 
 	thresholdDataCondition.Id = rootNodeId + 4
 
-	conditionsOrdered := []swoClient.AlertConditionNodeInput{
+	conditions := []swoClient.AlertConditionNodeInput{
 		thresholdOperatorCondition,
 		aggregationCondition,
 		metricFieldCondition,
@@ -62,7 +53,7 @@ func (model alertConditionModel) toAlertConditionInputs(conditions []swoClient.A
 		thresholdDataCondition,
 	}
 
-	return append(conditions, conditionsOrdered...)
+	return conditions
 }
 
 // Creates the threshold operation and threshold data nodes by either:
@@ -113,6 +104,8 @@ func (model *alertConditionModel) toThresholdConditionInputs() (swoClient.AlertC
 		} else {
 			log.Fatal("Threshold value not found")
 		}
+	} else {
+		log.Fatal("Unable to create threshold operation and value")
 	}
 
 	return thresholdOperatorConditions, thresholdDataConditions
