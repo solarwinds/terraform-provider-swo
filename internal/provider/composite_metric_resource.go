@@ -14,8 +14,7 @@ import (
 )
 
 const (
-	clientErrSummary = "SwoV1 Client Error"
-	compositePrefix  = "composite."
+	compositePrefix = "composite."
 )
 
 var (

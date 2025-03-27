@@ -47,6 +47,8 @@ const (
 	apiTokenEnv = "SWO_API_TOKEN"
 	// #nosec G101: Potential hardcoded credentials
 	baseUrlEnv = "SWO_BASE_URL"
+
+	clientErrSummary = "SwoV1 Client Error"
 )
 
 type ReadOperation[T any] func(context.Context, string) (T, error)
