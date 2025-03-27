@@ -132,7 +132,13 @@ func (r *alertResource) Create(ctx context.Context, req resource.CreateRequest, 
 	}
 
 	// Create the alert from the provided Terraform model...
-	input := tfPlan.toAlertDefinitionInput()
+	input, defError := tfPlan.toAlertDefinitionInput()
+	if defError != nil {
+		resp.Diagnostics.AddError("Bad input in terraform resource",
+			fmt.Sprintf("error parsing terraform resource: %s", defError))
+		return
+	}
+
 	newAlertDef, err := r.client.AlertsService().Create(ctx, input)
 
 	if err != nil {
@@ -177,7 +183,12 @@ func (r *alertResource) Update(ctx context.Context, req resource.UpdateRequest, 
 	}
 
 	alertId := tfState.Id.ValueString()
-	input := tfPlan.toAlertDefinitionInput()
+	input, defError := tfPlan.toAlertDefinitionInput()
+	if defError != nil {
+		resp.Diagnostics.AddError("Bad input in terraform resource",
+			fmt.Sprintf("error parsing terraform resource: %s", defError))
+		return
+	}
 
 	// Update the alert definition...
 	_, err := r.client.AlertsService().Update(ctx, alertId, input)
@@ -233,12 +244,16 @@ func (r *alertResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 //
 // The function will first create the required number of logical operator nodes with
 // pre-computed operator IDs. Then it'll transform all condition items to alert conditions.
-func (model *alertResourceModel) toAlertDefinitionInput() swoClient.AlertDefinitionInput {
+func (model *alertResourceModel) toAlertDefinitionInput() (swoClient.AlertDefinitionInput, error) {
 
 	var conditions []swoClient.AlertConditionNodeInput
+	var err error
 
 	if len(model.Conditions) == 1 {
-		conditions = model.Conditions[0].toAlertConditionInputs(0)
+		conditions, err = model.Conditions[0].toAlertConditionInputs(0)
+		if err != nil {
+			return swoClient.AlertDefinitionInput{}, err
+		}
 	} else {
 
 		// Currently we only allow one AND logical operator type on the top level
@@ -269,7 +284,11 @@ func (model *alertResourceModel) toAlertDefinitionInput() swoClient.AlertDefinit
 		// Create an alert condition for each
 		for i := 0; i < numConditions; i++ {
 			childRootNodeId := rootOperandIds[i]
-			conditions = append(conditions, model.Conditions[i].toAlertConditionInputs(childRootNodeId)...)
+			childConditions, err := model.Conditions[i].toAlertConditionInputs(childRootNodeId)
+			if err != nil {
+				return swoClient.AlertDefinitionInput{}, err
+			}
+			conditions = append(conditions, childConditions...)
 		}
 	}
 
@@ -282,7 +301,7 @@ func (model *alertResourceModel) toAlertDefinitionInput() swoClient.AlertDefinit
 		TriggerResetActions: model.TriggerResetActions.ValueBoolPointer(),
 		Condition:           conditions,
 		RunbookLink:         model.RunbookLink.ValueStringPointer(),
-	}
+	}, nil
 }
 
 func (model *alertResourceModel) toAlertActionInput() []swoClient.AlertActionInput {
