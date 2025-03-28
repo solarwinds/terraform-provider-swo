@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"reflect"
 
 	"github.com/cenkalti/backoff/v5"
@@ -69,13 +70,13 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 		AvailabilityCheckSettings: &swoClient.AvailabilityCheckSettingsInput{
 			CheckForString:        checkForString,
 			TestIntervalInSeconds: swoClientTypes.TestIntervalInSeconds(int(tfPlan.Monitoring.Availability.TestIntervalInSeconds.ValueInt64())),
-			Protocols: convertArray(tfPlan.Monitoring.Availability.Protocols, func(s string) swoClient.WebsiteProtocol {
-				return swoClient.WebsiteProtocol(s)
+			Protocols: convertArray(tfPlan.Monitoring.Availability.Protocols.Elements(), func(s attr.Value) swoClient.WebsiteProtocol {
+				return swoClient.WebsiteProtocol(attrValueToString(s))
 			}),
 			PlatformOptions: &swoClient.ProbePlatformOptionsInput{
 				TestFromAll: tfPlan.Monitoring.Availability.PlatformOptions.TestFromAll.ValueBoolPointer(),
-				ProbePlatforms: convertArray(tfPlan.Monitoring.Availability.PlatformOptions.Platforms, func(s string) swoClient.ProbePlatform {
-					return swoClient.ProbePlatform(s)
+				ProbePlatforms: convertArray(tfPlan.Monitoring.Availability.PlatformOptions.Platforms.Elements(), func(s attr.Value) swoClient.ProbePlatform {
+					return swoClient.ProbePlatform(attrValueToString(s))
 				}),
 			},
 			TestFrom: swoClient.ProbeLocationInput{
@@ -164,14 +165,14 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 				tfState.Monitoring.Availability.TestIntervalInSeconds = types.Int64Null()
 			}
 
-			tfState.Monitoring.Availability.Protocols = convertArray(availability.Protocols, func(s swoClient.WebsiteProtocol) string {
+			tfState.Monitoring.Availability.Protocols = stringSliceToList(availability.Protocols, func(s swoClient.WebsiteProtocol) string {
 				return string(s)
 			})
 
 			if availability.PlatformOptions != nil {
 				tfState.Monitoring.Availability.PlatformOptions = platformOptions{
 					TestFromAll: types.BoolValue(availability.PlatformOptions.TestFromAll),
-					Platforms:   availability.PlatformOptions.Platforms,
+					Platforms:   stringArrayToList(availability.PlatformOptions.Platforms),
 				}
 			} else {
 				tfState.Monitoring.Availability.PlatformOptions = platformOptions{}
@@ -188,7 +189,7 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 				for _, p := range availability.LocationOptions {
 					locOpts = append(locOpts, probeLocation{
 						Type:  types.StringValue(string(p.Type)),
-						Value: types.StringValue(string(p.Value)),
+						Value: types.StringValue(p.Value),
 					})
 				}
 				tfState.Monitoring.Availability.LocationOptions = locOpts
@@ -275,13 +276,13 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 		AvailabilityCheckSettings: &swoClient.AvailabilityCheckSettingsInput{
 			CheckForString:        checkForString,
 			TestIntervalInSeconds: swoClientTypes.TestIntervalInSeconds(int(tfPlan.Monitoring.Availability.TestIntervalInSeconds.ValueInt64())),
-			Protocols: convertArray(tfPlan.Monitoring.Availability.Protocols, func(s string) swoClient.WebsiteProtocol {
-				return swoClient.WebsiteProtocol(s)
+			Protocols: convertArray(tfPlan.Monitoring.Availability.Protocols.Elements(), func(s attr.Value) swoClient.WebsiteProtocol {
+				return swoClient.WebsiteProtocol(attrValueToString(s))
 			}),
 			PlatformOptions: &swoClient.ProbePlatformOptionsInput{
 				TestFromAll: swoClient.Ptr(tfPlan.Monitoring.Availability.PlatformOptions.TestFromAll.ValueBool()),
-				ProbePlatforms: convertArray(tfPlan.Monitoring.Availability.PlatformOptions.Platforms, func(s string) swoClient.ProbePlatform {
-					return swoClient.ProbePlatform(s)
+				ProbePlatforms: convertArray(tfPlan.Monitoring.Availability.PlatformOptions.Platforms.Elements(), func(s attr.Value) swoClient.ProbePlatform {
+					return swoClient.ProbePlatform(attrValueToString(s))
 				}),
 			},
 			TestFrom: swoClient.ProbeLocationInput{
@@ -349,7 +350,7 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
-	// Updates are eventually consistant. Retry until the Website we read and the Website we are updating match.
+	// Updates are eventually consistent. Retry until the Website we read and the Website we are updating match.
 	_, err = BackoffRetry(func() (*swoClient.ReadWebsiteResult, error) {
 		// Read the Uri...
 		website, err := r.client.WebsiteService().Read(ctx, tfState.Id.ValueString())
