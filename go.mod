@@ -16,6 +16,7 @@ require (
 	github.com/solarwinds/swo-client-go v0.0.15
 	github.com/solarwinds/swo-sdk-go/swov1 v0.1.3
 	golang.org/x/exp v0.0.0-20230809150735-7b3493d9a819
+	github.com/joho/godotenv v1.5.1
 )
 
 require (
