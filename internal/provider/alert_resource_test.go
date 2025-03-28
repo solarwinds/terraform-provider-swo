@@ -198,6 +198,74 @@ func TestMultiConditionAlertResource(t *testing.T) {
 	})
 }
 
+func TestMultiConditionAlertResource(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		IsUnitTest:               true,
+		Steps: []resource.TestStep{
+			// Create and Read testing
+			{
+				Config: testMultiConditionAlertResourceConfig("test-acc Mock Multi Condition Alert Name"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+
+					resource.TestCheckResourceAttr("swo_alert.test", "name", "test-acc Mock Multi Condition Alert Name"),
+					resource.TestCheckResourceAttr("swo_alert.test", "description", ""),
+					resource.TestCheckResourceAttr("swo_alert.test", "severity", "INFO"),
+					resource.TestCheckResourceAttr("swo_alert.test", "enabled", "false"),
+					// Verify actions
+					resource.TestCheckResourceAttr("swo_alert.test", "notification_actions.0.configuration_ids.0", "333:email"),
+					resource.TestCheckResourceAttr("swo_alert.test", "notification_actions.0.configuration_ids.1", "444:msteams"),
+					resource.TestCheckResourceAttr("swo_alert.test", "notification_actions.0.resend_interval_seconds", "600"),
+					// Verify number of conditions.
+					resource.TestCheckResourceAttr("swo_alert.test", "conditions.#", "3"),
+					// Verify the conditions.
+					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.target_entity_types.0", "Website"),
+					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.metric_name", "sw.metrics.healthscore"),
+					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.threshold", "<10"),
+					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.not_reporting", "false"),
+					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.duration", "5m"),
+					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.aggregation_type", "AVG"),
+					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.entity_ids.0", "e-1521946194448543744"),
+					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.entity_ids.1", "e-1521947552186691584"),
+					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.group_by_metric_tag.0", "host.name"),
+
+					resource.TestCheckResourceAttr("swo_alert.test", "conditions.1.target_entity_types.0", "Website"),
+					resource.TestCheckResourceAttr("swo_alert.test", "conditions.1.metric_name", "synthetics.https.response.time"),
+					resource.TestCheckResourceAttr("swo_alert.test", "conditions.1.threshold", ">=3000ms"),
+					resource.TestCheckResourceAttr("swo_alert.test", "conditions.1.not_reporting", "false"),
+					resource.TestCheckResourceAttr("swo_alert.test", "conditions.1.duration", "5m"),
+					resource.TestCheckResourceAttr("swo_alert.test", "conditions.1.aggregation_type", "AVG"),
+					resource.TestCheckResourceAttr("swo_alert.test", "conditions.1.entity_ids.0", "e-1521946194448543744"),
+					resource.TestCheckResourceAttr("swo_alert.test", "conditions.1.entity_ids.1", "e-1521947552186691584"),
+
+					resource.TestCheckResourceAttr("swo_alert.test", "conditions.2.target_entity_types.0", "Website"),
+					resource.TestCheckResourceAttr("swo_alert.test", "conditions.2.metric_name", "synthetics.status"),
+					resource.TestCheckResourceAttr("swo_alert.test", "conditions.2.threshold", ""),
+					resource.TestCheckResourceAttr("swo_alert.test", "conditions.2.not_reporting", "true"),
+					resource.TestCheckResourceAttr("swo_alert.test", "conditions.2.duration", "30m"),
+					resource.TestCheckResourceAttr("swo_alert.test", "conditions.2.aggregation_type", "COUNT"),
+					resource.TestCheckResourceAttr("swo_alert.test", "conditions.2.entity_ids.0", "e-1521946194448543744"),
+					resource.TestCheckResourceAttr("swo_alert.test", "conditions.2.entity_ids.1", "e-1521947552186691584"),
+					resource.TestCheckResourceAttr("swo_alert.test", "conditions.2.group_by_metric_tag.0", "host.name"),
+
+					resource.TestCheckResourceAttr("swo_alert.test", "notifications.0", "123"),
+					resource.TestCheckResourceAttr("swo_alert.test", "notifications.1", "456"),
+					resource.TestCheckResourceAttr("swo_alert.test", "runbook_link", "https://www.runbooklink.com"),
+				),
+			},
+			// Update and Read testing
+			{
+				Config: testMultiConditionAlertResourceConfig("test-acc test_two"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("swo_alert.test", "name", "test-acc test_two"),
+				),
+			},
+			// Delete testing automatically occurs in TestCase
+		},
+	})
+}
+
 func testAccAlertResourceConfig(name string) string {
 	return providerConfig() + fmt.Sprintf(`
 
@@ -315,6 +383,73 @@ resource "swo_alert" "test" {
  notifications = ["123", "456"]
  runbook_link = "https://www.runbooklink.com"
  trigger_delay_seconds = 600
+}
+`, name)
+}
+
+func testMultiConditionAlertResourceConfig(name string) string {
+	return providerConfig() + fmt.Sprintf(`
+
+resource "swo_alert" "test" {
+ name        = %[1]q
+ description = ""
+ severity    = "INFO"
+ enabled     = false
+ notification_actions = [
+   {
+	  configuration_ids = ["333:email", "444:msteams"]
+	  resend_interval_seconds = 600
+   },
+ ]
+ conditions = [
+	{
+	  metric_name      = "synthetics.https.response.time"
+	  threshold        = ">=3000ms"
+	  duration         = "5m"
+	  not_reporting    = false
+	  aggregation_type = "AVG"
+	  target_entity_types = ["Website"]
+	  entity_ids = [
+		"e-1521946194448543744",
+		"e-1521947552186691584"
+	  ]
+	  group_by_metric_tag = [
+		"host.name"
+	  ]
+	},
+	{
+	  metric_name      = "sw.metrics.healthscore"
+	  threshold        = "<10"
+	  duration         = "5m"
+	  not_reporting    = false
+	  aggregation_type = "AVG"
+	  target_entity_types = ["Website"]
+	  entity_ids = [
+		"e-1521946194448543744",
+		"e-1521947552186691584"
+	  ]
+	  group_by_metric_tag = [
+		"host.name"
+	  ]
+	},
+	{
+	  metric_name      = "synthetics.status"
+	  threshold        = ""
+	  not_reporting    = true
+	  duration         = "30m"
+	  aggregation_type = "COUNT"
+	  target_entity_types = ["Website"]
+	  entity_ids = [
+		"e-1521946194448543744",
+		"e-1521947552186691584"
+	  ]
+	  group_by_metric_tag = [
+		"host.name"
+	  ]
+	},
+ ]
+ notifications = ["123", "456"]
+ runbook_link = "https://www.runbooklink.com"
 }
 `, name)
 }
