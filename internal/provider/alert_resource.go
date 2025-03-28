@@ -292,6 +292,7 @@ func (model *alertResourceModel) toAlertDefinitionInput() (swoClient.AlertDefini
 		}
 	}
 
+	triggerDelay := int(model.TriggerDelaySeconds.ValueInt64())
 	return swoClient.AlertDefinitionInput{
 		Name:                model.Name.ValueString(),
 		Description:         model.Description.ValueStringPointer(),
@@ -301,6 +302,7 @@ func (model *alertResourceModel) toAlertDefinitionInput() (swoClient.AlertDefini
 		TriggerResetActions: model.TriggerResetActions.ValueBoolPointer(),
 		Condition:           conditions,
 		RunbookLink:         model.RunbookLink.ValueStringPointer(),
+		TriggerDelaySeconds: &triggerDelay,
 	}, nil
 }
 

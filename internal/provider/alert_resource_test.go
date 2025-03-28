@@ -47,6 +47,7 @@ func TestAccAlertResource(t *testing.T) {
 					resource.TestCheckResourceAttr("swo_alert.test", "notifications.0", "123"),
 					resource.TestCheckResourceAttr("swo_alert.test", "notifications.1", "456"),
 					resource.TestCheckResourceAttr("swo_alert.test", "runbook_link", "https://www.runbooklink.com"),
+					resource.TestCheckResourceAttr("swo_alert.test", "trigger_delay_seconds", "300"),
 				),
 			},
 			// ImportState testing
@@ -107,6 +108,7 @@ func TestAccAlertResourceNotReporting(t *testing.T) {
 					resource.TestCheckResourceAttr("swo_alert.test", "notifications.0", "123"),
 					resource.TestCheckResourceAttr("swo_alert.test", "notifications.1", "456"),
 					resource.TestCheckResourceAttr("swo_alert.test", "runbook_link", "https://www.runbooklink.com"),
+					resource.TestCheckResourceAttr("swo_alert.test", "trigger_delay_seconds", "0"),
 				),
 			},
 			// ImportState testing
@@ -181,6 +183,7 @@ func TestMultiConditionAlertResource(t *testing.T) {
 					resource.TestCheckResourceAttr("swo_alert.test", "notifications.0", "123"),
 					resource.TestCheckResourceAttr("swo_alert.test", "notifications.1", "456"),
 					resource.TestCheckResourceAttr("swo_alert.test", "runbook_link", "https://www.runbooklink.com"),
+					resource.TestCheckResourceAttr("swo_alert.test", "trigger_delay_seconds", "600"),
 				),
 			},
 			// Update and Read testing
@@ -243,6 +246,7 @@ resource "swo_alert" "test" {
  ]
  notifications = ["123", "456"]
  runbook_link = "https://www.runbooklink.com"
+ trigger_delay_seconds = 300
 }
 `, name)
 }
@@ -310,6 +314,7 @@ resource "swo_alert" "test" {
  ]
  notifications = ["123", "456"]
  runbook_link = "https://www.runbooklink.com"
+ trigger_delay_seconds = 600
 }
 `, name)
 }
