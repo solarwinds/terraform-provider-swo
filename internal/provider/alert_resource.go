@@ -315,10 +315,10 @@ func (model *alertResourceModel) toAlertActionInput(ctx context.Context) []swoCl
 		for _, action := range model.NotificationActions {
 			actionsList := make(map[string][]string)
 
-			var ConfigurationIdsStringSlice []string
-			_ = action.ConfigurationIds.ElementsAs(ctx, &ConfigurationIdsStringSlice, false)
+			var configurationIds []string
+			_ = action.ConfigurationIds.ElementsAs(ctx, &configurationIds, false)
 
-			for _, configId := range ConfigurationIdsStringSlice {
+			for _, configId := range configurationIds {
 				// Notification Id's are formatted as id:type.
 				// This is to accommodate ImportState needing a single Id to import a resource.
 

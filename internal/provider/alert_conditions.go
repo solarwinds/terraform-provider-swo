@@ -3,7 +3,6 @@ package provider
 import (
 	"context"
 	"errors"
-	"fmt"
 	"regexp"
 	"strconv"
 
@@ -158,9 +157,7 @@ func (model alertConditionModel) toMetricFieldConditionInput(ctx context.Context
 
 	var entityFilterTypes, entityFilterIds []string
 	_ = model.TargetEntityTypes.ElementsAs(ctx, &entityFilterTypes, false)
-	diag := model.EntityIds.ElementsAs(ctx, &entityFilterIds, false)
-
-	fmt.Print(diag)
+	_ = model.EntityIds.ElementsAs(ctx, &entityFilterIds, false)
 
 	if len(model.EntityIds.Elements()) > 0 {
 		entityFilter := &swoClient.AlertConditionNodeEntityFilterInput{

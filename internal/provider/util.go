@@ -62,7 +62,7 @@ func lowerCaseSlice(input []string) []string {
 	return input
 }
 
-func stringSliceToList[T any](
+func sliceToStringList[T any](
 	items []T,
 	mapFn func(T) string,
 ) types.List {
@@ -82,7 +82,7 @@ func stringSliceToList[T any](
 }
 
 func stringArrayToList(items []string) types.List {
-	return stringSliceToList(items, func(s string) string { return s })
+	return sliceToStringList(items, func(s string) string { return s })
 }
 
 func attrValueToString(val attr.Value) string {

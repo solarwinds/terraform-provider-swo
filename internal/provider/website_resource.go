@@ -165,7 +165,7 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 				tfState.Monitoring.Availability.TestIntervalInSeconds = types.Int64Null()
 			}
 
-			tfState.Monitoring.Availability.Protocols = stringSliceToList(availability.Protocols, func(s swoClient.WebsiteProtocol) string {
+			tfState.Monitoring.Availability.Protocols = sliceToStringList(availability.Protocols, func(s swoClient.WebsiteProtocol) string {
 				return string(s)
 			})
 
