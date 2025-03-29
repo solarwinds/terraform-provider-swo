@@ -132,7 +132,7 @@ func (p *swoProvider) Configure(ctx context.Context, req provider.ConfigureReque
 		return
 	}
 
-	baseUrl, err := StripURLToDomain(config.BaseURL.ValueString())
+	baseUrl, err := stripURLToDomain(config.BaseURL.ValueString())
 
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("invalid base url: %s err: %s", baseUrl, err))

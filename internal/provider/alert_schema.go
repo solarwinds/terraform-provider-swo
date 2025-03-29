@@ -23,7 +23,7 @@ type alertResourceModel struct {
 	Severity            types.String            `tfsdk:"severity"`
 	Enabled             types.Bool              `tfsdk:"enabled"`
 	Conditions          []alertConditionModel   `tfsdk:"conditions"`
-	Notifications       []string                `tfsdk:"notifications"`
+	Notifications       types.List              `tfsdk:"notifications"`
 	TriggerResetActions types.Bool              `tfsdk:"trigger_reset_actions"`
 	RunbookLink         types.String            `tfsdk:"runbook_link"`
 	TriggerDelaySeconds types.Int64             `tfsdk:"trigger_delay_seconds"`
@@ -34,21 +34,21 @@ type alertConditionModel struct {
 	Threshold         types.String      `tfsdk:"threshold"`
 	Duration          types.String      `tfsdk:"duration"`
 	AggregationType   types.String      `tfsdk:"aggregation_type"`
-	EntityIds         []string          `tfsdk:"entity_ids"`
-	TargetEntityTypes []string          `tfsdk:"target_entity_types"`
+	EntityIds         types.List        `tfsdk:"entity_ids"`
+	TargetEntityTypes types.List        `tfsdk:"target_entity_types"`
 	IncludeTags       *[]alertTagsModel `tfsdk:"include_tags"`
 	ExcludeTags       *[]alertTagsModel `tfsdk:"exclude_tags"`
-	GroupByMetricTag  []string          `tfsdk:"group_by_metric_tag"`
+	GroupByMetricTag  types.List        `tfsdk:"group_by_metric_tag"`
 	NotReporting      types.Bool        `tfsdk:"not_reporting"`
 }
 
 type alertTagsModel struct {
 	Name   types.String `tfsdk:"name"`
-	Values []*string    `tfsdk:"values"`
+	Values types.List   `tfsdk:"values"`
 }
 
 type alertActionInputModel struct {
-	ConfigurationIds      []string    `tfsdk:"configuration_ids"`
+	ConfigurationIds      types.List  `tfsdk:"configuration_ids"`
 	ResendIntervalSeconds types.Int64 `tfsdk:"resend_interval_seconds"`
 }
 
