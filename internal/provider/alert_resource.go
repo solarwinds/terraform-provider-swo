@@ -291,6 +291,7 @@ func (model *alertResourceModel) toAlertDefinitionInput(ctx context.Context) (sw
 		}
 	}
 
+	triggerDelay := int(model.TriggerDelaySeconds.ValueInt64())
 	return swoClient.AlertDefinitionInput{
 		Name:                model.Name.ValueString(),
 		Description:         model.Description.ValueStringPointer(),
@@ -300,6 +301,7 @@ func (model *alertResourceModel) toAlertDefinitionInput(ctx context.Context) (sw
 		TriggerResetActions: model.TriggerResetActions.ValueBoolPointer(),
 		Condition:           conditions,
 		RunbookLink:         model.RunbookLink.ValueStringPointer(),
+		TriggerDelaySeconds: &triggerDelay,
 	}, nil
 }
 
