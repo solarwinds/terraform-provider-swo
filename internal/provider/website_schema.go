@@ -30,7 +30,7 @@ type probeLocation struct {
 
 type platformOptions struct {
 	TestFromAll types.Bool `tfsdk:"test_from_all"`
-	Platforms   []string   `tfsdk:"platforms"`
+	Platforms   types.List `tfsdk:"platforms"`
 }
 
 type sslMonitoring struct {
@@ -55,7 +55,7 @@ type monitoringOptions struct {
 type availabilityMonitoring struct {
 	CheckForString        *checkForStringType `tfsdk:"check_for_string"`
 	SSL                   *sslMonitoring      `tfsdk:"ssl"`
-	Protocols             []string            `tfsdk:"protocols"`
+	Protocols             types.List          `tfsdk:"protocols"`
 	TestFromLocation      types.String        `tfsdk:"test_from_location"`
 	TestIntervalInSeconds types.Int64         `tfsdk:"test_interval_in_seconds"`
 	LocationOptions       []probeLocation     `tfsdk:"location_options"`

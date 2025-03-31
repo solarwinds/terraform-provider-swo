@@ -45,11 +45,17 @@ func (r *alertResource) ValidateConfig(ctx context.Context, req resource.Validat
 		return
 	}
 
-	if len(data.Conditions) > 1 {
+	if len(data.Conditions) > 5 {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("conditions"),
-			"More than one condition.",
-			"Cannot support more than one condition at this time.",
+			"More than five conditions.",
+			"Cannot support more than five conditions at this time.",
+		)
+	} else if len(data.Conditions) < 1 {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("conditions"),
+			"No conditions.",
+			"One or more conditions are required to trigger the alert.",
 		)
 	}
 
@@ -77,6 +83,43 @@ func (r *alertResource) ValidateConfig(ctx context.Context, req resource.Validat
 					"Aggregation type must be COUNT when not_reporting is set to true.",
 				)
 			}
+		} else {
+			threshold := condition.Threshold.ValueString()
+			if threshold == "" {
+				resp.Diagnostics.AddAttributeError(
+					path.Root("threshold"),
+					"Required field when not_reporting is set to false.",
+					"Required field when not_reporting is set to false.",
+				)
+			}
+		}
+		if condition.MetricName.ValueString() == "" {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("metricName"),
+				"Required field.",
+				"Required field for alerting condition.",
+			)
+		}
+		if condition.Duration.ValueString() == "" {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("duration"),
+				"Required field.",
+				"Required field for alerting condition.",
+			)
+		}
+		if len(condition.TargetEntityTypes.Elements()) == 0 {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("targetEntityTypes"),
+				"Required field.",
+				"Required field for alerting condition.",
+			)
+		}
+		if condition.AggregationType.ValueString() == "" {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("aggregationType"),
+				"Required field.",
+				"Required field for alerting condition.",
+			)
 		}
 	}
 }
@@ -89,7 +132,13 @@ func (r *alertResource) Create(ctx context.Context, req resource.CreateRequest, 
 	}
 
 	// Create the alert from the provided Terraform model...
-	input := tfPlan.toAlertDefinitionInput()
+	input, defError := tfPlan.toAlertDefinitionInput(ctx)
+	if defError != nil {
+		resp.Diagnostics.AddError("Bad input in terraform resource",
+			fmt.Sprintf("error parsing terraform resource: %s", defError))
+		return
+	}
+
 	newAlertDef, err := r.client.AlertsService().Create(ctx, input)
 
 	if err != nil {
@@ -99,7 +148,6 @@ func (r *alertResource) Create(ctx context.Context, req resource.CreateRequest, 
 	}
 
 	tfPlan.Id = types.StringValue(newAlertDef.Id)
-
 	resp.Diagnostics.Append(resp.State.Set(ctx, &tfPlan)...)
 }
 
@@ -134,7 +182,12 @@ func (r *alertResource) Update(ctx context.Context, req resource.UpdateRequest, 
 	}
 
 	alertId := tfState.Id.ValueString()
-	input := tfPlan.toAlertDefinitionInput()
+	input, defError := tfPlan.toAlertDefinitionInput(ctx)
+	if defError != nil {
+		resp.Diagnostics.AddError("Bad input in terraform resource",
+			fmt.Sprintf("error parsing terraform resource: %s", defError))
+		return
+	}
 
 	// Update the alert definition...
 	_, err := r.client.AlertsService().Update(ctx, alertId, input)
@@ -176,27 +229,84 @@ func (r *alertResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 // func (r *alertResource) updateState(state *alertResourceModel, data *swoClient.ReadAlertDefinitionResult) {
 // }
 
-func (model *alertResourceModel) toAlertDefinitionInput() swoClient.AlertDefinitionInput {
-	conditions := []swoClient.AlertConditionNodeInput{}
+// Transforms a full Alert condition (with logical operators if needed) from
+// form values to a flat condition tree format that is accepted by the API.
+//
+// An example of a resulting condition tree (displayed as a nested tree):
+//
+//	     AND
+//	  /   |   \
+//	Con  Con  Con
+//
+// AND - Binary logical operator
+// Con. - Simple condition (comparison operator, metric, threshold, ...)
+//
+// The function will first create the required number of logical operator nodes with
+// pre-computed operator IDs. Then it'll transform all condition items to alert conditions.
+func (model *alertResourceModel) toAlertDefinitionInput(ctx context.Context) (swoClient.AlertDefinitionInput, error) {
 
-	for _, condition := range model.Conditions {
-		conditions = condition.toAlertConditionInputs(conditions)
+	var conditions []swoClient.AlertConditionNodeInput
+	var err error
+
+	if len(model.Conditions) == 1 {
+		conditions, err = model.Conditions[0].toAlertConditionInputs(ctx, 0)
+		if err != nil {
+			return swoClient.AlertDefinitionInput{}, err
+		}
+	} else {
+
+		// Currently we only allow one AND logical operator type on the top level
+		// These logical operators can be n-ary, so we just need one logicalOperator
+		rootLogicalOperator := swoClient.AlertConditionNodeInput{}
+		rootLogicalOperator.Id = 0
+		rootLogicalOperator.Type = string(swoClient.AlertLogicalOperatorType)
+		logicalOperator := string(swoClient.AlertOperatorAnd)
+		rootLogicalOperator.Operator = &logicalOperator
+
+		// Pre-computed child operator IDs
+		numConditions := len(model.Conditions)
+		rootOperandIds := make([]int, numConditions)
+		// We need to create 5 flat tree nodes to build an alert condition:
+		// - binaryOperator (comparisonOperator)
+		// - aggregationOperator
+		// - constantValue (threshold)
+		// - metricField
+		// - constantValue (time frame)
+		// and condition limit is 5 (for nested conditions). Total 30 = parent condition(10 = 2:relationship operator & scope-field + remaining for logical operators) + nested conditions max(5)(5*5 = 25)
+		alertConditionCountBuffer := 65
+		for i := 0; i < numConditions; i++ {
+			rootOperandIds[i] = (alertConditionCountBuffer * i) + 1
+		}
+		rootLogicalOperator.OperandIds = rootOperandIds
+		conditions = []swoClient.AlertConditionNodeInput{rootLogicalOperator}
+
+		// Create an alert condition for each
+		for i := 0; i < numConditions; i++ {
+			childRootNodeId := rootOperandIds[i]
+			childConditions, err := model.Conditions[i].toAlertConditionInputs(ctx, childRootNodeId)
+			if err != nil {
+				return swoClient.AlertDefinitionInput{}, err
+			}
+			conditions = append(conditions, childConditions...)
+		}
 	}
 
+	triggerDelay := int(model.TriggerDelaySeconds.ValueInt64())
 	return swoClient.AlertDefinitionInput{
 		Name:                model.Name.ValueString(),
 		Description:         model.Description.ValueStringPointer(),
 		Enabled:             model.Enabled.ValueBool(),
 		Severity:            swoClient.AlertSeverity(model.Severity.ValueString()),
-		Actions:             model.toAlertActionInput(),
+		Actions:             model.toAlertActionInput(ctx),
 		TriggerResetActions: model.TriggerResetActions.ValueBoolPointer(),
 		Condition:           conditions,
 		RunbookLink:         model.RunbookLink.ValueStringPointer(),
-	}
+		TriggerDelaySeconds: &triggerDelay,
+	}, nil
 }
 
-func (model *alertResourceModel) toAlertActionInput() []swoClient.AlertActionInput {
-	inputs := []swoClient.AlertActionInput{}
+func (model *alertResourceModel) toAlertActionInput(ctx context.Context) []swoClient.AlertActionInput {
+	var inputs []swoClient.AlertActionInput
 
 	//Notifications is deprecated. NotificationActions should be used instead.
 	// This if/else maintains backwards compatability.
@@ -207,9 +317,13 @@ func (model *alertResourceModel) toAlertActionInput() []swoClient.AlertActionInp
 		for _, action := range model.NotificationActions {
 			actionsList := make(map[string][]string)
 
-			for _, configId := range action.ConfigurationIds {
+			var configurationIds []string
+			action.ConfigurationIds.ElementsAs(ctx, &configurationIds, false)
+
+			for _, configId := range configurationIds {
 				// Notification Id's are formatted as id:type.
-				// This is to accomidate ImportState needing a single Id to import a resource.
+				// This is to accommodate ImportState needing a single Id to import a resource.
+
 				actionId, notificationType, _ := ParseNotificationId(types.StringValue(configId))
 				actionType := findCaseInsensitiveMatch(notificationActionTypes, notificationType)
 
@@ -230,8 +344,8 @@ func (model *alertResourceModel) toAlertActionInput() []swoClient.AlertActionInp
 		}
 	} else {
 		actionTypes := map[string][]string{}
-		for _, configId := range model.Notifications {
-			actionId, notificationType, err := ParseNotificationId(types.StringValue(configId))
+		for _, configId := range model.Notifications.Elements() {
+			actionId, notificationType, err := ParseNotificationId(types.StringValue(configId.String()))
 			actionType := findCaseInsensitiveMatch(notificationActionTypes, notificationType)
 
 			if err == nil {

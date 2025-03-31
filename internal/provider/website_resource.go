@@ -62,16 +62,18 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 	var availabilityCheckSettings *components.AvailabilityCheckSettings
 	if tfPlan.Monitoring.Availability != nil {
 
+		var protocols []components.WebsiteProtocol
+		tfPlan.Monitoring.Availability.Protocols.ElementsAs(ctx, &protocols, false)
+
+		var probePlatforms []components.ProbePlatform
+		tfPlan.Monitoring.Availability.PlatformOptions.Platforms.ElementsAs(ctx, &protocols, false)
+
 		availabilityCheckSettings = &components.AvailabilityCheckSettings{
 			TestIntervalInSeconds: int(tfPlan.Monitoring.Availability.TestIntervalInSeconds.ValueInt64()),
-			Protocols: convertArray(tfPlan.Monitoring.Availability.Protocols, func(s string) components.WebsiteProtocol {
-				return components.WebsiteProtocol(s)
-			}),
+			Protocols:             protocols,
 			PlatformOptions: &components.ProbePlatformOptions{
-				TestFromAll: tfPlan.Monitoring.Availability.PlatformOptions.TestFromAll.ValueBoolPointer(),
-				ProbePlatforms: convertArray(tfPlan.Monitoring.Availability.PlatformOptions.Platforms, func(s string) components.ProbePlatform {
-					return components.ProbePlatform(s)
-				}),
+				TestFromAll:    tfPlan.Monitoring.Availability.PlatformOptions.TestFromAll.ValueBoolPointer(),
+				ProbePlatforms: probePlatforms,
 			},
 			TestFrom: components.TestFrom{
 				Type: components.ProbeLocationType(tfPlan.Monitoring.Availability.TestFromLocation.ValueString()),
@@ -110,7 +112,7 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 			Spa: tfPlan.Monitoring.Rum.Spa.ValueBool(),
 		}
 
-		if tfPlan.Monitoring.Rum.ApdexTimeInSeconds != nil {
+		if &tfPlan.Monitoring.Rum.ApdexTimeInSeconds != nil {
 			rumApdexTimeInSeconds := int(tfPlan.Monitoring.Rum.ApdexTimeInSeconds.ValueInt32())
 			rum.ApdexTimeInSeconds = &rumApdexTimeInSeconds
 		}
@@ -188,14 +190,14 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 		tfState.Monitoring.Availability.TestIntervalInSeconds = types.Int64Null()
 	}
 
-	tfState.Monitoring.Availability.Protocols = convertArray(availability.Protocols, func(s components.WebsiteProtocol) string {
+	tfState.Monitoring.Availability.Protocols = sliceToStringList(availability.Protocols, func(s components.WebsiteProtocol) string {
 		return string(s)
 	})
 
 	if availability.PlatformOptions != nil {
 		tfState.Monitoring.Availability.PlatformOptions = platformOptions{
 			TestFromAll: types.BoolValue(*availability.PlatformOptions.TestFromAll),
-			Platforms: convertArray(availability.PlatformOptions.ProbePlatforms, func(s components.ProbePlatform) string {
+			Platforms: sliceToStringList(availability.PlatformOptions.ProbePlatforms, func(s components.ProbePlatform) string {
 				return string(s)
 			}),
 		}
@@ -214,7 +216,7 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 		for _, p := range availability.TestFrom.Values {
 			locOpts = append(locOpts, probeLocation{
 				Type:  types.StringValue(string(availability.TestFrom.Type)),
-				Value: types.StringValue(string(p)),
+				Value: types.StringValue(p),
 			})
 		}
 		tfState.Monitoring.Availability.LocationOptions = locOpts
@@ -253,8 +255,7 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 		}
 
 		if ws.Rum.ApdexTimeInSeconds != nil {
-			apdexTimeInSeconds := types.Int32Value(int32(*ws.Rum.ApdexTimeInSeconds))
-			tfState.Monitoring.Rum.ApdexTimeInSeconds = &apdexTimeInSeconds
+			tfState.Monitoring.Rum.ApdexTimeInSeconds = types.Int32Value(int32(*ws.Rum.ApdexTimeInSeconds))
 		}
 
 		if ws.Rum.Snippet != nil {
@@ -293,6 +294,12 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 
 	rumApdexTimeInSeconds := int(tfPlan.Monitoring.Rum.ApdexTimeInSeconds.ValueInt32())
 
+	var protocols []components.WebsiteProtocol
+	tfPlan.Monitoring.Availability.Protocols.ElementsAs(ctx, &protocols, false)
+
+	var probePlatforms []components.ProbePlatform
+	tfPlan.Monitoring.Availability.PlatformOptions.Platforms.ElementsAs(ctx, &protocols, false)
+
 	updateWebsiteReq := operations.UpdateWebsiteRequest{
 		EntityID: tfState.Id.ValueString(),
 		Website: components.Website{
@@ -301,14 +308,10 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 			AvailabilityCheckSettings: &components.AvailabilityCheckSettings{
 				CheckForString:        checkForString,
 				TestIntervalInSeconds: int(tfPlan.Monitoring.Availability.TestIntervalInSeconds.ValueInt64()),
-				Protocols: convertArray(tfPlan.Monitoring.Availability.Protocols, func(s string) components.WebsiteProtocol {
-					return components.WebsiteProtocol(s)
-				}),
+				Protocols:             protocols,
 				PlatformOptions: &components.ProbePlatformOptions{
-					TestFromAll: swoClient.Ptr(tfPlan.Monitoring.Availability.PlatformOptions.TestFromAll.ValueBool()),
-					ProbePlatforms: convertArray(tfPlan.Monitoring.Availability.PlatformOptions.Platforms, func(s string) components.ProbePlatform {
-						return components.ProbePlatform(s)
-					}),
+					TestFromAll:    swoClient.Ptr(tfPlan.Monitoring.Availability.PlatformOptions.TestFromAll.ValueBool()),
+					ProbePlatforms: probePlatforms,
 				},
 				TestFrom: components.TestFrom{
 					Type: components.ProbeLocationType(tfPlan.Monitoring.Availability.TestFromLocation.ValueString()),
@@ -366,7 +369,7 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 		},
 	}
 
-	// Updates are eventually consistant. Retry until the Website we read and the Website we are updating match.
+	// Updates are eventually consistent. Retry until the Website we read and the Website we are updating match.
 	_, err = BackoffRetry(func() (*operations.GetWebsiteResponse, error) {
 
 		websiteReq := operations.GetWebsiteRequest{
@@ -426,7 +429,7 @@ func (r *websiteResource) ImportState(ctx context.Context, req resource.ImportSt
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-// Website Creates and Updates are eventually consistant. Retry until the entity id is returned.
+// RetryGetWebsite Website Creates and Updates are eventually consistent. Retry until the entity id is returned.
 func (r *websiteResource) RetryGetWebsite(ctx context.Context, entityId string) (operations.GetWebsiteResponse, error) {
 	website := operations.GetWebsiteRequest{
 		EntityID: entityId,

@@ -17,7 +17,7 @@ type logFilterResourceModel struct {
 	Id             types.String          `tfsdk:"id"`
 	Name           types.String          `tfsdk:"name"`
 	Description    types.String          `tfsdk:"description"`
-	TokenSignature *string               `tfsdk:"token_signature"`
+	TokenSignature types.String          `tfsdk:"token_signature"`
 	Expressions    []logFilterExpression `tfsdk:"expressions"`
 }
 

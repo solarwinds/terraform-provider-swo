@@ -7,6 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	swoClient "github.com/solarwinds/swo-client-go/pkg/client"
@@ -22,9 +23,10 @@ type alertResourceModel struct {
 	Severity            types.String            `tfsdk:"severity"`
 	Enabled             types.Bool              `tfsdk:"enabled"`
 	Conditions          []alertConditionModel   `tfsdk:"conditions"`
-	Notifications       []string                `tfsdk:"notifications"`
+	Notifications       types.List              `tfsdk:"notifications"`
 	TriggerResetActions types.Bool              `tfsdk:"trigger_reset_actions"`
 	RunbookLink         types.String            `tfsdk:"runbook_link"`
+	TriggerDelaySeconds types.Int64             `tfsdk:"trigger_delay_seconds"`
 }
 
 type alertConditionModel struct {
@@ -32,21 +34,21 @@ type alertConditionModel struct {
 	Threshold         types.String      `tfsdk:"threshold"`
 	Duration          types.String      `tfsdk:"duration"`
 	AggregationType   types.String      `tfsdk:"aggregation_type"`
-	EntityIds         []string          `tfsdk:"entity_ids"`
-	TargetEntityTypes []string          `tfsdk:"target_entity_types"`
+	EntityIds         types.List        `tfsdk:"entity_ids"`
+	TargetEntityTypes types.List        `tfsdk:"target_entity_types"`
 	IncludeTags       *[]alertTagsModel `tfsdk:"include_tags"`
 	ExcludeTags       *[]alertTagsModel `tfsdk:"exclude_tags"`
-	GroupByMetricTag  []string          `tfsdk:"group_by_metric_tag"`
+	GroupByMetricTag  types.List        `tfsdk:"group_by_metric_tag"`
 	NotReporting      types.Bool        `tfsdk:"not_reporting"`
 }
 
 type alertTagsModel struct {
 	Name   types.String `tfsdk:"name"`
-	Values []*string    `tfsdk:"values"`
+	Values types.List   `tfsdk:"values"`
 }
 
 type alertActionInputModel struct {
-	ConfigurationIds      []string    `tfsdk:"configuration_ids"`
+	ConfigurationIds      types.List  `tfsdk:"configuration_ids"`
 	ResendIntervalSeconds types.Int64 `tfsdk:"resend_interval_seconds"`
 }
 
@@ -222,6 +224,12 @@ func (r *alertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 			"runbook_link": schema.StringAttribute{
 				Description: "A runbook is documentation of what steps to follow when something goes wrong.",
 				Optional:    true,
+			},
+			"trigger_delay_seconds": schema.Int64Attribute{
+				Description: "Number of seconds during which the conditions must be continually met before an alert is triggered. Value must be between 60 to 86400 seconds, and value has to be divisible by 60.",
+				Optional:    true,
+				Computed:    true,
+				Default:     int64default.StaticInt64(0),
 			},
 		},
 	}
