@@ -318,7 +318,7 @@ func (model *alertResourceModel) toAlertActionInput(ctx context.Context) []swoCl
 			actionsList := make(map[string][]string)
 
 			var configurationIds []string
-			_ = action.ConfigurationIds.ElementsAs(ctx, &configurationIds, false)
+			action.ConfigurationIds.ElementsAs(ctx, &configurationIds, false)
 
 			for _, configId := range configurationIds {
 				// Notification Id's are formatted as id:type.

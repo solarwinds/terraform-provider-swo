@@ -146,7 +146,7 @@ func (model alertConditionModel) toAggregationConditionInput() (swoClient.AlertC
 func (model alertConditionModel) toMetricFieldConditionInput(ctx context.Context) swoClient.AlertConditionNodeInput {
 
 	var groupByMetricTag []string
-	_ = model.GroupByMetricTag.ElementsAs(ctx, &groupByMetricTag, false)
+	model.GroupByMetricTag.ElementsAs(ctx, &groupByMetricTag, false)
 	metricName := model.MetricName.ValueString()
 
 	metricFieldCondition := swoClient.AlertConditionNodeInput{
@@ -156,8 +156,8 @@ func (model alertConditionModel) toMetricFieldConditionInput(ctx context.Context
 	}
 
 	var entityFilterTypes, entityFilterIds []string
-	_ = model.TargetEntityTypes.ElementsAs(ctx, &entityFilterTypes, false)
-	_ = model.EntityIds.ElementsAs(ctx, &entityFilterIds, false)
+	model.TargetEntityTypes.ElementsAs(ctx, &entityFilterTypes, false)
+	model.EntityIds.ElementsAs(ctx, &entityFilterIds, false)
 
 	if len(model.EntityIds.Elements()) > 0 {
 		entityFilter := &swoClient.AlertConditionNodeEntityFilterInput{
@@ -187,7 +187,7 @@ func (model alertConditionModel) toMetricFieldConditionInput(ctx context.Context
 
 	for _, tag := range includeTags {
 		var metricFilterPropertyValues []*string
-		_ = tag.Values.ElementsAs(ctx, &metricFilterPropertyValues, false)
+		tag.Values.ElementsAs(ctx, &metricFilterPropertyValues, false)
 		propertyName := tag.Name.ValueString()
 		metricFilter := swoClient.AlertFilterExpressionInput{
 			PropertyName:   &propertyName,
@@ -203,7 +203,7 @@ func (model alertConditionModel) toMetricFieldConditionInput(ctx context.Context
 
 	for _, tag := range excludeTags {
 		var propertyValues []*string
-		_ = tag.Values.ElementsAs(ctx, &propertyValues, false)
+		tag.Values.ElementsAs(ctx, &propertyValues, false)
 		propertyName := tag.Name.ValueString()
 
 		metricFilter := swoClient.AlertFilterExpressionInput{
