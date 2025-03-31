@@ -112,7 +112,7 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 			Spa: tfPlan.Monitoring.Rum.Spa.ValueBool(),
 		}
 
-		if &tfPlan.Monitoring.Rum.ApdexTimeInSeconds != nil {
+		if tfPlan.Monitoring.Rum.ApdexTimeInSeconds.ValueInt32Pointer() != nil {
 			rumApdexTimeInSeconds := int(tfPlan.Monitoring.Rum.ApdexTimeInSeconds.ValueInt32())
 			rum.ApdexTimeInSeconds = &rumApdexTimeInSeconds
 		}
@@ -255,7 +255,13 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 		}
 
 		if ws.Rum.ApdexTimeInSeconds != nil {
-			tfState.Monitoring.Rum.ApdexTimeInSeconds = types.Int32Value(int32(*ws.Rum.ApdexTimeInSeconds))
+			var apdexTimeInSeconds int32
+			apdexTimeInSeconds, resp.Diagnostics = safeIntToInt32(*ws.Rum.ApdexTimeInSeconds, resp.Diagnostics)
+			if resp.Diagnostics.HasError() {
+				return
+			}
+
+			tfState.Monitoring.Rum.ApdexTimeInSeconds = types.Int32Value(apdexTimeInSeconds)
 		}
 
 		if ws.Rum.Snippet != nil {
