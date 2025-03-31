@@ -97,13 +97,22 @@ resource "swo_website" "test_website" {
 
 Required:
 
-- `availability` (Attributes) The Website availability monitoring settings. (see [below for nested schema](#nestedatt--monitoring--availability))
 - `custom_headers` (Attributes Set) One or more custom headers to send with the uptime check. (see [below for nested schema](#nestedatt--monitoring--custom_headers))
-- `rum` (Attributes) The Website RUM monitoring settings. (see [below for nested schema](#nestedatt--monitoring--rum))
 
 Optional:
 
+- `availability` (Attributes) The Website availability monitoring settings. (see [below for nested schema](#nestedatt--monitoring--availability))
 - `options` (Attributes, Deprecated) The Website monitoring options. (see [below for nested schema](#nestedatt--monitoring--options))
+- `rum` (Attributes) The Website RUM monitoring settings. (see [below for nested schema](#nestedatt--monitoring--rum))
+
+<a id="nestedatt--monitoring--custom_headers"></a>
+### Nested Schema for `monitoring.custom_headers`
+
+Required:
+
+- `name` (String) The Website custom header name.
+- `value` (String) The Website custom header value.
+
 
 <a id="nestedatt--monitoring--availability"></a>
 ### Nested Schema for `monitoring.availability`
@@ -159,28 +168,6 @@ Required:
 
 
 
-<a id="nestedatt--monitoring--custom_headers"></a>
-### Nested Schema for `monitoring.custom_headers`
-
-Required:
-
-- `name` (String) The Website custom header name.
-- `value` (String) The Website custom header value.
-
-
-<a id="nestedatt--monitoring--rum"></a>
-### Nested Schema for `monitoring.rum`
-
-Required:
-
-- `apdex_time_in_seconds` (Number) The Website RUM monitoring apdex time in seconds.
-- `spa` (Boolean) Is SPA monitoring enabled?
-
-Read-Only:
-
-- `snippet` (String) The Website RUM monitoring code snippet (provided by the server).
-
-
 <a id="nestedatt--monitoring--options"></a>
 ### Nested Schema for `monitoring.options`
 
@@ -188,3 +175,19 @@ Required:
 
 - `is_availability_active` (Boolean, Deprecated) Is availability monitoring active?
 - `is_rum_active` (Boolean, Deprecated) Is RUM monitoring active?
+
+
+<a id="nestedatt--monitoring--rum"></a>
+### Nested Schema for `monitoring.rum`
+
+Required:
+
+- `spa` (Boolean) Is SPA monitoring enabled?
+
+Optional:
+
+- `apdex_time_in_seconds` (Number) The Website RUM monitoring apdex time in seconds.
+
+Read-Only:
+
+- `snippet` (String) The Website RUM monitoring code snippet (provided by the server).
