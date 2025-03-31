@@ -46,7 +46,7 @@ func (r *logFilterResource) Create(ctx context.Context, req resource.CreateReque
 	createInput := swoClient.CreateExclusionFilterInput{
 		Name:           tfPlan.Name.ValueString(),
 		Description:    tfPlan.Description.ValueString(),
-		TokenSignature: tfPlan.TokenSignature,
+		TokenSignature: tfPlan.TokenSignature.ValueStringPointer(),
 		Expressions: convertArray(tfPlan.Expressions, func(e logFilterExpression) swoClient.CreateExclusionFilterExpressionInput {
 			return swoClient.CreateExclusionFilterExpressionInput{
 				Kind:       swoClient.ExclusionFilterExpressionKind(e.Kind),
@@ -90,7 +90,7 @@ func (r *logFilterResource) Read(ctx context.Context, req resource.ReadRequest, 
 	// Update the Terraform state with latest values from the server.
 	tfState.Name = types.StringValue(logFilter.Name)
 	tfState.Description = types.StringValue(*logFilter.Description)
-	tfState.TokenSignature = logFilter.TokenSignature
+	tfState.TokenSignature = types.StringValue(*logFilter.TokenSignature)
 
 	var lfe []logFilterExpression
 	for _, p := range logFilter.Expressions {
