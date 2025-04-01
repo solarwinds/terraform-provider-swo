@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 
@@ -59,6 +60,9 @@ func (r *alertResource) ValidateConfig(ctx context.Context, req resource.Validat
 		)
 	}
 
+	// get first node with which to compare each nodes' targetEntityTypes, entityIds, groupByMetricTag against
+	firstNode := data.Conditions[0]
+
 	for _, condition := range data.Conditions {
 		// Validation if not_reporting = true
 		notReporting := condition.NotReporting.ValueBool()
@@ -114,11 +118,34 @@ func (r *alertResource) ValidateConfig(ctx context.Context, req resource.Validat
 				"Required field for alerting condition.",
 			)
 		}
+		if !reflect.DeepEqual(firstNode.TargetEntityTypes, condition.TargetEntityTypes) {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("targetEntityTypes"),
+				"The entity type list must be same for all conditions",
+				fmt.Sprintf("The list must be same for all conditions, but %v does not match %v.", firstNode.TargetEntityTypes, condition.TargetEntityTypes),
+			)
+		}
+
 		if condition.AggregationType.ValueString() == "" {
 			resp.Diagnostics.AddAttributeError(
 				path.Root("aggregationType"),
 				"Required field.",
 				"Required field for alerting condition.",
+			)
+		}
+
+		if !reflect.DeepEqual(firstNode.GroupByMetricTag, condition.GroupByMetricTag) {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("groupByMetricTag"),
+				"The tag list must be same for all conditions",
+				fmt.Sprintf("The list must be same for all conditions, but %v does not match %v.", firstNode.GroupByMetricTag, condition.GroupByMetricTag),
+			)
+		}
+		if !reflect.DeepEqual(firstNode.EntityIds, condition.EntityIds) {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("entityIds"),
+				"The entity id list must be same for all conditions",
+				fmt.Sprintf("The list must be same for all conditions, but %v does not match %v.", firstNode.EntityIds, condition.EntityIds),
 			)
 		}
 	}
