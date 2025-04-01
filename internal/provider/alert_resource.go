@@ -3,8 +3,6 @@ package provider
 import (
 	"context"
 	"fmt"
-	"reflect"
-
 	"github.com/hashicorp/terraform-plugin-framework/path"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -118,7 +116,7 @@ func (r *alertResource) ValidateConfig(ctx context.Context, req resource.Validat
 				"Required field for alerting condition.",
 			)
 		}
-		if !reflect.DeepEqual(firstNode.TargetEntityTypes, condition.TargetEntityTypes) {
+		if !firstNode.TargetEntityTypes.Equal(condition.TargetEntityTypes) {
 			resp.Diagnostics.AddAttributeError(
 				path.Root("targetEntityTypes"),
 				"The entity type list must be same for all conditions",
@@ -134,14 +132,14 @@ func (r *alertResource) ValidateConfig(ctx context.Context, req resource.Validat
 			)
 		}
 
-		if !reflect.DeepEqual(firstNode.GroupByMetricTag, condition.GroupByMetricTag) {
+		if !firstNode.GroupByMetricTag.Equal(condition.GroupByMetricTag) {
 			resp.Diagnostics.AddAttributeError(
 				path.Root("groupByMetricTag"),
 				"The tag list must be same for all conditions",
 				fmt.Sprintf("The list must be same for all conditions, but %v does not match %v.", firstNode.GroupByMetricTag, condition.GroupByMetricTag),
 			)
 		}
-		if !reflect.DeepEqual(firstNode.EntityIds, condition.EntityIds) {
+		if !firstNode.EntityIds.Equal(condition.EntityIds) {
 			resp.Diagnostics.AddAttributeError(
 				path.Root("entityIds"),
 				"The entity id list must be same for all conditions",
