@@ -50,14 +50,17 @@ func (r *alertResource) ValidateConfig(ctx context.Context, req resource.Validat
 			"More than five conditions.",
 			"Cannot support more than five conditions at this time.",
 		)
+		return
 	} else if len(data.Conditions) < 1 {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("conditions"),
 			"No conditions.",
 			"One or more conditions are required to trigger the alert.",
 		)
+		return
 	}
 
+	// validate each alert condition
 	// get first node with which to compare each nodes' targetEntityTypes, entityIds, groupByMetricTag against
 	firstNode := data.Conditions[0]
 
