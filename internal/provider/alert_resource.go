@@ -3,7 +3,6 @@ package provider
 import (
 	"context"
 	"fmt"
-
 	"github.com/hashicorp/terraform-plugin-framework/path"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -51,13 +50,19 @@ func (r *alertResource) ValidateConfig(ctx context.Context, req resource.Validat
 			"More than five conditions.",
 			"Cannot support more than five conditions at this time.",
 		)
+		return
 	} else if len(data.Conditions) < 1 {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("conditions"),
 			"No conditions.",
 			"One or more conditions are required to trigger the alert.",
 		)
+		return
 	}
+
+	// validate each alert condition
+	// get first node with which to compare each nodes' targetEntityTypes, entityIds, groupByMetricTag against
+	firstNode := data.Conditions[0]
 
 	for _, condition := range data.Conditions {
 		// Validation if not_reporting = true
@@ -114,11 +119,34 @@ func (r *alertResource) ValidateConfig(ctx context.Context, req resource.Validat
 				"Required field for alerting condition.",
 			)
 		}
+		if !firstNode.TargetEntityTypes.Equal(condition.TargetEntityTypes) {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("targetEntityTypes"),
+				"The entity type list must be same for all conditions",
+				fmt.Sprintf("The list must be same for all conditions, but %v does not match %v.", firstNode.TargetEntityTypes, condition.TargetEntityTypes),
+			)
+		}
+
 		if condition.AggregationType.ValueString() == "" {
 			resp.Diagnostics.AddAttributeError(
 				path.Root("aggregationType"),
 				"Required field.",
 				"Required field for alerting condition.",
+			)
+		}
+
+		if !firstNode.GroupByMetricTag.Equal(condition.GroupByMetricTag) {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("groupByMetricTag"),
+				"The tag list must be same for all conditions",
+				fmt.Sprintf("The list must be same for all conditions, but %v does not match %v.", firstNode.GroupByMetricTag, condition.GroupByMetricTag),
+			)
+		}
+		if !firstNode.EntityIds.Equal(condition.EntityIds) {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("entityIds"),
+				"The entity id list must be same for all conditions",
+				fmt.Sprintf("The list must be same for all conditions, but %v does not match %v.", firstNode.EntityIds, condition.EntityIds),
 			)
 		}
 	}
