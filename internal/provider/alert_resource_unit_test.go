@@ -2,6 +2,8 @@ package provider
 
 import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -12,24 +14,25 @@ func Test_ValidateConditions_LengthLessThanOne(t *testing.T) {
 	model := alertResourceModel{
 		Conditions: []alertConditionModel{},
 	}
-	diagnosticError := model.validateConditions()
+	result := model.validateConditions()
 
-	expected := []diagnosticsError{
-		{
-			attributeName: "conditions",
-			summary:       "Invalid number of alerting conditions.",
-			details:       "Number of alerting conditions must be between 1 and 5.",
-		},
+	expected := []diag.DiagnosticWithPath{
+		diag.NewAttributeErrorDiagnostic(
+			path.Root("conditions"),
+			"Invalid number of alerting conditions.",
+			"Number of alerting conditions must be between 1 and 5."),
 	}
-	if len(diagnosticError) != len(expected) {
+
+	if len(expected) != len(result) {
 		t.Fatalf("expected %v diagnosticErrors", len(expected))
 	}
 
-	for i := 0; i < len(expected); i++ {
-		if diagnosticError[i] != expected[i] {
-			t.Fatalf("expected(%v, %v, %v) unexpected(%v, %v, %v) ",
-				expected[i].attributeName, expected[i].summary, expected[i].details,
-				diagnosticError[i].attributeName, diagnosticError[i].summary, diagnosticError[i].details)
+	for i := range expected {
+		r, _ := result[i].(diag.DiagnosticWithPath)
+		if !expected[i].Equal(r) {
+			t.Errorf("expected(%v, %v, %v) unexpected(%v, %v, %v) ",
+				expected[i].Path(), expected[i].Summary(), expected[i].Detail(),
+				r.Path(), r.Summary(), r.Detail())
 		}
 	}
 }
@@ -41,24 +44,25 @@ func Test_ValidateConditions_LengthGreaterThanFive(t *testing.T) {
 			{}, {}, {}, {}, {}, {},
 		},
 	}
-	diagnosticError := model.validateConditions()
+	result := model.validateConditions()
 
-	expected := []diagnosticsError{
-		{
-			attributeName: "conditions",
-			summary:       "Invalid number of alerting conditions.",
-			details:       "Number of alerting conditions must be between 1 and 5.",
-		},
+	expected := []diag.DiagnosticWithPath{
+		diag.NewAttributeErrorDiagnostic(
+			path.Root("conditions"),
+			"Invalid number of alerting conditions.",
+			"Number of alerting conditions must be between 1 and 5."),
 	}
-	if len(diagnosticError) != len(expected) {
+
+	if len(expected) != len(result) {
 		t.Fatalf("expected %v diagnosticErrors", len(expected))
 	}
 
-	for i := 0; i < len(expected); i++ {
-		if diagnosticError[i] != expected[i] {
-			t.Fatalf("expected(%v, %v, %v) unexpected(%v, %v, %v) ",
-				expected[i].attributeName, expected[i].summary, expected[i].details,
-				diagnosticError[i].attributeName, diagnosticError[i].summary, diagnosticError[i].details)
+	for i := range expected {
+		r, _ := result[i].(diag.DiagnosticWithPath)
+		if !expected[i].Equal(r) {
+			t.Errorf("expected(%v, %v, %v) unexpected(%v, %v, %v) ",
+				expected[i].Path(), expected[i].Summary(), expected[i].Detail(),
+				r.Path(), r.Summary(), r.Detail())
 		}
 	}
 }
@@ -101,30 +105,30 @@ func Test_ValidateCondition_NotReporting(t *testing.T) {
 			},
 		},
 	}
-	expected := []diagnosticsError{
-		{
-			attributeName: "threshold",
-			summary:       "Cannot set threshold when not_reporting is set to true.",
-			details:       "Cannot set threshold when not_reporting is set to true.",
-		},
-		{
-			attributeName: "aggregationType",
-			summary:       "Aggregation type must be COUNT when not_reporting is set to true.",
-			details:       "Aggregation type must be COUNT when not_reporting is set to true.",
-		},
+
+	expected := []diag.DiagnosticWithPath{
+		diag.NewAttributeErrorDiagnostic(
+			path.Root("threshold"),
+			"Cannot set threshold when not_reporting is set to true.",
+			"Cannot set threshold when not_reporting is set to true."),
+		diag.NewAttributeErrorDiagnostic(
+			path.Root("aggregationType"),
+			"Aggregation type must be COUNT when not_reporting is set to true.",
+			"Aggregation type must be COUNT when not_reporting is set to true."),
 	}
 
-	diagnosticError := model.validateConditions()
+	result := model.validateConditions()
 
-	if len(diagnosticError) != len(expected) {
+	if len(expected) != len(result) {
 		t.Fatalf("expected %v diagnosticErrors", len(expected))
 	}
 
-	for i := 0; i < len(expected); i++ {
-		if diagnosticError[i] != expected[i] {
-			t.Fatalf("expected(%v, %v, %v) unexpected(%v, %v, %v) ",
-				expected[i].attributeName, expected[i].summary, expected[i].details,
-				diagnosticError[i].attributeName, diagnosticError[i].summary, diagnosticError[i].details)
+	for i := range expected {
+		r, _ := result[i].(diag.DiagnosticWithPath)
+		if !expected[i].Equal(r) {
+			t.Errorf("expected(%v, %v, %v) unexpected(%v, %v, %v) ",
+				expected[i].Path(), expected[i].Summary(), expected[i].Detail(),
+				r.Path(), r.Summary(), r.Detail())
 		}
 	}
 }
@@ -144,24 +148,26 @@ func Test_ValidateCondition_Reporting(t *testing.T) {
 			},
 		},
 	}
-	diagnosticError := model.validateConditions()
 
-	expected := []diagnosticsError{
-		{
-			attributeName: "threshold",
-			summary:       "Required field when not_reporting is set to false.",
-			details:       "Required field when not_reporting is set to false.",
-		},
+	expected := []diag.DiagnosticWithPath{
+		diag.NewAttributeErrorDiagnostic(
+			path.Root("threshold"),
+			"Required field when not_reporting is set to false.",
+			"Required field when not_reporting is set to false."),
 	}
-	if len(diagnosticError) != len(expected) {
+
+	result := model.validateConditions()
+
+	if len(expected) != len(result) {
 		t.Fatalf("expected %v diagnosticErrors", len(expected))
 	}
 
-	for i := 0; i < len(expected); i++ {
-		if diagnosticError[i] != expected[i] {
-			t.Fatalf("expected(%v, %v, %v) unexpected(%v, %v, %v) ",
-				expected[i].attributeName, expected[i].summary, expected[i].details,
-				diagnosticError[i].attributeName, diagnosticError[i].summary, diagnosticError[i].details)
+	for i := range expected {
+		r, _ := result[i].(diag.DiagnosticWithPath)
+		if !expected[i].Equal(r) {
+			t.Errorf("expected(%v, %v, %v) unexpected(%v, %v, %v) ",
+				expected[i].Path(), expected[i].Summary(), expected[i].Detail(),
+				r.Path(), r.Summary(), r.Detail())
 		}
 	}
 }
@@ -215,35 +221,33 @@ func Test_ValidateCondition_CompareLists(t *testing.T) {
 			},
 		},
 	}
-	diagnosticError := model.validateConditions()
+	result := model.validateConditions()
 
-	expected := []diagnosticsError{
-		{
-			attributeName: "targetEntityTypes",
-			summary:       "The list must be same for all conditions",
-			details:       "The list must be same for all conditions, but [\"Website\"] does not match [\"Uri\"].",
-		},
-		{
-			attributeName: "entityIds",
-			summary:       "The list must be same for all conditions",
-			details:       "The list must be same for all conditions, but [\"123\"] does not match [\"456\"].",
-		},
-		{
-			attributeName: "groupByMetricTag",
-			summary:       "The list must be same for all conditions",
-			details:       "The list must be same for all conditions, but [\"tags.names\"] does not match [\"tags.environment\"].",
-		},
+	expected := []diag.DiagnosticWithPath{
+		diag.NewAttributeErrorDiagnostic(
+			path.Root("targetEntityTypes"),
+			"The list must be same for all conditions",
+			"The list must be same for all conditions, but [\"Website\"] does not match [\"Uri\"]."),
+		diag.NewAttributeErrorDiagnostic(
+			path.Root("entityIds"),
+			"The list must be same for all conditions",
+			"The list must be same for all conditions, but [\"123\"] does not match [\"456\"]."),
+		diag.NewAttributeErrorDiagnostic(
+			path.Root("groupByMetricTag"),
+			"The list must be same for all conditions",
+			"The list must be same for all conditions, but [\"tags.names\"] does not match [\"tags.environment\"]."),
 	}
 
-	if len(diagnosticError) != len(expected) {
+	if len(expected) != len(result) {
 		t.Fatalf("expected %v diagnosticErrors", len(expected))
 	}
 
-	for i := 0; i < len(expected); i++ {
-		if diagnosticError[i] != expected[i] {
-			t.Fatalf("expected(%v, %v, %v) unexpected(%v, %v, %v) ",
-				expected[i].attributeName, expected[i].summary, expected[i].details,
-				diagnosticError[i].attributeName, diagnosticError[i].summary, diagnosticError[i].details)
+	for i := range expected {
+		r, _ := result[i].(diag.DiagnosticWithPath)
+		if !expected[i].Equal(r) {
+			t.Errorf("expected(%v, %v, %v) unexpected(%v, %v, %v) ",
+				expected[i].Path(), expected[i].Summary(), expected[i].Detail(),
+				r.Path(), r.Summary(), r.Detail())
 		}
 	}
 }
