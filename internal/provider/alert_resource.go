@@ -119,16 +119,23 @@ func (model *alertResourceModel) validateConditions() []diagnosticsError {
 			conditionErrors = append(conditionErrors, d)
 		}
 
-		//if !reflect.DeepEqual(firstNode.TargetEntityTypes, condition.TargetEntityTypes) {
-		//	d := diagnosticsError{
-		//		attributeName: "targetEntityTypes",
-		//		summary:       "The list must be same for all conditions",
-		//		details:       fmt.Sprintf("The list must be same for all conditions, but %v does not match %v.", firstNode.TargetEntityTypes, condition.TargetEntityTypes),
-		//	}
-		//	conditionErrors = append(conditionErrors, d)
-		//}
+		if !firstNode.TargetEntityTypes.Equal(condition.TargetEntityTypes) {
+			d := diagnosticsError{
+				attributeName: "targetEntityTypes",
+				summary:       "The list must be same for all conditions",
+				details:       fmt.Sprintf("The list must be same for all conditions, but %v does not match %v.", firstNode.TargetEntityTypes, condition.TargetEntityTypes),
+			}
+			conditionErrors = append(conditionErrors, d)
+		}
+		if !firstNode.EntityIds.Equal(condition.EntityIds) {
+			d := diagnosticsError{
+				attributeName: "entityIds",
+				summary:       "The list must be same for all conditions",
+				details:       fmt.Sprintf("The list must be same for all conditions, but %v does not match %v.", firstNode.EntityIds, condition.EntityIds),
+			}
+			conditionErrors = append(conditionErrors, d)
+		}
 		if !firstNode.GroupByMetricTag.Equal(condition.GroupByMetricTag) {
-			//if !reflect.DeepEqual(firstNode.GroupByMetricTag, condition.GroupByMetricTag) {
 			d := diagnosticsError{
 				attributeName: "groupByMetricTag",
 				summary:       "The list must be same for all conditions",
@@ -136,16 +143,8 @@ func (model *alertResourceModel) validateConditions() []diagnosticsError {
 			}
 			conditionErrors = append(conditionErrors, d)
 		}
-		//if !firstNode.EntityIds.Equal(condition.EntityIds) {
-		//if !reflect.DeepEqual(firstNode.EntityIds, condition.EntityIds) {
-		//	d := diagnosticsError{
-		//		attributeName: "entityIds",
-		//		summary:       "The list must be same for all conditions",
-		//		details:       fmt.Sprintf("The list must be same for all conditions, but %v does not match %v.", firstNode.EntityIds, condition.EntityIds),
-		//	}
-		//	conditionErrors = append(conditionErrors, d)
-		//}
 	}
+
 	return conditionErrors
 }
 

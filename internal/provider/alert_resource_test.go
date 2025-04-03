@@ -419,6 +419,29 @@ func Test_ValidateConditions_LengthGreaterThanFive(t *testing.T) {
 	}
 }
 
+func Test_ValidateCondition_HappyPath(t *testing.T) {
+	entities := []attr.Value{types.StringValue("Website")}
+	targetEntityTypes, _ := types.ListValue(types.StringType, entities)
+
+	model := alertResourceModel{
+		Conditions: []alertConditionModel{
+			{
+				NotReporting:      types.BoolValue(false),
+				Threshold:         types.StringValue("<300"),
+				AggregationType:   types.StringValue("AVG"),
+				TargetEntityTypes: targetEntityTypes,
+				EntityIds:         types.ListNull(attr.Type(types.StringType)),
+				GroupByMetricTag:  types.ListNull(attr.Type(types.StringType)),
+			},
+		},
+	}
+	diagnosticError := model.validateConditions()
+
+	if len(diagnosticError) != 0 {
+		t.Errorf("expected 0 diagnosticError")
+	}
+}
+
 func Test_ValidateCondition_NotReporting(t *testing.T) {
 	entities := []attr.Value{types.StringValue("Website")}
 	targetEntityTypes, _ := types.ListValue(types.StringType, entities)
@@ -429,6 +452,8 @@ func Test_ValidateCondition_NotReporting(t *testing.T) {
 				Threshold:         types.StringValue("<300"), // should be ""
 				AggregationType:   types.StringValue("AVG"),  // should be COUNT
 				TargetEntityTypes: targetEntityTypes,
+				EntityIds:         types.ListNull(attr.Type(types.StringType)),
+				GroupByMetricTag:  types.ListNull(attr.Type(types.StringType)),
 			},
 		},
 	}
@@ -469,6 +494,8 @@ func Test_ValidateCondition_Reporting(t *testing.T) {
 				Threshold:         types.StringValue(""), // is required
 				AggregationType:   types.StringValue("AVG"),
 				TargetEntityTypes: targetEntityTypes,
+				EntityIds:         types.ListNull(attr.Type(types.StringType)),
+				GroupByMetricTag:  types.ListNull(attr.Type(types.StringType)),
 			},
 		},
 	}
@@ -489,27 +516,7 @@ func Test_ValidateCondition_Reporting(t *testing.T) {
 	}
 }
 
-func Test_ValidateCondition_HappyPath(t *testing.T) {
-	entities := []attr.Value{types.StringValue("Website")}
-	targetEntityTypes, _ := types.ListValue(types.StringType, entities)
-	model := alertResourceModel{
-		Conditions: []alertConditionModel{
-			{
-				NotReporting:      types.BoolValue(false),
-				Threshold:         types.StringValue("<300"),
-				AggregationType:   types.StringValue("AVG"),
-				TargetEntityTypes: targetEntityTypes,
-			},
-		},
-	}
-	diagnosticError := model.validateConditions()
-
-	if len(diagnosticError) != 0 {
-		t.Errorf("expected 0 diagnosticError")
-	}
-}
-
-func Test_ValidateCondition_Errors(t *testing.T) {
+func Test_ValidateCondition_CompareLists(t *testing.T) {
 	entities0 := []attr.Value{types.StringValue("Website")}
 	targetEntityTypes0, _ := types.ListValue(types.StringType, entities0)
 
@@ -539,17 +546,19 @@ func Test_ValidateCondition_Errors(t *testing.T) {
 				GroupByMetricTag:  groupByMetricTag0,
 			},
 			{
-				NotReporting:      types.BoolValue(true),
-				Threshold:         types.StringValue(""),
-				AggregationType:   types.StringValue("COUNT"),
+				NotReporting:    types.BoolValue(true),
+				Threshold:       types.StringValue(""),
+				AggregationType: types.StringValue("COUNT"),
+				// same []types.List as node 0
 				TargetEntityTypes: targetEntityTypes0,
 				EntityIds:         entityIds0,
 				GroupByMetricTag:  groupByMetricTag0,
 			},
 			{
-				NotReporting:      types.BoolValue(false),
-				Threshold:         types.StringValue("<300"),
-				AggregationType:   types.StringValue("AVG"),
+				NotReporting:    types.BoolValue(false),
+				Threshold:       types.StringValue("<300"),
+				AggregationType: types.StringValue("AVG"),
+				// different []types.List from node 0
 				TargetEntityTypes: targetEntityTypes1,
 				EntityIds:         entityIds1,
 				GroupByMetricTag:  groupByMetricTag1,
@@ -569,18 +578,17 @@ func Test_ValidateCondition_Errors(t *testing.T) {
 		t.Errorf("unexpected diagnosticError[0].summary")
 	}
 
-	if diagnosticError[1].attributeName != "groupByMetricTag" {
+	if diagnosticError[1].attributeName != "entityIds" {
 		t.Errorf("unexpected diagnosticError[1].attributeName")
 	}
 	if diagnosticError[1].summary != "The list must be same for all conditions" {
 		t.Errorf("unexpected diagnosticError[1].summary")
 	}
 
-	if diagnosticError[2].attributeName != "entityIds" {
+	if diagnosticError[2].attributeName != "groupByMetricTag" {
 		t.Errorf("unexpected diagnosticError[2].attributeName")
 	}
 	if diagnosticError[2].summary != "The list must be same for all conditions" {
 		t.Errorf("unexpected diagnosticError[2].summary")
 	}
-
 }
