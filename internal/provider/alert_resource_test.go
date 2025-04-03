@@ -2,8 +2,10 @@ package provider
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
@@ -369,4 +371,216 @@ resource "swo_alert" "test" {
   runbook_link = "https://www.runbooklink.com"
 }
 `, name)
+}
+
+func Test_ValidateConditions_LengthLessThanOne(t *testing.T) {
+
+	model := alertResourceModel{
+		Conditions: []alertConditionModel{},
+	}
+	diagnosticError := model.validateConditions()
+
+	if len(diagnosticError) != 1 {
+		t.Errorf("expected only one diagnosticError")
+	}
+
+	if diagnosticError[0].attributeName != "conditions" {
+		t.Errorf("unexpected diagnosticError[0].attributeName")
+	}
+	if diagnosticError[0].summary != "Invalid number of alerting conditions." {
+		t.Errorf("unexpected diagnosticError[0].summary")
+	}
+	if diagnosticError[0].details != "Number of alerting conditions must be between 1 and 5." {
+		t.Errorf("unexpected diagnosticError[0].details")
+	}
+}
+
+func Test_ValidateConditions_LengthGreaterThanFive(t *testing.T) {
+
+	model := alertResourceModel{
+		Conditions: []alertConditionModel{
+			{}, {}, {}, {}, {}, {},
+		},
+	}
+	diagnosticError := model.validateConditions()
+
+	if len(diagnosticError) != 1 {
+		t.Errorf("expected only one diagnosticError")
+	}
+
+	if diagnosticError[0].attributeName != "conditions" {
+		t.Errorf("unexpected diagnosticError[0].attributeName")
+	}
+	if diagnosticError[0].summary != "Invalid number of alerting conditions." {
+		t.Errorf("unexpected diagnosticError[0].summary")
+	}
+	if diagnosticError[0].details != "Number of alerting conditions must be between 1 and 5." {
+		t.Errorf("unexpected diagnosticError[0].details")
+	}
+}
+
+func Test_ValidateCondition_NotReporting(t *testing.T) {
+	entities := []attr.Value{types.StringValue("Website")}
+	targetEntityTypes, _ := types.ListValue(types.StringType, entities)
+	model := alertResourceModel{
+		Conditions: []alertConditionModel{
+			{
+				NotReporting:      types.BoolValue(true),
+				Threshold:         types.StringValue("<300"), // should be ""
+				AggregationType:   types.StringValue("AVG"),  // should be COUNT
+				TargetEntityTypes: targetEntityTypes,
+			},
+		},
+	}
+	diagnosticError := model.validateConditions()
+
+	if len(diagnosticError) != 2 {
+		t.Errorf("expected only two diagnosticErrors")
+	}
+
+	if diagnosticError[0].attributeName != "threshold" {
+		t.Errorf("unexpected diagnosticError[0].attributeName")
+	}
+	if diagnosticError[0].summary != "Cannot set threshold when not_reporting is set to true." {
+		t.Errorf("unexpected diagnosticError[0].summary")
+	}
+	if diagnosticError[0].details != "Cannot set threshold when not_reporting is set to true." {
+		t.Errorf("unexpected diagnosticError[0].details")
+	}
+
+	if diagnosticError[1].attributeName != "aggregationType" {
+		t.Errorf("unexpected diagnosticError[1].attributeName")
+	}
+	if diagnosticError[1].summary != "Aggregation type must be COUNT when not_reporting is set to true." {
+		t.Errorf("unexpected diagnosticError[1].summary")
+	}
+	if diagnosticError[1].details != "Aggregation type must be COUNT when not_reporting is set to true." {
+		t.Errorf("unexpected diagnosticError[1].details")
+	}
+}
+
+func Test_ValidateCondition_Reporting(t *testing.T) {
+	entities := []attr.Value{types.StringValue("Website")}
+	targetEntityTypes, _ := types.ListValue(types.StringType, entities)
+	model := alertResourceModel{
+		Conditions: []alertConditionModel{
+			{
+				NotReporting:      types.BoolValue(false),
+				Threshold:         types.StringValue(""), // is required
+				AggregationType:   types.StringValue("AVG"),
+				TargetEntityTypes: targetEntityTypes,
+			},
+		},
+	}
+	diagnosticError := model.validateConditions()
+
+	if len(diagnosticError) != 1 {
+		t.Errorf("expected only two diagnosticErrors")
+	}
+
+	if diagnosticError[0].attributeName != "threshold" {
+		t.Errorf("unexpected diagnosticError[0].attributeName")
+	}
+	if diagnosticError[0].summary != "Required field when not_reporting is set to false." {
+		t.Errorf("unexpected diagnosticError[0].summary")
+	}
+	if diagnosticError[0].details != "Required field when not_reporting is set to false." {
+		t.Errorf("unexpected diagnosticError[0].details")
+	}
+}
+
+func Test_ValidateCondition_HappyPath(t *testing.T) {
+	entities := []attr.Value{types.StringValue("Website")}
+	targetEntityTypes, _ := types.ListValue(types.StringType, entities)
+	model := alertResourceModel{
+		Conditions: []alertConditionModel{
+			{
+				NotReporting:      types.BoolValue(false),
+				Threshold:         types.StringValue("<300"),
+				AggregationType:   types.StringValue("AVG"),
+				TargetEntityTypes: targetEntityTypes,
+			},
+		},
+	}
+	diagnosticError := model.validateConditions()
+
+	if len(diagnosticError) != 0 {
+		t.Errorf("expected 0 diagnosticError")
+	}
+}
+
+func Test_ValidateCondition_Errors(t *testing.T) {
+	entities0 := []attr.Value{types.StringValue("Website")}
+	targetEntityTypes0, _ := types.ListValue(types.StringType, entities0)
+
+	ids0 := []attr.Value{types.StringValue("123")}
+	entityIds0, _ := types.ListValue(types.StringType, ids0)
+
+	tags0 := []attr.Value{types.StringValue("tags.names")}
+	groupByMetricTag0, _ := types.ListValue(types.StringType, tags0)
+
+	entities1 := []attr.Value{types.StringValue("Uri")}
+	targetEntityTypes1, _ := types.ListValue(types.StringType, entities1)
+
+	ids1 := []attr.Value{types.StringValue("456")}
+	entityIds1, _ := types.ListValue(types.StringType, ids1)
+
+	tags1 := []attr.Value{types.StringValue("tags.environment")}
+	groupByMetricTag1, _ := types.ListValue(types.StringType, tags1)
+
+	model := alertResourceModel{
+		Conditions: []alertConditionModel{
+			{
+				NotReporting:      types.BoolValue(false),
+				Threshold:         types.StringValue("<300"),
+				AggregationType:   types.StringValue("AVG"),
+				TargetEntityTypes: targetEntityTypes0,
+				EntityIds:         entityIds0,
+				GroupByMetricTag:  groupByMetricTag0,
+			},
+			{
+				NotReporting:      types.BoolValue(true),
+				Threshold:         types.StringValue(""),
+				AggregationType:   types.StringValue("COUNT"),
+				TargetEntityTypes: targetEntityTypes0,
+				EntityIds:         entityIds0,
+				GroupByMetricTag:  groupByMetricTag0,
+			},
+			{
+				NotReporting:      types.BoolValue(false),
+				Threshold:         types.StringValue("<300"),
+				AggregationType:   types.StringValue("AVG"),
+				TargetEntityTypes: targetEntityTypes1,
+				EntityIds:         entityIds1,
+				GroupByMetricTag:  groupByMetricTag1,
+			},
+		},
+	}
+	diagnosticError := model.validateConditions()
+
+	if len(diagnosticError) != 3 {
+		t.Errorf("expected 0 diagnosticError")
+	}
+
+	if diagnosticError[0].attributeName != "targetEntityTypes" {
+		t.Errorf("unexpected diagnosticError[0].attributeName")
+	}
+	if diagnosticError[0].summary != "The list must be same for all conditions" {
+		t.Errorf("unexpected diagnosticError[0].summary")
+	}
+
+	if diagnosticError[1].attributeName != "groupByMetricTag" {
+		t.Errorf("unexpected diagnosticError[1].attributeName")
+	}
+	if diagnosticError[1].summary != "The list must be same for all conditions" {
+		t.Errorf("unexpected diagnosticError[1].summary")
+	}
+
+	if diagnosticError[2].attributeName != "entityIds" {
+		t.Errorf("unexpected diagnosticError[2].attributeName")
+	}
+	if diagnosticError[2].summary != "The list must be same for all conditions" {
+		t.Errorf("unexpected diagnosticError[2].summary")
+	}
+
 }
