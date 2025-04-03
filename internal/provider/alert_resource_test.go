@@ -380,18 +380,23 @@ func Test_ValidateConditions_LengthLessThanOne(t *testing.T) {
 	}
 	diagnosticError := model.validateConditions()
 
-	if len(diagnosticError) != 1 {
-		t.Errorf("expected only one diagnosticError")
+	expected := []diagnosticsError{
+		{
+			attributeName: "conditions",
+			summary:       "Invalid number of alerting conditions.",
+			details:       "Number of alerting conditions must be between 1 and 5.",
+		},
+	}
+	if len(diagnosticError) != len(expected) {
+		t.Fatalf("expected %v diagnosticErrors", len(expected))
 	}
 
-	if diagnosticError[0].attributeName != "conditions" {
-		t.Errorf("unexpected diagnosticError[0].attributeName")
-	}
-	if diagnosticError[0].summary != "Invalid number of alerting conditions." {
-		t.Errorf("unexpected diagnosticError[0].summary")
-	}
-	if diagnosticError[0].details != "Number of alerting conditions must be between 1 and 5." {
-		t.Errorf("unexpected diagnosticError[0].details")
+	for i := 0; i < len(expected); i++ {
+		if diagnosticError[i] != expected[i] {
+			t.Fatalf("expected(%v, %v, %v) unexpected(%v, %v, %v) ",
+				expected[i].attributeName, expected[i].summary, expected[i].details,
+				diagnosticError[i].attributeName, diagnosticError[i].summary, diagnosticError[i].details)
+		}
 	}
 }
 
@@ -404,18 +409,23 @@ func Test_ValidateConditions_LengthGreaterThanFive(t *testing.T) {
 	}
 	diagnosticError := model.validateConditions()
 
-	if len(diagnosticError) != 1 {
-		t.Errorf("expected only one diagnosticError")
+	expected := []diagnosticsError{
+		{
+			attributeName: "conditions",
+			summary:       "Invalid number of alerting conditions.",
+			details:       "Number of alerting conditions must be between 1 and 5.",
+		},
+	}
+	if len(diagnosticError) != len(expected) {
+		t.Fatalf("expected %v diagnosticErrors", len(expected))
 	}
 
-	if diagnosticError[0].attributeName != "conditions" {
-		t.Errorf("unexpected diagnosticError[0].attributeName")
-	}
-	if diagnosticError[0].summary != "Invalid number of alerting conditions." {
-		t.Errorf("unexpected diagnosticError[0].summary")
-	}
-	if diagnosticError[0].details != "Number of alerting conditions must be between 1 and 5." {
-		t.Errorf("unexpected diagnosticError[0].details")
+	for i := 0; i < len(expected); i++ {
+		if diagnosticError[i] != expected[i] {
+			t.Fatalf("expected(%v, %v, %v) unexpected(%v, %v, %v) ",
+				expected[i].attributeName, expected[i].summary, expected[i].details,
+				diagnosticError[i].attributeName, diagnosticError[i].summary, diagnosticError[i].details)
+		}
 	}
 }
 
@@ -438,7 +448,7 @@ func Test_ValidateCondition_HappyPath(t *testing.T) {
 	diagnosticError := model.validateConditions()
 
 	if len(diagnosticError) != 0 {
-		t.Errorf("expected 0 diagnosticError")
+		t.Fatal("expected 0 diagnosticError")
 	}
 }
 
@@ -457,30 +467,31 @@ func Test_ValidateCondition_NotReporting(t *testing.T) {
 			},
 		},
 	}
+	expected := []diagnosticsError{
+		{
+			attributeName: "threshold",
+			summary:       "Cannot set threshold when not_reporting is set to true.",
+			details:       "Cannot set threshold when not_reporting is set to true.",
+		},
+		{
+			attributeName: "aggregationType",
+			summary:       "Aggregation type must be COUNT when not_reporting is set to true.",
+			details:       "Aggregation type must be COUNT when not_reporting is set to true.",
+		},
+	}
+
 	diagnosticError := model.validateConditions()
 
-	if len(diagnosticError) != 2 {
-		t.Errorf("expected only two diagnosticErrors")
+	if len(diagnosticError) != len(expected) {
+		t.Fatalf("expected %v diagnosticErrors", len(expected))
 	}
 
-	if diagnosticError[0].attributeName != "threshold" {
-		t.Errorf("unexpected diagnosticError[0].attributeName")
-	}
-	if diagnosticError[0].summary != "Cannot set threshold when not_reporting is set to true." {
-		t.Errorf("unexpected diagnosticError[0].summary")
-	}
-	if diagnosticError[0].details != "Cannot set threshold when not_reporting is set to true." {
-		t.Errorf("unexpected diagnosticError[0].details")
-	}
-
-	if diagnosticError[1].attributeName != "aggregationType" {
-		t.Errorf("unexpected diagnosticError[1].attributeName")
-	}
-	if diagnosticError[1].summary != "Aggregation type must be COUNT when not_reporting is set to true." {
-		t.Errorf("unexpected diagnosticError[1].summary")
-	}
-	if diagnosticError[1].details != "Aggregation type must be COUNT when not_reporting is set to true." {
-		t.Errorf("unexpected diagnosticError[1].details")
+	for i := 0; i < len(expected); i++ {
+		if diagnosticError[i] != expected[i] {
+			t.Fatalf("expected(%v, %v, %v) unexpected(%v, %v, %v) ",
+				expected[i].attributeName, expected[i].summary, expected[i].details,
+				diagnosticError[i].attributeName, diagnosticError[i].summary, diagnosticError[i].details)
+		}
 	}
 }
 
@@ -501,18 +512,23 @@ func Test_ValidateCondition_Reporting(t *testing.T) {
 	}
 	diagnosticError := model.validateConditions()
 
-	if len(diagnosticError) != 1 {
-		t.Errorf("expected only two diagnosticErrors")
+	expected := []diagnosticsError{
+		{
+			attributeName: "threshold",
+			summary:       "Required field when not_reporting is set to false.",
+			details:       "Required field when not_reporting is set to false.",
+		},
+	}
+	if len(diagnosticError) != len(expected) {
+		t.Fatalf("expected %v diagnosticErrors", len(expected))
 	}
 
-	if diagnosticError[0].attributeName != "threshold" {
-		t.Errorf("unexpected diagnosticError[0].attributeName")
-	}
-	if diagnosticError[0].summary != "Required field when not_reporting is set to false." {
-		t.Errorf("unexpected diagnosticError[0].summary")
-	}
-	if diagnosticError[0].details != "Required field when not_reporting is set to false." {
-		t.Errorf("unexpected diagnosticError[0].details")
+	for i := 0; i < len(expected); i++ {
+		if diagnosticError[i] != expected[i] {
+			t.Fatalf("expected(%v, %v, %v) unexpected(%v, %v, %v) ",
+				expected[i].attributeName, expected[i].summary, expected[i].details,
+				diagnosticError[i].attributeName, diagnosticError[i].summary, diagnosticError[i].details)
+		}
 	}
 }
 
@@ -567,28 +583,33 @@ func Test_ValidateCondition_CompareLists(t *testing.T) {
 	}
 	diagnosticError := model.validateConditions()
 
-	if len(diagnosticError) != 3 {
-		t.Errorf("expected 0 diagnosticError")
+	expected := []diagnosticsError{
+		{
+			attributeName: "targetEntityTypes",
+			summary:       "The list must be same for all conditions",
+			details:       "The list must be same for all conditions, but [\"Website\"] does not match [\"Uri\"].",
+		},
+		{
+			attributeName: "entityIds",
+			summary:       "The list must be same for all conditions",
+			details:       "The list must be same for all conditions, but [\"123\"] does not match [\"456\"].",
+		},
+		{
+			attributeName: "groupByMetricTag",
+			summary:       "The list must be same for all conditions",
+			details:       "The list must be same for all conditions, but [\"tags.names\"] does not match [\"tags.environment\"].",
+		},
 	}
 
-	if diagnosticError[0].attributeName != "targetEntityTypes" {
-		t.Errorf("unexpected diagnosticError[0].attributeName")
-	}
-	if diagnosticError[0].summary != "The list must be same for all conditions" {
-		t.Errorf("unexpected diagnosticError[0].summary")
+	if len(diagnosticError) != len(expected) {
+		t.Fatalf("expected %v diagnosticErrors", len(expected))
 	}
 
-	if diagnosticError[1].attributeName != "entityIds" {
-		t.Errorf("unexpected diagnosticError[1].attributeName")
-	}
-	if diagnosticError[1].summary != "The list must be same for all conditions" {
-		t.Errorf("unexpected diagnosticError[1].summary")
-	}
-
-	if diagnosticError[2].attributeName != "groupByMetricTag" {
-		t.Errorf("unexpected diagnosticError[2].attributeName")
-	}
-	if diagnosticError[2].summary != "The list must be same for all conditions" {
-		t.Errorf("unexpected diagnosticError[2].summary")
+	for i := 0; i < len(expected); i++ {
+		if diagnosticError[i] != expected[i] {
+			t.Fatalf("expected(%v, %v, %v) unexpected(%v, %v, %v) ",
+				expected[i].attributeName, expected[i].summary, expected[i].details,
+				diagnosticError[i].attributeName, diagnosticError[i].summary, diagnosticError[i].details)
+		}
 	}
 }

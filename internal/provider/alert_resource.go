@@ -49,31 +49,28 @@ func (r *alertResource) ValidateConfig(ctx context.Context, req resource.Validat
 		return
 	}
 
-	d := data.validateConditions()
-	if d != nil || len(d) > 0 {
-		for _, c := range d {
-			resp.Diagnostics.AddAttributeError(
-				path.Root(c.attributeName),
-				c.summary,
-				c.details,
-			)
-		}
+	for _, c := range data.validateConditions() {
+		resp.Diagnostics.AddAttributeError(
+			path.Root(c.attributeName),
+			c.summary,
+			c.details)
 	}
 }
 
 func (model *alertResourceModel) validateConditions() []diagnosticsError {
 	if len(model.Conditions) > 5 || len(model.Conditions) < 1 {
-		d := diagnosticsError{}
-		d.attributeName = "conditions"
-		d.summary = "Invalid number of alerting conditions."
-		d.details = "Number of alerting conditions must be between 1 and 5."
+		d := diagnosticsError{
+			attributeName: "conditions",
+			summary:       "Invalid number of alerting conditions.",
+			details:       "Number of alerting conditions must be between 1 and 5.",
+		}
 		return []diagnosticsError{d}
 	}
 
 	// validate each alert condition
-	// get first node with which to compare each nodes' targetEntityTypes, entityIds, groupByMetricTag against
+	// do not need to validate required fields, those have been validated by schema validation at this point
 	var conditionErrors []diagnosticsError
-	firstNode := model.Conditions[0]
+	firstNode := model.Conditions[0] // get first node with which to compare each nodes' targetEntityTypes, entityIds, groupByMetricTag against
 	for _, condition := range model.Conditions {
 		// Validation if not_reporting = true
 		notReporting := condition.NotReporting.ValueBool()
@@ -90,7 +87,7 @@ func (model *alertResourceModel) validateConditions() []diagnosticsError {
 
 			// Aggregation must be count
 			operator := condition.AggregationType.ValueString()
-			operatorType, _ := swoClient.GetAlertConditionType(operator)
+			operatorType, _ := swoClient.GetAlertConditionType(operator) // ignore return err, aggregation_type will have been validated by schema by this point
 			if operatorType == string(swoClient.AlertAggregationOperatorType) && operator != string(swoClient.AlertOperatorCount) {
 				d := diagnosticsError{
 					attributeName: "aggregationType",
