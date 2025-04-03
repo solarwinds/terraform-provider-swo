@@ -45,22 +45,15 @@ func (r *alertResource) ValidateConfig(ctx context.Context, req resource.Validat
 	}
 
 	resp.Diagnostics.Append(data.validateConditions()...)
-
-	resp.Diagnostics.AddAttributeError(
-		path.Root("testing path"),
-		"testing summary",
-		"testing details")
-
 }
 
 func (model *alertResourceModel) validateConditions() []diag.Diagnostic {
 	if len(model.Conditions) > 5 || len(model.Conditions) < 1 {
-		d := diag.NewAttributeErrorDiagnostic(
-			path.Root("conditions"),
-			"Invalid number of alerting conditions.",
-			"Number of alerting conditions must be between 1 and 5.")
-
-		return []diag.Diagnostic{d}
+		return []diag.Diagnostic{
+			diag.NewAttributeErrorDiagnostic(
+				path.Root("conditions"),
+				"Invalid number of alerting conditions.",
+				"Number of alerting conditions must be between 1 and 5.")}
 	}
 
 	// validate each alert condition
