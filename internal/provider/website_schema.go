@@ -17,10 +17,10 @@ import (
 
 // The main Website Resource model that is derived from the schema.
 type websiteResourceModel struct {
-	Id         types.String       `tfsdk:"id"`
-	Name       types.String       `tfsdk:"name"`
-	Url        types.String       `tfsdk:"url"`
-	Monitoring *websiteMonitoring `tfsdk:"monitoring"`
+	Id         types.String      `tfsdk:"id"`
+	Name       types.String      `tfsdk:"name"`
+	Url        types.String      `tfsdk:"url"`
+	Monitoring websiteMonitoring `tfsdk:"monitoring"`
 }
 
 type probeLocation struct {
@@ -40,10 +40,10 @@ type sslMonitoring struct {
 }
 
 type websiteMonitoring struct {
-	Options       *monitoringOptions     `tfsdk:"options"`
-	Availability  availabilityMonitoring `tfsdk:"availability"`
-	Rum           rumMonitoring          `tfsdk:"rum"`
-	CustomHeaders []customHeader         `tfsdk:"custom_headers"`
+	Options       *monitoringOptions      `tfsdk:"options"`
+	Availability  *availabilityMonitoring `tfsdk:"availability"`
+	Rum           *rumMonitoring          `tfsdk:"rum"`
+	CustomHeaders []customHeader          `tfsdk:"custom_headers"`
 }
 
 // Deprecated: Options are not used anymore
@@ -63,7 +63,7 @@ type availabilityMonitoring struct {
 }
 
 type rumMonitoring struct {
-	ApdexTimeInSeconds types.Int64  `tfsdk:"apdex_time_in_seconds"`
+	ApdexTimeInSeconds types.Int32  `tfsdk:"apdex_time_in_seconds"`
 	Snippet            types.String `tfsdk:"snippet"`
 	Spa                types.Bool   `tfsdk:"spa"`
 }
@@ -114,7 +114,7 @@ func (r *websiteResource) Schema(ctx context.Context, req resource.SchemaRequest
 					},
 					"availability": schema.SingleNestedAttribute{
 						Description: "The Website availability monitoring settings.",
-						Required:    true,
+						Optional:    true,
 						Attributes: map[string]schema.Attribute{
 							"check_for_string": schema.SingleNestedAttribute{
 								Description: "The Website availability monitoring check for string settings.",
@@ -211,11 +211,11 @@ func (r *websiteResource) Schema(ctx context.Context, req resource.SchemaRequest
 					},
 					"rum": schema.SingleNestedAttribute{
 						Description: "The Website RUM monitoring settings.",
-						Required:    true,
+						Optional:    true,
 						Attributes: map[string]schema.Attribute{
-							"apdex_time_in_seconds": schema.Int64Attribute{
+							"apdex_time_in_seconds": schema.Int32Attribute{
 								Description: "The Website RUM monitoring apdex time in seconds.",
-								Required:    true,
+								Optional:    true,
 							},
 							"snippet": schema.StringAttribute{
 								Description: "The Website RUM monitoring code snippet (provided by the server).",

@@ -102,11 +102,6 @@ func testAccWebsiteResourceConfig(name string) string {
 				}
 			}
 	
-			rum = {
-				apdex_time_in_seconds = 4
-				spa                   = true
-			}
-	
 			custom_headers = [
 				{
 					name  = "Custom-Header-1"

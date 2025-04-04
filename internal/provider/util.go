@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"math"
 	"net/url"
 	"strings"
 )
@@ -81,13 +83,11 @@ func sliceToStringList[T any](
 	return list
 }
 
-func stringArrayToList(items []string) types.List {
-	return sliceToStringList(items, func(s string) string { return s })
-}
-
-func attrValueToString(val attr.Value) string {
-	if val == nil {
-		return ""
+func safeIntToInt32(value int, diag diag.Diagnostics) (int32, diag.Diagnostics) {
+	if value > math.MaxInt32 || value < math.MinInt32 {
+		diag.AddError("Conversion Error", "Value out of range for int32")
+		return 0, diag
 	}
-	return strings.Trim(val.String(), "\"")
+
+	return int32(value), diag
 }
