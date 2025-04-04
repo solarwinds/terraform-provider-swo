@@ -1,6 +1,7 @@
 module github.com/solarwinds/terraform-provider-swo
 
-go 1.23
+go 1.23.0
+
 toolchain go1.24.1
 
 require (
