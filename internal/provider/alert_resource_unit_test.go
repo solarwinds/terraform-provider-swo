@@ -16,7 +16,7 @@ func Test_ValidateConditions_LengthLessThanOne(t *testing.T) {
 	}
 	result := model.validateConditions()
 
-	expected := []diag.DiagnosticWithPath{
+	expected := diag.Diagnostics{
 		diag.NewAttributeErrorDiagnostic(
 			path.Root("conditions"),
 			"Invalid number of alerting conditions.",
@@ -27,13 +27,8 @@ func Test_ValidateConditions_LengthLessThanOne(t *testing.T) {
 		t.Fatalf("expected %v diagnosticErrors", len(expected))
 	}
 
-	for i := range expected {
-		r, _ := result[i].(diag.DiagnosticWithPath)
-		if !expected[i].Equal(r) {
-			t.Errorf("expected(%v, %v, %v) unexpected(%v, %v, %v) ",
-				expected[i].Path(), expected[i].Summary(), expected[i].Detail(),
-				r.Path(), r.Summary(), r.Detail())
-		}
+	if !result.Equal(expected) {
+		t.Errorf("expected %v but got %v", expected, result)
 	}
 }
 
@@ -46,7 +41,7 @@ func Test_ValidateConditions_LengthGreaterThanFive(t *testing.T) {
 	}
 	result := model.validateConditions()
 
-	expected := []diag.DiagnosticWithPath{
+	expected := diag.Diagnostics{
 		diag.NewAttributeErrorDiagnostic(
 			path.Root("conditions"),
 			"Invalid number of alerting conditions.",
@@ -57,13 +52,8 @@ func Test_ValidateConditions_LengthGreaterThanFive(t *testing.T) {
 		t.Fatalf("expected %v diagnosticErrors", len(expected))
 	}
 
-	for i := range expected {
-		r, _ := result[i].(diag.DiagnosticWithPath)
-		if !expected[i].Equal(r) {
-			t.Errorf("expected(%v, %v, %v) unexpected(%v, %v, %v) ",
-				expected[i].Path(), expected[i].Summary(), expected[i].Detail(),
-				r.Path(), r.Summary(), r.Detail())
-		}
+	if !result.Equal(expected) {
+		t.Errorf("expected %v but got %v", expected, result)
 	}
 }
 
@@ -106,7 +96,7 @@ func Test_ValidateCondition_NotReporting(t *testing.T) {
 		},
 	}
 
-	expected := []diag.DiagnosticWithPath{
+	expected := diag.Diagnostics{
 		diag.NewAttributeErrorDiagnostic(
 			path.Root("threshold"),
 			"Cannot set threshold when not_reporting is set to true.",
@@ -123,13 +113,8 @@ func Test_ValidateCondition_NotReporting(t *testing.T) {
 		t.Fatalf("expected %v diagnosticErrors", len(expected))
 	}
 
-	for i := range expected {
-		r, _ := result[i].(diag.DiagnosticWithPath)
-		if !expected[i].Equal(r) {
-			t.Errorf("expected(%v, %v, %v) unexpected(%v, %v, %v) ",
-				expected[i].Path(), expected[i].Summary(), expected[i].Detail(),
-				r.Path(), r.Summary(), r.Detail())
-		}
+	if !result.Equal(expected) {
+		t.Errorf("expected %v but got %v", expected, result)
 	}
 }
 
@@ -149,7 +134,7 @@ func Test_ValidateCondition_Reporting(t *testing.T) {
 		},
 	}
 
-	expected := []diag.DiagnosticWithPath{
+	expected := diag.Diagnostics{
 		diag.NewAttributeErrorDiagnostic(
 			path.Root("threshold"),
 			"Required field when not_reporting is set to false.",
@@ -162,13 +147,8 @@ func Test_ValidateCondition_Reporting(t *testing.T) {
 		t.Fatalf("expected %v diagnosticErrors", len(expected))
 	}
 
-	for i := range expected {
-		r, _ := result[i].(diag.DiagnosticWithPath)
-		if !expected[i].Equal(r) {
-			t.Errorf("expected(%v, %v, %v) unexpected(%v, %v, %v) ",
-				expected[i].Path(), expected[i].Summary(), expected[i].Detail(),
-				r.Path(), r.Summary(), r.Detail())
-		}
+	if !result.Equal(expected) {
+		t.Errorf("expected %v but got %v", expected, result)
 	}
 }
 
@@ -223,7 +203,7 @@ func Test_ValidateCondition_CompareLists(t *testing.T) {
 	}
 	result := model.validateConditions()
 
-	expected := []diag.DiagnosticWithPath{
+	expected := diag.Diagnostics{
 		diag.NewAttributeErrorDiagnostic(
 			path.Root("targetEntityTypes"),
 			"The list must be same for all conditions",
@@ -242,12 +222,7 @@ func Test_ValidateCondition_CompareLists(t *testing.T) {
 		t.Fatalf("expected %v diagnosticErrors", len(expected))
 	}
 
-	for i := range expected {
-		r, _ := result[i].(diag.DiagnosticWithPath)
-		if !expected[i].Equal(r) {
-			t.Errorf("expected(%v, %v, %v) unexpected(%v, %v, %v) ",
-				expected[i].Path(), expected[i].Summary(), expected[i].Detail(),
-				r.Path(), r.Summary(), r.Detail())
-		}
+	if !result.Equal(expected) {
+		t.Errorf("expected %v but got %v", expected, result)
 	}
 }

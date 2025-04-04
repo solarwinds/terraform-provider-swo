@@ -47,9 +47,9 @@ func (r *alertResource) ValidateConfig(ctx context.Context, req resource.Validat
 	resp.Diagnostics.Append(data.validateConditions()...)
 }
 
-func (model *alertResourceModel) validateConditions() []diag.Diagnostic {
+func (model *alertResourceModel) validateConditions() diag.Diagnostics {
 	if len(model.Conditions) > 5 || len(model.Conditions) < 1 {
-		return []diag.Diagnostic{
+		return diag.Diagnostics{
 			diag.NewAttributeErrorDiagnostic(
 				path.Root("conditions"),
 				"Invalid number of alerting conditions.",
@@ -58,7 +58,7 @@ func (model *alertResourceModel) validateConditions() []diag.Diagnostic {
 
 	// validate each alert condition
 	// do not need to validate required fields, those have been validated by schema validation at this point
-	var conditionErrors []diag.Diagnostic
+	var conditionErrors diag.Diagnostics
 	firstNode := model.Conditions[0] // get first node with which to compare each nodes' targetEntityTypes, entityIds, groupByMetricTag against
 	for _, condition := range model.Conditions {
 		// Validation if not_reporting = true
