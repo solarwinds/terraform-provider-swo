@@ -3,8 +3,8 @@ package provider
 import (
 	"context"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
-
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	swoClient "github.com/solarwinds/swo-client-go/pkg/client"
@@ -44,112 +44,87 @@ func (r *alertResource) ValidateConfig(ctx context.Context, req resource.Validat
 		return
 	}
 
-	if len(data.Conditions) > 5 {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("conditions"),
-			"More than five conditions.",
-			"Cannot support more than five conditions at this time.",
-		)
-		return
-	} else if len(data.Conditions) < 1 {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("conditions"),
-			"No conditions.",
-			"One or more conditions are required to trigger the alert.",
-		)
-		return
+	resp.Diagnostics.Append(data.validateConditions()...)
+}
+
+func (model *alertResourceModel) validateConditions() diag.Diagnostics {
+	if len(model.Conditions) > 5 || len(model.Conditions) < 1 {
+		return diag.Diagnostics{
+			diag.NewAttributeErrorDiagnostic(
+				path.Root("conditions"),
+				"Invalid number of alerting conditions.",
+				"Number of alerting conditions must be between 1 and 5.")}
 	}
 
 	// validate each alert condition
-	// get first node with which to compare each nodes' targetEntityTypes, entityIds, groupByMetricTag against
-	firstNode := data.Conditions[0]
-
-	for _, condition := range data.Conditions {
+	// do not need to validate required fields, those have been validated by schema validation at this point
+	var conditionErrors diag.Diagnostics
+	firstNode := model.Conditions[0] // get first node with which to compare each nodes' targetEntityTypes, entityIds, groupByMetricTag against
+	for _, condition := range model.Conditions {
 		// Validation if not_reporting = true
 		notReporting := condition.NotReporting.ValueBool()
 		if notReporting {
 			// Can't use threshold in the same condition
-			threshold := condition.Threshold.ValueString()
-			if threshold != "" {
-				resp.Diagnostics.AddAttributeError(
+			if condition.Threshold.ValueString() != "" {
+				d := diag.NewAttributeErrorDiagnostic(
 					path.Root("threshold"),
 					"Cannot set threshold when not_reporting is set to true.",
-					"Cannot set threshold when not_reporting is set to true.",
-				)
+					"Cannot set threshold when not_reporting is set to true.")
+				conditionErrors = append(conditionErrors, d)
 			}
 
 			// Aggregation must be count
 			operator := condition.AggregationType.ValueString()
-			operatorType, _ := swoClient.GetAlertConditionType(operator)
+			operatorType, _ := swoClient.GetAlertConditionType(operator) // ignore return err, aggregation_type will have been validated by schema by this point
 			if operatorType == string(swoClient.AlertAggregationOperatorType) && operator != string(swoClient.AlertOperatorCount) {
-				resp.Diagnostics.AddAttributeError(
+				d := diag.NewAttributeErrorDiagnostic(
 					path.Root("aggregationType"),
 					"Aggregation type must be COUNT when not_reporting is set to true.",
-					"Aggregation type must be COUNT when not_reporting is set to true.",
-				)
+					"Aggregation type must be COUNT when not_reporting is set to true.")
+				conditionErrors = append(conditionErrors, d)
 			}
 		} else {
-			threshold := condition.Threshold.ValueString()
-			if threshold == "" {
-				resp.Diagnostics.AddAttributeError(
+			if condition.Threshold.ValueString() == "" {
+				d := diag.NewAttributeErrorDiagnostic(
 					path.Root("threshold"),
 					"Required field when not_reporting is set to false.",
-					"Required field when not_reporting is set to false.",
-				)
+					"Required field when not_reporting is set to false.")
+				conditionErrors = append(conditionErrors, d)
 			}
 		}
-		if condition.MetricName.ValueString() == "" {
-			resp.Diagnostics.AddAttributeError(
-				path.Root("metricName"),
-				"Required field.",
-				"Required field for alerting condition.",
-			)
-		}
-		if condition.Duration.ValueString() == "" {
-			resp.Diagnostics.AddAttributeError(
-				path.Root("duration"),
-				"Required field.",
-				"Required field for alerting condition.",
-			)
-		}
+
 		if len(condition.TargetEntityTypes.Elements()) == 0 {
-			resp.Diagnostics.AddAttributeError(
+			d := diag.NewAttributeErrorDiagnostic(
 				path.Root("targetEntityTypes"),
 				"Required field.",
-				"Required field for alerting condition.",
-			)
+				"Required field for alerting condition.")
+			conditionErrors = append(conditionErrors, d)
 		}
+
 		if !firstNode.TargetEntityTypes.Equal(condition.TargetEntityTypes) {
-			resp.Diagnostics.AddAttributeError(
+			d := diag.NewAttributeErrorDiagnostic(
 				path.Root("targetEntityTypes"),
-				"The entity type list must be same for all conditions",
-				fmt.Sprintf("The list must be same for all conditions, but %v does not match %v.", firstNode.TargetEntityTypes, condition.TargetEntityTypes),
-			)
-		}
-
-		if condition.AggregationType.ValueString() == "" {
-			resp.Diagnostics.AddAttributeError(
-				path.Root("aggregationType"),
-				"Required field.",
-				"Required field for alerting condition.",
-			)
-		}
-
-		if !firstNode.GroupByMetricTag.Equal(condition.GroupByMetricTag) {
-			resp.Diagnostics.AddAttributeError(
-				path.Root("groupByMetricTag"),
-				"The tag list must be same for all conditions",
-				fmt.Sprintf("The list must be same for all conditions, but %v does not match %v.", firstNode.GroupByMetricTag, condition.GroupByMetricTag),
-			)
+				"The list must be same for all conditions",
+				fmt.Sprintf("The list must be same for all conditions, but %v does not match %v.", firstNode.TargetEntityTypes, condition.TargetEntityTypes))
+			conditionErrors = append(conditionErrors, d)
 		}
 		if !firstNode.EntityIds.Equal(condition.EntityIds) {
-			resp.Diagnostics.AddAttributeError(
+			d := diag.NewAttributeErrorDiagnostic(
 				path.Root("entityIds"),
-				"The entity id list must be same for all conditions",
-				fmt.Sprintf("The list must be same for all conditions, but %v does not match %v.", firstNode.EntityIds, condition.EntityIds),
-			)
+				"The list must be same for all conditions",
+				fmt.Sprintf("The list must be same for all conditions, but %v does not match %v.", firstNode.EntityIds, condition.EntityIds))
+			conditionErrors = append(conditionErrors, d)
+		}
+		if !firstNode.GroupByMetricTag.Equal(condition.GroupByMetricTag) {
+			d := diag.NewAttributeErrorDiagnostic(
+				path.Root("groupByMetricTag"),
+				"The list must be same for all conditions",
+				fmt.Sprintf("The list must be same for all conditions, but %v does not match %v.", firstNode.GroupByMetricTag, condition.GroupByMetricTag))
+			conditionErrors = append(conditionErrors, d)
 		}
 	}
+
+	return conditionErrors
 }
 
 func (r *alertResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
