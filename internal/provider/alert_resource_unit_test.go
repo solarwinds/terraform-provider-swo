@@ -23,10 +23,6 @@ func Test_ValidateConditions_LengthLessThanOne(t *testing.T) {
 			"Number of alerting conditions must be between 1 and 5."),
 	}
 
-	if len(expected) != len(result) {
-		t.Fatalf("expected %v diagnosticErrors", len(expected))
-	}
-
 	if !result.Equal(expected) {
 		t.Errorf("expected %v but got %v", expected, result)
 	}
@@ -46,10 +42,6 @@ func Test_ValidateConditions_LengthGreaterThanFive(t *testing.T) {
 			path.Root("conditions"),
 			"Invalid number of alerting conditions.",
 			"Number of alerting conditions must be between 1 and 5."),
-	}
-
-	if len(expected) != len(result) {
-		t.Fatalf("expected %v diagnosticErrors", len(expected))
 	}
 
 	if !result.Equal(expected) {
@@ -109,10 +101,6 @@ func Test_ValidateCondition_NotReporting(t *testing.T) {
 
 	result := model.validateConditions()
 
-	if len(expected) != len(result) {
-		t.Fatalf("expected %v diagnosticErrors", len(expected))
-	}
-
 	if !result.Equal(expected) {
 		t.Errorf("expected %v but got %v", expected, result)
 	}
@@ -142,10 +130,6 @@ func Test_ValidateCondition_Reporting(t *testing.T) {
 	}
 
 	result := model.validateConditions()
-
-	if len(expected) != len(result) {
-		t.Fatalf("expected %v diagnosticErrors", len(expected))
-	}
 
 	if !result.Equal(expected) {
 		t.Errorf("expected %v but got %v", expected, result)
@@ -216,10 +200,6 @@ func Test_ValidateCondition_CompareLists(t *testing.T) {
 			path.Root("groupByMetricTag"),
 			"The list must be same for all conditions",
 			"The list must be same for all conditions, but [\"tags.names\"] does not match [\"tags.environment\"]."),
-	}
-
-	if len(expected) != len(result) {
-		t.Fatalf("expected %v diagnosticErrors", len(expected))
 	}
 
 	if !result.Equal(expected) {
