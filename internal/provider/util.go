@@ -1,25 +1,21 @@
 package provider
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"net/url"
-  "strings"
+	"strings"
 )
-
-func IIf[T any](condition bool, trueValue T, falseValue T) T {
-	if condition {
-		return trueValue
-	}
-	return falseValue
-}
 
 func convertArray[A, B any](source []A, accumulator func(A) B) []B {
 	if source == nil {
 		return nil
 	}
 
-	var result = []B{}
+	var result []B
 	for _, x := range source {
 		result = append(result, accumulator(x))
 	}
@@ -41,8 +37,8 @@ func convertObject[T any](from any) (*T, error) {
 	return &result, err
 }
 
-// Removes everything after the domain of a URL.
-func StripURLToDomain(rawURL string) (string, error) {
+// stripURLToDomain Removes everything after the domain of a URL.
+func stripURLToDomain(rawURL string) (string, error) {
 	parsedURL, err := url.Parse(rawURL)
 	if err != nil {
 		return "", err
@@ -64,4 +60,34 @@ func lowerCaseSlice(input []string) []string {
 		input[i] = strings.ToLower(v)
 	}
 	return input
+}
+
+func sliceToStringList[T any](
+	items []T,
+	mapFn func(T) string,
+) types.List {
+	if items == nil || len(items) == 0 {
+		return types.ListNull(types.StringType)
+	}
+
+	ctx := context.Background()
+	elements := make([]attr.Value, len(items))
+
+	for i, item := range items {
+		elements[i] = types.StringValue(mapFn(item))
+	}
+
+	list, _ := types.ListValueFrom(ctx, types.StringType, elements)
+	return list
+}
+
+func stringArrayToList(items []string) types.List {
+	return sliceToStringList(items, func(s string) string { return s })
+}
+
+func attrValueToString(val attr.Value) string {
+	if val == nil {
+		return ""
+	}
+	return strings.Trim(val.String(), "\"")
 }

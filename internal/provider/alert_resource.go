@@ -3,7 +3,6 @@ package provider
 import (
 	"context"
 	"fmt"
-
 	"github.com/hashicorp/terraform-plugin-framework/path"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -51,13 +50,19 @@ func (r *alertResource) ValidateConfig(ctx context.Context, req resource.Validat
 			"More than five conditions.",
 			"Cannot support more than five conditions at this time.",
 		)
+		return
 	} else if len(data.Conditions) < 1 {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("conditions"),
 			"No conditions.",
 			"One or more conditions are required to trigger the alert.",
 		)
+		return
 	}
+
+	// validate each alert condition
+	// get first node with which to compare each nodes' targetEntityTypes, entityIds, groupByMetricTag against
+	firstNode := data.Conditions[0]
 
 	for _, condition := range data.Conditions {
 		// Validation if not_reporting = true
@@ -107,18 +112,41 @@ func (r *alertResource) ValidateConfig(ctx context.Context, req resource.Validat
 				"Required field for alerting condition.",
 			)
 		}
-		if len(condition.TargetEntityTypes) == 0 {
+		if len(condition.TargetEntityTypes.Elements()) == 0 {
 			resp.Diagnostics.AddAttributeError(
 				path.Root("targetEntityTypes"),
 				"Required field.",
 				"Required field for alerting condition.",
 			)
 		}
+		if !firstNode.TargetEntityTypes.Equal(condition.TargetEntityTypes) {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("targetEntityTypes"),
+				"The entity type list must be same for all conditions",
+				fmt.Sprintf("The list must be same for all conditions, but %v does not match %v.", firstNode.TargetEntityTypes, condition.TargetEntityTypes),
+			)
+		}
+
 		if condition.AggregationType.ValueString() == "" {
 			resp.Diagnostics.AddAttributeError(
 				path.Root("aggregationType"),
 				"Required field.",
 				"Required field for alerting condition.",
+			)
+		}
+
+		if !firstNode.GroupByMetricTag.Equal(condition.GroupByMetricTag) {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("groupByMetricTag"),
+				"The tag list must be same for all conditions",
+				fmt.Sprintf("The list must be same for all conditions, but %v does not match %v.", firstNode.GroupByMetricTag, condition.GroupByMetricTag),
+			)
+		}
+		if !firstNode.EntityIds.Equal(condition.EntityIds) {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("entityIds"),
+				"The entity id list must be same for all conditions",
+				fmt.Sprintf("The list must be same for all conditions, but %v does not match %v.", firstNode.EntityIds, condition.EntityIds),
 			)
 		}
 	}
@@ -132,7 +160,7 @@ func (r *alertResource) Create(ctx context.Context, req resource.CreateRequest, 
 	}
 
 	// Create the alert from the provided Terraform model...
-	input, defError := tfPlan.toAlertDefinitionInput()
+	input, defError := tfPlan.toAlertDefinitionInput(ctx)
 	if defError != nil {
 		resp.Diagnostics.AddError("Bad input in terraform resource",
 			fmt.Sprintf("error parsing terraform resource: %s", defError))
@@ -148,7 +176,6 @@ func (r *alertResource) Create(ctx context.Context, req resource.CreateRequest, 
 	}
 
 	tfPlan.Id = types.StringValue(newAlertDef.Id)
-
 	resp.Diagnostics.Append(resp.State.Set(ctx, &tfPlan)...)
 }
 
@@ -183,7 +210,7 @@ func (r *alertResource) Update(ctx context.Context, req resource.UpdateRequest, 
 	}
 
 	alertId := tfState.Id.ValueString()
-	input, defError := tfPlan.toAlertDefinitionInput()
+	input, defError := tfPlan.toAlertDefinitionInput(ctx)
 	if defError != nil {
 		resp.Diagnostics.AddError("Bad input in terraform resource",
 			fmt.Sprintf("error parsing terraform resource: %s", defError))
@@ -244,13 +271,13 @@ func (r *alertResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 //
 // The function will first create the required number of logical operator nodes with
 // pre-computed operator IDs. Then it'll transform all condition items to alert conditions.
-func (model *alertResourceModel) toAlertDefinitionInput() (swoClient.AlertDefinitionInput, error) {
+func (model *alertResourceModel) toAlertDefinitionInput(ctx context.Context) (swoClient.AlertDefinitionInput, error) {
 
 	var conditions []swoClient.AlertConditionNodeInput
 	var err error
 
 	if len(model.Conditions) == 1 {
-		conditions, err = model.Conditions[0].toAlertConditionInputs(0)
+		conditions, err = model.Conditions[0].toAlertConditionInputs(ctx, 0)
 		if err != nil {
 			return swoClient.AlertDefinitionInput{}, err
 		}
@@ -284,7 +311,7 @@ func (model *alertResourceModel) toAlertDefinitionInput() (swoClient.AlertDefini
 		// Create an alert condition for each
 		for i := 0; i < numConditions; i++ {
 			childRootNodeId := rootOperandIds[i]
-			childConditions, err := model.Conditions[i].toAlertConditionInputs(childRootNodeId)
+			childConditions, err := model.Conditions[i].toAlertConditionInputs(ctx, childRootNodeId)
 			if err != nil {
 				return swoClient.AlertDefinitionInput{}, err
 			}
@@ -298,7 +325,7 @@ func (model *alertResourceModel) toAlertDefinitionInput() (swoClient.AlertDefini
 		Description:         model.Description.ValueStringPointer(),
 		Enabled:             model.Enabled.ValueBool(),
 		Severity:            swoClient.AlertSeverity(model.Severity.ValueString()),
-		Actions:             model.toAlertActionInput(),
+		Actions:             model.toAlertActionInput(ctx),
 		TriggerResetActions: model.TriggerResetActions.ValueBoolPointer(),
 		Condition:           conditions,
 		RunbookLink:         model.RunbookLink.ValueStringPointer(),
@@ -306,8 +333,8 @@ func (model *alertResourceModel) toAlertDefinitionInput() (swoClient.AlertDefini
 	}, nil
 }
 
-func (model *alertResourceModel) toAlertActionInput() []swoClient.AlertActionInput {
-	inputs := []swoClient.AlertActionInput{}
+func (model *alertResourceModel) toAlertActionInput(ctx context.Context) []swoClient.AlertActionInput {
+	var inputs []swoClient.AlertActionInput
 
 	//Notifications is deprecated. NotificationActions should be used instead.
 	// This if/else maintains backwards compatability.
@@ -318,9 +345,13 @@ func (model *alertResourceModel) toAlertActionInput() []swoClient.AlertActionInp
 		for _, action := range model.NotificationActions {
 			actionsList := make(map[string][]string)
 
-			for _, configId := range action.ConfigurationIds {
+			var configurationIds []string
+			action.ConfigurationIds.ElementsAs(ctx, &configurationIds, false)
+
+			for _, configId := range configurationIds {
 				// Notification Id's are formatted as id:type.
 				// This is to accommodate ImportState needing a single Id to import a resource.
+
 				actionId, notificationType, _ := ParseNotificationId(types.StringValue(configId))
 				actionType := findCaseInsensitiveMatch(notificationActionTypes, notificationType)
 
@@ -341,8 +372,8 @@ func (model *alertResourceModel) toAlertActionInput() []swoClient.AlertActionInp
 		}
 	} else {
 		actionTypes := map[string][]string{}
-		for _, configId := range model.Notifications {
-			actionId, notificationType, err := ParseNotificationId(types.StringValue(configId))
+		for _, configId := range model.Notifications.Elements() {
+			actionId, notificationType, err := ParseNotificationId(types.StringValue(configId.String()))
 			actionType := findCaseInsensitiveMatch(notificationActionTypes, notificationType)
 
 			if err == nil {

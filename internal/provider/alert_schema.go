@@ -23,7 +23,7 @@ type alertResourceModel struct {
 	Severity            types.String            `tfsdk:"severity"`
 	Enabled             types.Bool              `tfsdk:"enabled"`
 	Conditions          []alertConditionModel   `tfsdk:"conditions"`
-	Notifications       []string                `tfsdk:"notifications"`
+	Notifications       types.List              `tfsdk:"notifications"`
 	TriggerResetActions types.Bool              `tfsdk:"trigger_reset_actions"`
 	RunbookLink         types.String            `tfsdk:"runbook_link"`
 	TriggerDelaySeconds types.Int64             `tfsdk:"trigger_delay_seconds"`
@@ -34,21 +34,21 @@ type alertConditionModel struct {
 	Threshold         types.String      `tfsdk:"threshold"`
 	Duration          types.String      `tfsdk:"duration"`
 	AggregationType   types.String      `tfsdk:"aggregation_type"`
-	EntityIds         []string          `tfsdk:"entity_ids"`
-	TargetEntityTypes []string          `tfsdk:"target_entity_types"`
+	EntityIds         types.List        `tfsdk:"entity_ids"`
+	TargetEntityTypes types.List        `tfsdk:"target_entity_types"`
 	IncludeTags       *[]alertTagsModel `tfsdk:"include_tags"`
 	ExcludeTags       *[]alertTagsModel `tfsdk:"exclude_tags"`
-	GroupByMetricTag  []string          `tfsdk:"group_by_metric_tag"`
+	GroupByMetricTag  types.List        `tfsdk:"group_by_metric_tag"`
 	NotReporting      types.Bool        `tfsdk:"not_reporting"`
 }
 
 type alertTagsModel struct {
 	Name   types.String `tfsdk:"name"`
-	Values []*string    `tfsdk:"values"`
+	Values types.List   `tfsdk:"values"`
 }
 
 type alertActionInputModel struct {
-	ConfigurationIds      []string    `tfsdk:"configuration_ids"`
+	ConfigurationIds      types.List  `tfsdk:"configuration_ids"`
 	ResendIntervalSeconds types.Int64 `tfsdk:"resend_interval_seconds"`
 }
 
@@ -158,12 +158,12 @@ func (r *alertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 							},
 						},
 						"entity_ids": schema.ListAttribute{
-							Description: "A list of Entity IDs that will be used to filter on the alert. The alert will only trigger if the alert matches one or more of the entity IDs.",
+							Description: "A list of Entity IDs that will be used to filter on the alert. The alert will only trigger if the alert matches one or more of the entity IDs. Must match across all alert conditions.",
 							Optional:    true,
 							ElementType: types.StringType,
 						},
 						"target_entity_types": schema.ListAttribute{
-							Description: "The entity types that the alert will be applied to.",
+							Description: "The entity types that the alert will be applied to. Must match across all alert conditions.",
 							Required:    true,
 							ElementType: types.StringType,
 						},
@@ -202,7 +202,7 @@ func (r *alertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 							},
 						},
 						"group_by_metric_tag": schema.ListAttribute{
-							Description: "Group alert data for selected attribute.",
+							Description: "Group alert data for selected attribute. Must match across all alert conditions.",
 							Optional:    true,
 							ElementType: types.StringType,
 						},
