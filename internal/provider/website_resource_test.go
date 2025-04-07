@@ -81,18 +81,6 @@ func testAccWebsiteResourceConfig(name string) string {
 					{
 						type  = "REGION"
 						value = "NA"
-					},
-					{
-						type  = "REGION"
-						value = "AS"
-					},
-					{
-						type  = "REGION"
-						value = "SA"
-					},
-					{
-						type  = "REGION"
-						value = "OC"
 					}
 				]
 	
@@ -100,11 +88,6 @@ func testAccWebsiteResourceConfig(name string) string {
 					test_from_all = false
 					platforms     = ["AWS"]
 				}
-			}
-	
-			rum = {
-				apdex_time_in_seconds = 4
-				spa                   = true
 			}
 	
 			custom_headers = [
@@ -139,18 +122,6 @@ func testAccWebsiteResourceConfigWithoutOptionals(name string) string {
 					{
 						type  = "REGION"
 						value = "NA"
-					},
-					{
-						type  = "REGION"
-						value = "AS"
-					},
-					{
-						type  = "REGION"
-						value = "SA"
-					},
-					{
-						type  = "REGION"
-						value = "OC"
 					}
 				]
 	

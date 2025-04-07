@@ -47,27 +47,36 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
-	// Create our input request.
-	var checkForString *swoClient.CheckForStringInput
-	if tfPlan.Monitoring.Availability.CheckForString != nil {
-		checkForString = &swoClient.CheckForStringInput{
-			Operator: swoClient.CheckStringOperator(tfPlan.Monitoring.Availability.CheckForString.Operator.ValueString()),
-			Value:    tfPlan.Monitoring.Availability.CheckForString.Value.ValueString(),
-		}
-	}
-	var ssl *swoClient.SslMonitoringInput
-	if tfPlan.Monitoring.Availability.SSL != nil {
-		ssl = &swoClient.SslMonitoringInput{
-			Enabled:                        tfPlan.Monitoring.Availability.SSL.Enabled.ValueBoolPointer(),
-			DaysPriorToExpiration:          swoClient.Ptr(int(tfPlan.Monitoring.Availability.SSL.DaysPriorToExpiration.ValueInt64())),
-			IgnoreIntermediateCertificates: tfPlan.Monitoring.Availability.SSL.IgnoreIntermediateCertificates.ValueBoolPointer(),
-		}
-	}
-
 	createInput := swoClient.CreateWebsiteInput{
 		Name: tfPlan.Name.ValueString(),
 		Url:  tfPlan.Url.ValueString(),
-		AvailabilityCheckSettings: &swoClient.AvailabilityCheckSettingsInput{
+	}
+
+	if tfPlan.Monitoring.Availability == nil && tfPlan.Monitoring.Rum == nil {
+		resp.Diagnostics.AddError("Website Create Error",
+			fmt.Sprintf("error creating website resource named %s, provide either 'rum' or 'availability'. Both fields cannot be empty.", tfPlan.Name))
+		return
+	}
+
+	if tfPlan.Monitoring.Availability != nil {
+		var checkForString *swoClient.CheckForStringInput
+		if tfPlan.Monitoring.Availability.CheckForString != nil {
+			checkForString = &swoClient.CheckForStringInput{
+				Operator: swoClient.CheckStringOperator(tfPlan.Monitoring.Availability.CheckForString.Operator.ValueString()),
+				Value:    tfPlan.Monitoring.Availability.CheckForString.Value.ValueString(),
+			}
+		}
+
+		var ssl *swoClient.SslMonitoringInput
+		if tfPlan.Monitoring.Availability.SSL != nil {
+			ssl = &swoClient.SslMonitoringInput{
+				Enabled:                        tfPlan.Monitoring.Availability.SSL.Enabled.ValueBoolPointer(),
+				DaysPriorToExpiration:          swoClient.Ptr(int(tfPlan.Monitoring.Availability.SSL.DaysPriorToExpiration.ValueInt64())),
+				IgnoreIntermediateCertificates: tfPlan.Monitoring.Availability.SSL.IgnoreIntermediateCertificates.ValueBoolPointer(),
+			}
+		}
+
+		createInput.AvailabilityCheckSettings = &swoClient.AvailabilityCheckSettingsInput{
 			CheckForString:        checkForString,
 			TestIntervalInSeconds: swoClientTypes.TestIntervalInSeconds(int(tfPlan.Monitoring.Availability.TestIntervalInSeconds.ValueInt64())),
 			Protocols: convertArray(tfPlan.Monitoring.Availability.Protocols.Elements(), func(s attr.Value) swoClient.WebsiteProtocol {
@@ -92,11 +101,14 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 					Value: h.Value.ValueString(),
 				}
 			}),
-		},
-		Rum: &swoClient.RumMonitoringInput{
+		}
+	}
+
+	if tfPlan.Monitoring.Rum != nil {
+		createInput.Rum = &swoClient.RumMonitoringInput{
 			ApdexTimeInSeconds: swoClient.Ptr(int(tfPlan.Monitoring.Rum.ApdexTimeInSeconds.ValueInt64())),
 			Spa:                swoClient.Ptr(tfPlan.Monitoring.Rum.Spa.ValueBool()),
-		},
+		}
 	}
 
 	// Create the Website...
@@ -109,12 +121,16 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 
 	website, err := ReadRetry(ctx, result.Id, r.client.WebsiteService().Read)
 
-	// Get the latest Website state from the server so we can get the 'snippet' field. Ideally we need to update
-	// the API to return the 'snippet' field in the create response.
 	if err != nil {
 		resp.Diagnostics.AddWarning("Client Error",
-			fmt.Sprintf("error capturing RUM snippit for Website '%s' - error: %s", tfPlan.Name, err))
-	} else {
+			fmt.Sprintf("error reading webiste after create '%s' - error: %s", tfPlan.Name, err))
+		return
+	}
+
+	// Get the latest Website state from the server so we can get the 'snippet' field. Ideally we need to update
+	// the API to return the 'snippet' field in the create response.
+	// only set the snippet field if the user has RUM enabled.
+	if tfPlan.Monitoring.Rum != nil {
 		tfPlan.Monitoring.Rum.Snippet = types.StringValue(*website.Monitoring.Rum.Snippet)
 	}
 
@@ -134,7 +150,7 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error",
-			fmt.Sprintf("error reading Website %s. error: %s", tfState.Id, err))
+			fmt.Sprintf("error reading website %s. error: %s", tfState.Name, err))
 		return
 	}
 
@@ -147,7 +163,7 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 		tfState.Monitoring = &websiteMonitoring{}
 
 		if monitoring.Availability != nil {
-			tfState.Monitoring.Availability = availabilityMonitoring{}
+			tfState.Monitoring.Availability = &availabilityMonitoring{}
 			availability := monitoring.Availability
 
 			if availability.CheckForString != nil {
@@ -224,7 +240,7 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 		tfState.Monitoring.CustomHeaders = customHeaders
 
 		if monitoring.Rum != nil {
-			tfState.Monitoring.Rum = rumMonitoring{
+			tfState.Monitoring.Rum = &rumMonitoring{
 				Spa: types.BoolValue(monitoring.Rum.Spa),
 			}
 
@@ -236,7 +252,7 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 				tfState.Monitoring.Rum.Snippet = types.StringValue(*monitoring.Rum.Snippet)
 			}
 		} else {
-			tfState.Monitoring.Rum = rumMonitoring{}
+			tfState.Monitoring.Rum = &rumMonitoring{}
 		}
 	} else {
 		tfState.Monitoring = nil
