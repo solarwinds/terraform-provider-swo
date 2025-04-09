@@ -154,7 +154,7 @@ func (r *uriResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 		tfState.TestDefinitions.TestIntervalInSeconds = types.Int64Null()
 	}
 
-	var locOpts = []uriResourceProbeLocation{}
+	var locOpts []uriResourceProbeLocation
 	for _, x := range testDefs.LocationOptions {
 		locOpts = append(locOpts, uriResourceProbeLocation{
 			Type:  types.StringValue(string(x.Type)),
@@ -251,8 +251,8 @@ func (r *uriResource) Update(ctx context.Context, req resource.UpdateRequest, re
 		return
 	}
 
-	// Updates are eventually consistant. Retry until the URI we read and the URI we are updating match.
-	_, err = BackoffRetry(func() (*swoClient.ReadUriResult, error) {
+	// Updates are eventually consistent. Retry until the URI we read and the URI we are updating match.
+	_, err = BackoffRetry(ctx, func() (*swoClient.ReadUriResult, error) {
 		// Read the Uri...
 		uri, err := r.client.UriService().Read(ctx, tfState.Id.ValueString())
 
