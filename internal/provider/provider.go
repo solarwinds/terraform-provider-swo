@@ -20,12 +20,9 @@ import (
 	"github.com/solarwinds/terraform-provider-swo/internal/envvar"
 )
 
-// Ensure SwoProvider satisfies various provider interfaces.
 var (
-	_                     provider.Provider = &swoProvider{}
-	ErrNonMatchingEntites                   = errors.New("updated entity properties don't match")
-
-	dataSources = []func() datasource.DataSource{}
+	dataSources           []func() datasource.DataSource
+	ErrNonMatchingEntites = errors.New("updated entity properties don't match")
 )
 
 var resources = []func() resource.Resource{
@@ -121,7 +118,7 @@ func (p *swoProvider) Configure(ctx context.Context, req provider.ConfigureReque
 	clientTimeout := time.Duration(config.RequestTimeout.ValueInt64()) * time.Second
 
 	// Client configuration for data sources and resources.
-	swoClient, err := swoClient.New(config.ApiToken.ValueString(),
+	client, err := swoClient.New(config.ApiToken.ValueString(),
 		swoClient.RequestTimeoutOption(clientTimeout),
 		swoClient.BaseUrlOption(config.BaseURL.ValueString()),
 		swoClient.TransportOption(p.transport),
@@ -146,7 +143,7 @@ func (p *swoProvider) Configure(ctx context.Context, req provider.ConfigureReque
 	)
 
 	providerClients := providerClients{
-		SwoClient:   swoClient,
+		SwoClient:   client,
 		SwoV1Client: swoV1Client,
 	}
 
@@ -211,17 +208,17 @@ func New(version string, transport http.RoundTripper) func() provider.Provider {
 	}
 }
 
-func BackoffRetry[T any](operation backoff.Operation[T]) (T, error) {
+func BackoffRetry[T any](ctx context.Context, operation backoff.Operation[T]) (T, error) {
 	expBackoff := backoff.NewExponentialBackOff()
 	expBackoff.MaxInterval = expBackoffMaxInterval
 
-	return backoff.Retry(context.Background(), operation, backoff.WithBackOff(expBackoff), backoff.WithMaxElapsedTime(expBackoffMaxElapsed))
+	return backoff.Retry(ctx, operation, backoff.WithBackOff(expBackoff), backoff.WithMaxElapsedTime(expBackoffMaxElapsed))
 }
 
 func ReadRetry[T any](ctx context.Context, id string, operation ReadOperation[T]) (T, error) {
 	var entity T
-	// Uri, and Website Creates and Updates are eventually consistant. Retry until the entity id is returned.
-	entity, err := BackoffRetry(func() (T, error) {
+	// Uri, and Website Creates and Updates are eventually consistent. Retry until the entity id is returned.
+	entity, err := BackoffRetry(ctx, func() (T, error) {
 		entity, err := operation(ctx, id)
 		if err != nil {
 			// The entity is still being created, retry

@@ -29,8 +29,8 @@ type probeLocation struct {
 }
 
 type platformOptions struct {
-	TestFromAll types.Bool `tfsdk:"test_from_all"`
-	Platforms   types.List `tfsdk:"platforms"`
+	TestFromAll types.Bool     `tfsdk:"test_from_all"`
+	Platforms   []types.String `tfsdk:"platforms"`
 }
 
 type sslMonitoring struct {
@@ -43,7 +43,7 @@ type websiteMonitoring struct {
 	Options       *monitoringOptions      `tfsdk:"options"`
 	Availability  *availabilityMonitoring `tfsdk:"availability"`
 	Rum           *rumMonitoring          `tfsdk:"rum"`
-	CustomHeaders []customHeader          `tfsdk:"custom_headers"`
+	CustomHeaders *[]customHeader         `tfsdk:"custom_headers"` //deprecated
 }
 
 // Deprecated: Options are not used anymore
@@ -60,6 +60,7 @@ type availabilityMonitoring struct {
 	TestIntervalInSeconds types.Int64         `tfsdk:"test_interval_in_seconds"`
 	LocationOptions       []probeLocation     `tfsdk:"location_options"`
 	PlatformOptions       platformOptions     `tfsdk:"platform_options"`
+	CustomHeaders         *[]customHeader     `tfsdk:"custom_headers"`
 }
 
 type rumMonitoring struct {
@@ -114,7 +115,7 @@ func (r *websiteResource) Schema(ctx context.Context, req resource.SchemaRequest
 					},
 					"availability": schema.SingleNestedAttribute{
 						Description: "The Website availability monitoring settings.",
-						Required:    true,
+						Optional:    true,
 						Attributes: map[string]schema.Attribute{
 							"check_for_string": schema.SingleNestedAttribute{
 								Description: "The Website availability monitoring check for string settings.",
@@ -201,9 +202,27 @@ func (r *websiteResource) Schema(ctx context.Context, req resource.SchemaRequest
 										Required:    true,
 									},
 									"platforms": schema.ListAttribute{
-										Description: "The Website availability monitoring platform options. Valid values are [AWS, AZURE].",
+										Description: "The Website availability monitoring platform options.",
 										Required:    true,
 										ElementType: types.StringType,
+									},
+								},
+							},
+							"custom_headers": schema.SetNestedAttribute{
+								Description: "One or more custom headers to send with the uptime check.",
+								Optional:    true,
+								DeprecationMessage: "custom_headers was moved inside of monitoring.availability. " +
+									"Remove this attribute's configuration as it's no longer in use and the attribute will be removed in the next major version of the provider.",
+								NestedObject: schema.NestedAttributeObject{
+									Attributes: map[string]schema.Attribute{
+										"name": schema.StringAttribute{
+											Description: "The Website custom header name.",
+											Required:    true,
+										},
+										"value": schema.StringAttribute{
+											Description: "The Website custom header value.",
+											Required:    true,
+										},
 									},
 								},
 							},
@@ -227,22 +246,6 @@ func (r *websiteResource) Schema(ctx context.Context, req resource.SchemaRequest
 							"spa": schema.BoolAttribute{
 								Description: "Is SPA monitoring enabled?",
 								Required:    true,
-							},
-						},
-					},
-					"custom_headers": schema.SetNestedAttribute{
-						Description: "One or more custom headers to send with the uptime check.",
-						Required:    true,
-						NestedObject: schema.NestedAttributeObject{
-							Attributes: map[string]schema.Attribute{
-								"name": schema.StringAttribute{
-									Description: "The Website custom header name.",
-									Required:    true,
-								},
-								"value": schema.StringAttribute{
-									Description: "The Website custom header value.",
-									Required:    true,
-								},
 							},
 						},
 					},

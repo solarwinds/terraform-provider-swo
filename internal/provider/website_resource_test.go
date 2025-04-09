@@ -14,22 +14,30 @@ func TestAccWebsiteResource(t *testing.T) {
 		IsUnitTest:               true,
 		Steps: []resource.TestStep{
 			// Create and Read testing
-			{
-				Config: testAccWebsiteResourceConfig("test-acc test one [CREATE_TEST]"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet("swo_website.test", "id"),
-					resource.TestCheckResourceAttr("swo_website.test", "name", "test-acc test one [CREATE_TEST]"),
-					resource.TestCheckResourceAttr("swo_website.test", "url", "https://example.com"),
-				),
-			},
-			{
-				Config: testAccWebsiteResourceConfigWithoutOptionals("test-acc create without [CREATE_TEST]"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet("swo_website.test", "id"),
-					resource.TestCheckResourceAttr("swo_website.test", "name", "test-acc create without [CREATE_TEST]"),
-					resource.TestCheckResourceAttr("swo_website.test", "url", "https://solarwinds.com"),
-				),
-			},
+			createTestStep(testAccWebsiteResourceConfig, "test-acc test one [CREATE_TEST]", "https://example.com", websiteMonitoringConfig,
+				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.check_for_string.operator", "CONTAINS"),
+				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.ssl.enabled", "true"),
+				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.protocols.0", "HTTP"),
+				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.protocols.1", "HTTPS"),
+			),
+			createTestStep(
+				testAccWebsiteResourceConfig,
+				"test-acc create without [CREATE_TEST]",
+				"https://solarwinds.com",
+				websiteMonitoringConfigWithoutAvailabilityOptionals,
+				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.check_for_string.operator", "CONTAINS"),
+				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.ssl.enabled", "true"),
+				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.protocols.0", "HTTP"),
+				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.protocols.1", "HTTPS"),
+			),
+			createTestStep(
+				testAccWebsiteResourceConfig,
+				"test-acc create without availability [CREATE_TEST]",
+				"https://solarwinds.com",
+				websiteMonitoringConfigWithoutAvailability,
+				resource.TestCheckResourceAttr("swo_website.test", "monitoring.rum.apdex_time_in_seconds", "4"),
+				resource.TestCheckResourceAttr("swo_website.test", "monitoring.rum.spa", "true"),
+			),
 			// ImportState testing
 			{
 				ResourceName:      "swo_website.test",
@@ -37,121 +45,142 @@ func TestAccWebsiteResource(t *testing.T) {
 				ImportStateVerify: true,
 			},
 			// Update and Read testing
-			{
-				Config: testAccWebsiteResourceConfig("test-acc test two [UPDATE_TEST]"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_website.test", "name", "test-acc test two [UPDATE_TEST]"),
-				),
-			},
-			{
-				Config: testAccWebsiteResourceConfigWithoutOptionals("test-acc test update without [UPDATE_TEST]"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_website.test", "name", "test-acc test update without [UPDATE_TEST]"),
-				),
-			},
+			createTestStep(testAccWebsiteResourceConfig, "test-acc test two [UPDATE_TEST]", "https://example.com", websiteMonitoringConfig,
+				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.check_for_string.operator", "CONTAINS"),
+				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.ssl.enabled", "true"),
+				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.protocols.0", "HTTP"),
+				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.protocols.1", "HTTPS"),
+			),
+			createTestStep(
+				testAccWebsiteResourceConfig,
+				"test-acc test update without [UPDATE_TEST]",
+				"https://solarwinds.com",
+				websiteMonitoringConfigWithoutAvailabilityOptionals,
+				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.check_for_string.operator", "CONTAINS"),
+				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.ssl.enabled", "true"),
+				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.protocols.0", "HTTP"),
+				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.protocols.1", "HTTPS"),
+			),
+			createTestStep(
+				testAccWebsiteResourceConfig,
+				"test-acc test update without [UPDATE_TEST]",
+				"https://solarwinds.com",
+				websiteMonitoringConfigWithoutAvailability,
+				resource.TestCheckResourceAttr("swo_website.test", "monitoring.rum.apdex_time_in_seconds", "4"),
+				resource.TestCheckResourceAttr("swo_website.test", "monitoring.rum.spa", "true"),
+			),
 			// Delete testing automatically occurs in TestCase
 		},
 	})
 }
 
-func testAccWebsiteResourceConfig(name string) string {
-	return providerConfig() + fmt.Sprintf(`
-	resource "swo_website" "test" {
-		name        = %[1]q
-		url  = "https://example.com"
-	
-		monitoring = {
-			availability = {
-				check_for_string = {
-					operator = "CONTAINS"
-					value    = "example-string"
-				}
-	
-				ssl = {
-					days_prior_to_expiration         = 30
-					enabled                          = true
-					ignore_intermediate_certificates = true
-				}
-	
-				protocols                = ["HTTP", "HTTPS"]
-				test_interval_in_seconds = 300
-				test_from_location       = "REGION"
-	
-				location_options = [
-					{
-						type  = "REGION"
-						value = "NA"
-					}
-				]
-	
-				platform_options = {
-					test_from_all = false
-					platforms     = ["AWS"]
-				}
-			}
-	
-			custom_headers = [
-				{
-					name  = "Custom-Header-1"
-					value = "Custom-Value-1"
-				},
-				{
-					name  = "Custom-Header-2"
-					value = "Custom-Value-2"
-				}
-			]
-		}
-	}`, name)
+var (
+	websiteMonitoringConfig                             = monitoringConfig(availabilityConfig(true, true), "null")
+	websiteMonitoringConfigWithoutAvailability          = monitoringConfig("null", rumConfig())
+	websiteMonitoringConfigWithoutAvailabilityOptionals = monitoringConfig(availabilityConfig(false, false), rumConfig())
+)
+
+func createTestStep(configFunc func(string, string, string) string, name, url string, monitoring string, additionalChecks ...resource.TestCheckFunc) resource.TestStep {
+	return resource.TestStep{
+		Config: configFunc(name, url, monitoring),
+		Check: resource.ComposeAggregateTestCheckFunc(
+			append([]resource.TestCheckFunc{
+				resource.TestCheckResourceAttrSet("swo_website.test", "id"),
+				resource.TestCheckResourceAttr("swo_website.test", "name", name),
+				resource.TestCheckResourceAttr("swo_website.test", "url", url),
+			}, additionalChecks...)...,
+		),
+	}
 }
 
-func testAccWebsiteResourceConfigWithoutOptionals(name string) string {
-	return providerConfig() + fmt.Sprintf(`
+func testAccWebsiteResourceConfig(name string, url string, monitoring string) string {
+	return fmt.Sprintf(`
+    %s
 	resource "swo_website" "test" {
-		name        = %[1]q
-		url  = "https://solarwinds.com"
-	
-		monitoring = {
-
-			availability = {
-	
-				protocols                = ["HTTP", "HTTPS"]
-				test_interval_in_seconds = 300
-				test_from_location       = "REGION"
-	
-				location_options = [
-					{
-						type  = "REGION"
-						value = "NA"
-					}
-				]
-	
-				platform_options = {
-					test_from_all = false
-					platforms     = ["AWS"]
-				}
-
-				ssl = {
-					days_prior_to_expiration         = 30
-					enabled                          = false
-					ignore_intermediate_certificates = false
-				}
+		name = %[2]q
+		url  = %[3]q
+		monitoring = %s
+        custom_headers = [
+			{
+				name  = "Custom-Header-1-Deprecated"
+				value = "Custom-Value-1--Deprecated"
 			}
-	
-			rum = {
-				apdex_time_in_seconds = 4
-				spa                   = true
+		]
+	}`, providerConfig(), name, url, monitoring)
+}
+
+func monitoringConfig(availability, rum string) string {
+	return fmt.Sprintf(`
+		{
+			availability = %s
+			rum = %s
+		}`, availability, rum)
+}
+
+func rumConfig() string {
+	return `
+	{
+		apdex_time_in_seconds = 4
+		spa                   = true
+    }`
+}
+
+func availabilityConfig(includeCheckForString bool, includeSSL bool) string {
+	availabilityConfig := `
+	{`
+
+	if includeCheckForString {
+		availabilityConfig += `
+		check_for_string = {
+			operator = "CONTAINS"
+			value    = "example-string"
+		}`
+	}
+
+	if includeSSL {
+		availabilityConfig += `
+		ssl = {
+			days_prior_to_expiration         = 30
+			enabled                          = true
+			ignore_intermediate_certificates = true
+		}`
+	}
+
+	availabilityConfig += `
+		protocols                = ["HTTP", "HTTPS"]
+		test_interval_in_seconds = 300
+		test_from_location       = "REGION"
+
+		location_options = [
+			{
+				type  = "REGION"
+				value = "NA"
+			},
+			{
+			  type  = "REGION"
+			  value = "AS"
+			},
+			{
+			  type  = "REGION"
+			  value = "SA"
+			},
+			{
+			  type  = "REGION"
+			  value = "OC"
 			}
-	
-			custom_headers = [
-				{
-					name  = "Custom-Header-1"
-					value = "Custom-Value-1"
-				},
-				{
-					name  = "Custom-Header-2"
-					value = "Custom-Value-2"
-				}
-			]
+		]
+
+		platform_options = {
+			test_from_all = false
+			platforms     = ["AWS"]
 		}
-	}`, name)
+
+		custom_headers = [
+			{
+				name  = "Custom-Header-2"
+				value = "Custom-Value-2"
+			}
+		]
+	}`
+	return availabilityConfig
 }
