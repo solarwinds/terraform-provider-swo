@@ -54,12 +54,6 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 		Url:  tfPlan.Url.ValueString(),
 	}
 
-	if tfPlan.Monitoring.Availability == nil && tfPlan.Monitoring.Rum == nil {
-		resp.Diagnostics.AddError("Website Create Error",
-			fmt.Sprintf("error creating website resource named %s, provide either 'rum' or 'availability'. Both fields cannot be empty.", tfPlan.Name))
-		return
-	}
-
 	if tfPlan.Monitoring.Availability != nil {
 		var checkForString *swoClient.CheckForStringInput
 		if tfPlan.Monitoring.Availability.CheckForString != nil {
@@ -78,19 +72,18 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 			}
 		}
 
-		var customHeaders []swoClient.CustomHeaderInput
-		//monitoring.custom_headers is deprecated. If monitoring.availability.custom_headers is set this will be overridden.
-		if tfPlan.Monitoring.CustomHeaders != nil {
-			customHeaders = convertArray(*tfPlan.Monitoring.CustomHeaders, func(h customHeader) swoClient.CustomHeaderInput {
-				return swoClient.CustomHeaderInput{
-					Name:  h.Name.ValueString(),
-					Value: h.Value.ValueString(),
-				}
-			})
+		var tfPlanCustomHeaders []customHeader
+
+		//monitoring.custom_headers is deprecated. Both custom_headers fields cannot be set at the same time.
+		if tfPlan.Monitoring.Availability.CustomHeaders != nil {
+			tfPlanCustomHeaders = *tfPlan.Monitoring.Availability.CustomHeaders
+		} else {
+			tfPlanCustomHeaders = *tfPlan.Monitoring.CustomHeaders
 		}
 
-		if tfPlan.Monitoring.Availability.CustomHeaders != nil {
-			customHeaders = convertArray(*tfPlan.Monitoring.Availability.CustomHeaders, func(h customHeader) swoClient.CustomHeaderInput {
+		var customHeaders []swoClient.CustomHeaderInput
+		if len(tfPlanCustomHeaders) > 0 {
+			customHeaders = convertArray(tfPlanCustomHeaders, func(h customHeader) swoClient.CustomHeaderInput {
 				return swoClient.CustomHeaderInput{
 					Name:  h.Name.ValueString(),
 					Value: h.Value.ValueString(),
@@ -171,6 +164,8 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
+	tfStateCopy := tfState
+
 	// Update the Terraform state with latest values from the server.
 	tfState.Url = types.StringValue(website.Url)
 	tfState.Name = types.StringPointerValue(website.Name)
@@ -244,7 +239,11 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 					Value: types.StringValue(h.Value),
 				})
 			}
-			tfState.Monitoring.Availability.CustomHeaders = &customHeaders
+			if tfStateCopy.Monitoring.CustomHeaders != nil {
+				tfState.Monitoring.CustomHeaders = &customHeaders
+			} else {
+				tfState.Monitoring.Availability.CustomHeaders = &customHeaders
+			}
 		}
 
 		if monitoring.Options.IsRumActive && monitoring.Rum != nil {
@@ -272,12 +271,6 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &tfPlan)...)
 	resp.Diagnostics.Append(req.State.Get(ctx, &tfState)...)
 	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if tfPlan.Monitoring.Availability == nil && tfPlan.Monitoring.Rum == nil {
-		resp.Diagnostics.AddError("Website Create Error",
-			fmt.Sprintf("error creating website resource named %s, provide either 'rum' or 'availability'. Both fields cannot be empty.", tfPlan.Name))
 		return
 	}
 
@@ -405,7 +398,7 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 	}
 
 	// Updates are eventually consistent. Retry until the Website we read and the Website we are updating match.
-	website, err := BackoffRetry(ctx, func() (*swoClient.ReadWebsiteResult, error) {
+	website, err := BackoffRetry(func() (*swoClient.ReadWebsiteResult, error) {
 		// Read the Uri...
 		website, err := r.client.WebsiteService().Read(ctx, tfState.Id.ValueString())
 
@@ -434,6 +427,11 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 		// default values for availability are returned if availability is not set
 		if tfPlan.Monitoring.Availability == nil {
 			websiteToMatch.Monitoring.Availability = website.Monitoring.Availability
+		}
+
+		// default values for ssl are returned if ssl is not set
+		if tfPlan.Monitoring.Availability != nil && tfPlan.Monitoring.Availability.SSL == nil {
+			websiteToMatch.Monitoring.Availability.Ssl = website.Monitoring.Availability.Ssl
 		}
 
 		if websiteToMatch.Monitoring.CustomHeaders == nil && len(website.Monitoring.CustomHeaders) == 0 {

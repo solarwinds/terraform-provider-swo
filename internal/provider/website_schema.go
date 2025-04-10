@@ -2,7 +2,9 @@ package provider
 
 import (
 	"context"
-
+	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	swoClient "github.com/solarwinds/swo-client-go/pkg/client"
 	"github.com/solarwinds/terraform-provider-swo/internal/validators"
 
@@ -95,6 +97,12 @@ func (r *websiteResource) Schema(ctx context.Context, req resource.SchemaRequest
 			"monitoring": schema.SingleNestedAttribute{
 				Description: "The Website monitoring settings.",
 				Required:    true,
+				Validators: []validator.Object{
+					objectvalidator.AtLeastOneOf(path.Expressions{
+						path.MatchRelative().AtName("availability"),
+						path.MatchRelative().AtName("rum"),
+					}...),
+				},
 				Attributes: map[string]schema.Attribute{
 					"options": schema.SingleNestedAttribute{
 						Description:        "The Website monitoring options.",
@@ -211,8 +219,11 @@ func (r *websiteResource) Schema(ctx context.Context, req resource.SchemaRequest
 							"custom_headers": schema.SetNestedAttribute{
 								Description: "One or more custom headers to send with the uptime check.",
 								Optional:    true,
-								DeprecationMessage: "custom_headers was moved inside of monitoring.availability. " +
-									"Remove this attribute's configuration as it's no longer in use and the attribute will be removed in the next major version of the provider.",
+								Validators: []validator.Set{
+									setvalidator.ExactlyOneOf(path.Expressions{
+										path.MatchRoot("monitoring").AtName("custom_headers"),
+									}...),
+								},
 								NestedObject: schema.NestedAttributeObject{
 									Attributes: map[string]schema.Attribute{
 										"name": schema.StringAttribute{
@@ -246,6 +257,31 @@ func (r *websiteResource) Schema(ctx context.Context, req resource.SchemaRequest
 							"spa": schema.BoolAttribute{
 								Description: "Is SPA monitoring enabled?",
 								Required:    true,
+							},
+						},
+					},
+					"custom_headers": schema.SetNestedAttribute{
+						Description: "One or more custom headers to send with the uptime check.",
+						DeprecationMessage: "custom_headers was moved inside of monitoring.availability. " +
+							"Remove this attribute's configuration as it's no longer in use and the attribute will be removed in the next major version of the provider. " +
+							"If this field and monitoring.availability.custom_headers are both set an error with be thrown. " +
+							"If this field is set availability must also be set or an error will be thrown.",
+						Optional: true,
+						Validators: []validator.Set{
+							setvalidator.AlsoRequires(path.Expressions{
+								path.MatchRoot("monitoring").AtName("availability"),
+							}...),
+						},
+						NestedObject: schema.NestedAttributeObject{
+							Attributes: map[string]schema.Attribute{
+								"name": schema.StringAttribute{
+									Description: "The Website custom header name.",
+									Required:    true,
+								},
+								"value": schema.StringAttribute{
+									Description: "The Website custom header value.",
+									Required:    true,
+								},
 							},
 						},
 					},

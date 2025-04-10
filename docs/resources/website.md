@@ -98,6 +98,7 @@ resource "swo_website" "test_website" {
 Optional:
 
 - `availability` (Attributes) The Website availability monitoring settings. (see [below for nested schema](#nestedatt--monitoring--availability))
+- `custom_headers` (Attributes Set, Deprecated) One or more custom headers to send with the uptime check. (see [below for nested schema](#nestedatt--monitoring--custom_headers))
 - `options` (Attributes, Deprecated) The Website monitoring options. (see [below for nested schema](#nestedatt--monitoring--options))
 - `rum` (Attributes) The Website RUM monitoring settings. (see [below for nested schema](#nestedatt--monitoring--rum))
 
@@ -115,7 +116,7 @@ Required:
 Optional:
 
 - `check_for_string` (Attributes) The Website availability monitoring check for string settings. (see [below for nested schema](#nestedatt--monitoring--availability--check_for_string))
-- `custom_headers` (Attributes Set, Deprecated) One or more custom headers to send with the uptime check. (see [below for nested schema](#nestedatt--monitoring--availability--custom_headers))
+- `custom_headers` (Attributes Set) One or more custom headers to send with the uptime check. (see [below for nested schema](#nestedatt--monitoring--availability--custom_headers))
 - `ssl` (Attributes) The Website availability monitoring SSL settings. (see [below for nested schema](#nestedatt--monitoring--availability--ssl))
 
 <a id="nestedatt--monitoring--availability--location_options"></a>
@@ -163,6 +164,15 @@ Required:
 - `enabled` (Boolean) Is SSL monitoring enabled?
 - `ignore_intermediate_certificates` (Boolean) Ignore intermediate certificates?
 
+
+
+<a id="nestedatt--monitoring--custom_headers"></a>
+### Nested Schema for `monitoring.custom_headers`
+
+Required:
+
+- `name` (String) The Website custom header name.
+- `value` (String) The Website custom header value.
 
 
 <a id="nestedatt--monitoring--options"></a>

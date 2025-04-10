@@ -52,7 +52,7 @@ resource "swo_alert" "https_response_time" {
   ]
   notifications         = ["4661:email", "8112:webhook", "2456:newrelic"]
   trigger_reset_actions = true
-  runbookLink           = "https://www.runbook.com/highresponsetime"
+  runbook_link          = "https://www.runbook.com/highresponsetime"
   trigger_delay_seconds = 300
 }
 ```
@@ -73,7 +73,7 @@ resource "swo_alert" "https_response_time" {
 - `notification_actions` (Attributes Set) List of alert notifications that are sent when an alert triggers. (see [below for nested schema](#nestedatt--notification_actions))
 - `notifications` (List of String, Deprecated) A list of notifications that should be triggered for this alert.
 - `runbook_link` (String) A runbook is documentation of what steps to follow when something goes wrong.
-- `trigger_delay_seconds` (Number) Number of seconds during which the conditions must be continually met before an alert is triggered. Value must be between 60 to 86400 seconds, and value has to be divisible by 60.
+- `trigger_delay_seconds` (Number) Number of seconds during which the conditions must be continually met before an alert is triggered. Value must be between 60 to 86400 seconds, and value has to be divisible by 60. Default is `0`.
 - `trigger_reset_actions` (Boolean) True if a notification should be sent when an active alert returns to normal. Default is false. Default is `false`.
 
 ### Read-Only
@@ -88,14 +88,14 @@ Required:
 - `aggregation_type` (String) The aggregation function that will be applied to the metric. Valid values are [`AVG`|`COUNT`|`LAST`|`MAX`|`MIN`|`SUM`].
 - `duration` (String) How long the threshold has been met before triggering an alert.
 - `metric_name` (String) The field name of the metric to be filtered on.
-- `target_entity_types` (List of String) The entity types that the alert will be applied to.
+- `target_entity_types` (List of String) The entity types that the alert will be applied to. Must match across all alert conditions.
 - `threshold` (String) Operator and value that represent the threshold of an the alert. When the threshold is breached it triggers the alert. For Operator - binaryOperator:(=|!=|>|<|>=|<=), logicalOperator:(AND|OR) E.g. '>=10'
 
 Optional:
 
-- `entity_ids` (List of String) A list of Entity IDs that will be used to filter on the alert. The alert will only trigger if the alert matches one or more of the entity IDs.
+- `entity_ids` (List of String) A list of Entity IDs that will be used to filter on the alert. The alert will only trigger if the alert matches one or more of the entity IDs. Must match across all alert conditions.
 - `exclude_tags` (Attributes Set) Tag key and values to match in order to not trigger an alert. (see [below for nested schema](#nestedatt--conditions--exclude_tags))
-- `group_by_metric_tag` (List of String) Group alert data for selected attribute.
+- `group_by_metric_tag` (List of String) Group alert data for selected attribute. Must match across all alert conditions.
 - `include_tags` (Attributes Set) Tag key and values to match in order to trigger an alert. (see [below for nested schema](#nestedatt--conditions--include_tags))
 - `not_reporting` (Boolean) True if the alert should trigger when the metric is not reporting. If true, threshold must be '' and aggregation_type must be 'COUNT'. Default is `false`.
 

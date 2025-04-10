@@ -14,7 +14,11 @@ func TestAccWebsiteResource(t *testing.T) {
 		IsUnitTest:               true,
 		Steps: []resource.TestStep{
 			// Create and Read testing
-			createTestStep(testAccWebsiteResourceConfig, "test-acc test one [CREATE_TEST]", "https://example.com", websiteMonitoringConfig,
+			createTestStep(
+				testAccWebsiteResourceConfig,
+				"test-acc test one [CREATE_TEST]",
+				"https://example.com",
+				websiteMonitoringConfig,
 				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.check_for_string.operator", "CONTAINS"),
 				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.ssl.enabled", "true"),
 				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.protocols.0", "HTTP"),
@@ -25,8 +29,6 @@ func TestAccWebsiteResource(t *testing.T) {
 				"test-acc create without [CREATE_TEST]",
 				"https://solarwinds.com",
 				websiteMonitoringConfigWithoutAvailabilityOptionals,
-				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.check_for_string.operator", "CONTAINS"),
-				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.ssl.enabled", "true"),
 				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.protocols.0", "HTTP"),
 				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.protocols.1", "HTTPS"),
 			),
@@ -45,7 +47,11 @@ func TestAccWebsiteResource(t *testing.T) {
 				ImportStateVerify: true,
 			},
 			// Update and Read testing
-			createTestStep(testAccWebsiteResourceConfig, "test-acc test two [UPDATE_TEST]", "https://example.com", websiteMonitoringConfig,
+			createTestStep(
+				testAccWebsiteResourceConfig,
+				"test-acc test two [UPDATE_TEST]",
+				"https://example.com",
+				websiteMonitoringConfig,
 				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.check_for_string.operator", "CONTAINS"),
 				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.ssl.enabled", "true"),
 				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.protocols.0", "HTTP"),
@@ -56,8 +62,6 @@ func TestAccWebsiteResource(t *testing.T) {
 				"test-acc test update without [UPDATE_TEST]",
 				"https://solarwinds.com",
 				websiteMonitoringConfigWithoutAvailabilityOptionals,
-				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.check_for_string.operator", "CONTAINS"),
-				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.ssl.enabled", "true"),
 				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.protocols.0", "HTTP"),
 				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.protocols.1", "HTTPS"),
 			),
@@ -75,9 +79,9 @@ func TestAccWebsiteResource(t *testing.T) {
 }
 
 var (
-	websiteMonitoringConfig                             = monitoringConfig(availabilityConfig(true, true), "null")
-	websiteMonitoringConfigWithoutAvailability          = monitoringConfig("null", rumConfig())
-	websiteMonitoringConfigWithoutAvailabilityOptionals = monitoringConfig(availabilityConfig(false, false), rumConfig())
+	websiteMonitoringConfig                             = monitoringConfig(availabilityConfig(true, true), "null", true)
+	websiteMonitoringConfigWithoutAvailability          = monitoringConfig("null", rumConfig(), false)
+	websiteMonitoringConfigWithoutAvailabilityOptionals = monitoringConfig(availabilityConfig(false, false), rumConfig(), true)
 )
 
 func createTestStep(configFunc func(string, string, string) string, name, url string, monitoring string, additionalChecks ...resource.TestCheckFunc) resource.TestStep {
@@ -97,90 +101,76 @@ func testAccWebsiteResourceConfig(name string, url string, monitoring string) st
 	return fmt.Sprintf(`
     %s
 	resource "swo_website" "test" {
-		name = %[2]q
-		url  = %[3]q
-		monitoring = %s
-        custom_headers = [
-			{
-				name  = "Custom-Header-1-Deprecated"
-				value = "Custom-Value-1--Deprecated"
-			}
-		]
+    name = %[2]q
+    url  = %[3]q
+	monitoring = %s
 	}`, providerConfig(), name, url, monitoring)
 }
 
-func monitoringConfig(availability, rum string) string {
-	return fmt.Sprintf(`
-		{
-			availability = %s
-			rum = %s
-		}`, availability, rum)
+func monitoringConfig(availability, rum string, useDeprecatedCustomHeaders bool) string {
+	monitoringConf := fmt.Sprintf(`{
+		availability = %s
+		rum = %s
+	`, availability, rum)
+
+	if useDeprecatedCustomHeaders {
+		monitoringConf += `
+		custom_headers = [
+			{
+				name  = "Custom-Header-1-Deprecated"
+				value = "Custom-Value-1-Deprecated"
+			}
+		]`
+	}
+
+	monitoringConf += `}`
+
+	return monitoringConf
 }
 
 func rumConfig() string {
-	return `
-	{
+	return `{
 		apdex_time_in_seconds = 4
 		spa                   = true
     }`
 }
 
 func availabilityConfig(includeCheckForString bool, includeSSL bool) string {
-	availabilityConfig := `
-	{`
+	availabilityConfig := `{`
 
 	if includeCheckForString {
 		availabilityConfig += `
-		check_for_string = {
-			operator = "CONTAINS"
-			value    = "example-string"
-		}`
+			check_for_string = {
+				operator = "CONTAINS"
+				value    = "example-string"
+			}`
 	}
 
 	if includeSSL {
 		availabilityConfig += `
-		ssl = {
-			days_prior_to_expiration         = 30
-			enabled                          = true
-			ignore_intermediate_certificates = true
-		}`
+			ssl = {
+				days_prior_to_expiration         = 30
+				enabled                          = true
+				ignore_intermediate_certificates = true
+			}`
 	}
 
 	availabilityConfig += `
-		protocols                = ["HTTP", "HTTPS"]
-		test_interval_in_seconds = 300
-		test_from_location       = "REGION"
-
-		location_options = [
-			{
-				type  = "REGION"
-				value = "NA"
-			},
-			{
-			  type  = "REGION"
-			  value = "AS"
-			},
-			{
-			  type  = "REGION"
-			  value = "SA"
-			},
-			{
-			  type  = "REGION"
-			  value = "OC"
+			protocols                = ["HTTP", "HTTPS"]
+			test_interval_in_seconds = 300
+			test_from_location       = "REGION"
+	
+			location_options = [
+				{
+					type  = "REGION"
+					value = "NA"
+				}
+			]
+	
+			platform_options = {
+				test_from_all = false
+				platforms     = ["AWS"]
 			}
-		]
-
-		platform_options = {
-			test_from_all = false
-			platforms     = ["AWS"]
-		}
-
-		custom_headers = [
-			{
-				name  = "Custom-Header-2"
-				value = "Custom-Value-2"
-			}
-		]
-	}`
+		}`
 	return availabilityConfig
 }

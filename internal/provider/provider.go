@@ -208,17 +208,17 @@ func New(version string, transport http.RoundTripper) func() provider.Provider {
 	}
 }
 
-func BackoffRetry[T any](ctx context.Context, operation backoff.Operation[T]) (T, error) {
+func BackoffRetry[T any](operation backoff.Operation[T]) (T, error) {
 	expBackoff := backoff.NewExponentialBackOff()
 	expBackoff.MaxInterval = expBackoffMaxInterval
 
-	return backoff.Retry(ctx, operation, backoff.WithBackOff(expBackoff), backoff.WithMaxElapsedTime(expBackoffMaxElapsed))
+	return backoff.Retry(context.Background(), operation, backoff.WithBackOff(expBackoff), backoff.WithMaxElapsedTime(expBackoffMaxElapsed))
 }
 
 func ReadRetry[T any](ctx context.Context, id string, operation ReadOperation[T]) (T, error) {
 	var entity T
 	// Uri, and Website Creates and Updates are eventually consistent. Retry until the entity id is returned.
-	entity, err := BackoffRetry(ctx, func() (T, error) {
+	entity, err := BackoffRetry(func() (T, error) {
 		entity, err := operation(ctx, id)
 		if err != nil {
 			// The entity is still being created, retry
