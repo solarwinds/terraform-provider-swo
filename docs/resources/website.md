@@ -133,7 +133,7 @@ Required:
 
 Required:
 
-- `platforms` (List of String) The Website availability monitoring platform options.
+- `platforms` (List of String) The Website availability monitoring platform options. Valid values are [AWS, AZURE, GOOGLE_CLOUD].
 - `test_from_all` (Boolean) Test from all platforms?
 
 
