@@ -210,7 +210,7 @@ func (r *websiteResource) Schema(ctx context.Context, req resource.SchemaRequest
 										Required:    true,
 									},
 									"platforms": schema.ListAttribute{
-										Description: "The Website availability monitoring platform options.",
+										Description: "The Website availability monitoring platform options. Valid values are [AWS, AZURE, GOOGLE_CLOUD].",
 										Required:    true,
 										ElementType: types.StringType,
 									},
