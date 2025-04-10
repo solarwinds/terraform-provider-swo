@@ -58,23 +58,23 @@ resource "swo_website" "test_website" {
         test_from_all = false
         platforms     = ["AWS"]
       }
+
+      custom_headers = [
+        {
+          name  = "Custom-Header-1"
+          value = "Custom-Value-1"
+        },
+        {
+          name  = "Custom-Header-2"
+          value = "Custom-Value-2"
+        }
+      ]
     }
 
     rum = {
       apdex_time_in_seconds = 4
       spa                   = true
     }
-
-    custom_headers = [
-      {
-        name  = "Custom-Header-1"
-        value = "Custom-Value-1"
-      },
-      {
-        name  = "Custom-Header-2"
-        value = "Custom-Value-2"
-      }
-    ]
   }
 }
 ```
@@ -95,15 +95,12 @@ resource "swo_website" "test_website" {
 <a id="nestedatt--monitoring"></a>
 ### Nested Schema for `monitoring`
 
-Required:
-
-- `availability` (Attributes) The Website availability monitoring settings. (see [below for nested schema](#nestedatt--monitoring--availability))
-- `custom_headers` (Attributes Set) One or more custom headers to send with the uptime check. (see [below for nested schema](#nestedatt--monitoring--custom_headers))
-- `rum` (Attributes) The Website RUM monitoring settings. (see [below for nested schema](#nestedatt--monitoring--rum))
-
 Optional:
 
+- `availability` (Attributes) The Website availability monitoring settings. (see [below for nested schema](#nestedatt--monitoring--availability))
+- `custom_headers` (Attributes Set, Deprecated) One or more custom headers to send with the uptime check. custom_headers has been moved into monitoring.availability. If this field and monitoring.availability.custom_headers are both set an error with be thrown. If this field is set availability must also be set or an error will be thrown. (see [below for nested schema](#nestedatt--monitoring--custom_headers))
 - `options` (Attributes, Deprecated) The Website monitoring options. (see [below for nested schema](#nestedatt--monitoring--options))
+- `rum` (Attributes) The Website RUM monitoring settings. (see [below for nested schema](#nestedatt--monitoring--rum))
 
 <a id="nestedatt--monitoring--availability"></a>
 ### Nested Schema for `monitoring.availability`
@@ -119,6 +116,7 @@ Required:
 Optional:
 
 - `check_for_string` (Attributes) The Website availability monitoring check for string settings. (see [below for nested schema](#nestedatt--monitoring--availability--check_for_string))
+- `custom_headers` (Attributes Set) One or more custom headers to send with the uptime check. (see [below for nested schema](#nestedatt--monitoring--availability--custom_headers))
 - `ssl` (Attributes) The Website availability monitoring SSL settings. (see [below for nested schema](#nestedatt--monitoring--availability--ssl))
 
 <a id="nestedatt--monitoring--availability--location_options"></a>
@@ -135,7 +133,7 @@ Required:
 
 Required:
 
-- `platforms` (List of String) The Website availability monitoring platform options. Valid values are [AWS, AZURE].
+- `platforms` (List of String) The Website availability monitoring platform options.
 - `test_from_all` (Boolean) Test from all platforms?
 
 
@@ -146,6 +144,15 @@ Required:
 
 - `operator` (String) The Website availability monitoring check for string operator.
 - `value` (String) The Website availability monitoring check for string value.
+
+
+<a id="nestedatt--monitoring--availability--custom_headers"></a>
+### Nested Schema for `monitoring.availability.custom_headers`
+
+Required:
+
+- `name` (String) The Website custom header name.
+- `value` (String) The Website custom header value.
 
 
 <a id="nestedatt--monitoring--availability--ssl"></a>
@@ -168,6 +175,15 @@ Required:
 - `value` (String) The Website custom header value.
 
 
+<a id="nestedatt--monitoring--options"></a>
+### Nested Schema for `monitoring.options`
+
+Required:
+
+- `is_availability_active` (Boolean, Deprecated) Is availability monitoring active?
+- `is_rum_active` (Boolean, Deprecated) Is RUM monitoring active?
+
+
 <a id="nestedatt--monitoring--rum"></a>
 ### Nested Schema for `monitoring.rum`
 
@@ -179,12 +195,3 @@ Required:
 Read-Only:
 
 - `snippet` (String) The Website RUM monitoring code snippet (provided by the server).
-
-
-<a id="nestedatt--monitoring--options"></a>
-### Nested Schema for `monitoring.options`
-
-Required:
-
-- `is_availability_active` (Boolean, Deprecated) Is availability monitoring active?
-- `is_rum_active` (Boolean, Deprecated) Is RUM monitoring active?

@@ -2,7 +2,9 @@ package provider
 
 import (
 	"context"
-
+	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	swoClient "github.com/solarwinds/swo-client-go/pkg/client"
 	"github.com/solarwinds/terraform-provider-swo/internal/validators"
 
@@ -29,8 +31,8 @@ type probeLocation struct {
 }
 
 type platformOptions struct {
-	TestFromAll types.Bool `tfsdk:"test_from_all"`
-	Platforms   types.List `tfsdk:"platforms"`
+	TestFromAll types.Bool     `tfsdk:"test_from_all"`
+	Platforms   []types.String `tfsdk:"platforms"`
 }
 
 type sslMonitoring struct {
@@ -40,10 +42,10 @@ type sslMonitoring struct {
 }
 
 type websiteMonitoring struct {
-	Options       *monitoringOptions     `tfsdk:"options"`
-	Availability  availabilityMonitoring `tfsdk:"availability"`
-	Rum           rumMonitoring          `tfsdk:"rum"`
-	CustomHeaders []customHeader         `tfsdk:"custom_headers"`
+	Options       *monitoringOptions      `tfsdk:"options"`
+	Availability  *availabilityMonitoring `tfsdk:"availability"`
+	Rum           *rumMonitoring          `tfsdk:"rum"`
+	CustomHeaders *[]customHeader         `tfsdk:"custom_headers"` //deprecated
 }
 
 // Deprecated: Options are not used anymore
@@ -60,6 +62,7 @@ type availabilityMonitoring struct {
 	TestIntervalInSeconds types.Int64         `tfsdk:"test_interval_in_seconds"`
 	LocationOptions       []probeLocation     `tfsdk:"location_options"`
 	PlatformOptions       platformOptions     `tfsdk:"platform_options"`
+	CustomHeaders         *[]customHeader     `tfsdk:"custom_headers"`
 }
 
 type rumMonitoring struct {
@@ -94,6 +97,12 @@ func (r *websiteResource) Schema(ctx context.Context, req resource.SchemaRequest
 			"monitoring": schema.SingleNestedAttribute{
 				Description: "The Website monitoring settings.",
 				Required:    true,
+				Validators: []validator.Object{
+					objectvalidator.AtLeastOneOf(path.Expressions{
+						path.MatchRelative().AtName("availability"),
+						path.MatchRelative().AtName("rum"),
+					}...),
+				},
 				Attributes: map[string]schema.Attribute{
 					"options": schema.SingleNestedAttribute{
 						Description:        "The Website monitoring options.",
@@ -114,7 +123,7 @@ func (r *websiteResource) Schema(ctx context.Context, req resource.SchemaRequest
 					},
 					"availability": schema.SingleNestedAttribute{
 						Description: "The Website availability monitoring settings.",
-						Required:    true,
+						Optional:    true,
 						Attributes: map[string]schema.Attribute{
 							"check_for_string": schema.SingleNestedAttribute{
 								Description: "The Website availability monitoring check for string settings.",
@@ -201,9 +210,30 @@ func (r *websiteResource) Schema(ctx context.Context, req resource.SchemaRequest
 										Required:    true,
 									},
 									"platforms": schema.ListAttribute{
-										Description: "The Website availability monitoring platform options. Valid values are [AWS, AZURE].",
+										Description: "The Website availability monitoring platform options. Valid values are [AWS, AZURE, GOOGLE_CLOUD].",
 										Required:    true,
 										ElementType: types.StringType,
+									},
+								},
+							},
+							"custom_headers": schema.SetNestedAttribute{
+								Description: "One or more custom headers to send with the uptime check.",
+								Optional:    true,
+								Validators: []validator.Set{
+									setvalidator.ExactlyOneOf(path.Expressions{
+										path.MatchRoot("monitoring").AtName("custom_headers"),
+									}...),
+								},
+								NestedObject: schema.NestedAttributeObject{
+									Attributes: map[string]schema.Attribute{
+										"name": schema.StringAttribute{
+											Description: "The Website custom header name.",
+											Required:    true,
+										},
+										"value": schema.StringAttribute{
+											Description: "The Website custom header value.",
+											Required:    true,
+										},
 									},
 								},
 							},
@@ -211,7 +241,7 @@ func (r *websiteResource) Schema(ctx context.Context, req resource.SchemaRequest
 					},
 					"rum": schema.SingleNestedAttribute{
 						Description: "The Website RUM monitoring settings.",
-						Required:    true,
+						Optional:    true,
 						Attributes: map[string]schema.Attribute{
 							"apdex_time_in_seconds": schema.Int64Attribute{
 								Description: "The Website RUM monitoring apdex time in seconds.",
@@ -231,8 +261,20 @@ func (r *websiteResource) Schema(ctx context.Context, req resource.SchemaRequest
 						},
 					},
 					"custom_headers": schema.SetNestedAttribute{
-						Description: "One or more custom headers to send with the uptime check.",
-						Required:    true,
+						Description: "One or more custom headers to send with the uptime check. " +
+							"custom_headers has been moved into monitoring.availability. " +
+							"If this field and monitoring.availability.custom_headers are both set an error with be thrown. " +
+							"If this field is set availability must also be set or an error will be thrown.",
+						DeprecationMessage: "custom_headers has been moved into monitoring.availability. " +
+							"Remove this attribute's configuration as it's no longer in use and the attribute will be removed in the next major version of the provider. " +
+							"If this field and monitoring.availability.custom_headers are both set an error with be thrown. " +
+							"If this field is set availability must also be set or an error will be thrown.",
+						Optional: true,
+						Validators: []validator.Set{
+							setvalidator.AlsoRequires(path.Expressions{
+								path.MatchRoot("monitoring").AtName("availability"),
+							}...),
+						},
 						NestedObject: schema.NestedAttributeObject{
 							Attributes: map[string]schema.Attribute{
 								"name": schema.StringAttribute{

@@ -37,6 +37,6 @@ resource "swo_alert" "https_response_time" {
   ]
   notifications         = ["4661:email", "8112:webhook", "2456:newrelic"]
   trigger_reset_actions = true
-  runbook_link           = "https://www.runbook.com/highresponsetime"
+  runbook_link          = "https://www.runbook.com/highresponsetime"
   trigger_delay_seconds = 300
 }

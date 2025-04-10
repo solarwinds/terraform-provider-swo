@@ -81,10 +81,6 @@ func sliceToStringList[T any](
 	return list
 }
 
-func stringArrayToList(items []string) types.List {
-	return sliceToStringList(items, func(s string) string { return s })
-}
-
 func attrValueToString(val attr.Value) string {
 	if val == nil {
 		return ""
