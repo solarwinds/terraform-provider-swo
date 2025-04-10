@@ -58,23 +58,23 @@ resource "swo_website" "test_website" {
         test_from_all = false
         platforms     = ["AWS"]
       }
+
+      custom_headers = [
+        {
+          name  = "Custom-Header-1"
+          value = "Custom-Value-1"
+        },
+        {
+          name  = "Custom-Header-2"
+          value = "Custom-Value-2"
+        }
+      ]
     }
 
     rum = {
       apdex_time_in_seconds = 4
       spa                   = true
     }
-
-    custom_headers = [
-      {
-        name  = "Custom-Header-1"
-        value = "Custom-Value-1"
-      },
-      {
-        name  = "Custom-Header-2"
-        value = "Custom-Value-2"
-      }
-    ]
   }
 }
 ```
@@ -98,7 +98,7 @@ resource "swo_website" "test_website" {
 Optional:
 
 - `availability` (Attributes) The Website availability monitoring settings. (see [below for nested schema](#nestedatt--monitoring--availability))
-- `custom_headers` (Attributes Set, Deprecated) One or more custom headers to send with the uptime check. (see [below for nested schema](#nestedatt--monitoring--custom_headers))
+- `custom_headers` (Attributes Set, Deprecated) One or more custom headers to send with the uptime check. custom_headers has been moved into monitoring.availability. If this field and monitoring.availability.custom_headers are both set an error with be thrown. If this field is set availability must also be set or an error will be thrown. (see [below for nested schema](#nestedatt--monitoring--custom_headers))
 - `options` (Attributes, Deprecated) The Website monitoring options. (see [below for nested schema](#nestedatt--monitoring--options))
 - `rum` (Attributes) The Website RUM monitoring settings. (see [below for nested schema](#nestedatt--monitoring--rum))
 

@@ -43,22 +43,22 @@ resource "swo_website" "test_website" {
         test_from_all = false
         platforms     = ["AWS"]
       }
+
+      custom_headers = [
+        {
+          name  = "Custom-Header-1"
+          value = "Custom-Value-1"
+        },
+        {
+          name  = "Custom-Header-2"
+          value = "Custom-Value-2"
+        }
+      ]
     }
 
     rum = {
       apdex_time_in_seconds = 4
       spa                   = true
     }
-
-    custom_headers = [
-      {
-        name  = "Custom-Header-1"
-        value = "Custom-Value-1"
-      },
-      {
-        name  = "Custom-Header-2"
-        value = "Custom-Value-2"
-      }
-    ]
   }
 }

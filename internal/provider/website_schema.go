@@ -261,8 +261,11 @@ func (r *websiteResource) Schema(ctx context.Context, req resource.SchemaRequest
 						},
 					},
 					"custom_headers": schema.SetNestedAttribute{
-						Description: "One or more custom headers to send with the uptime check.",
-						DeprecationMessage: "custom_headers was moved inside of monitoring.availability. " +
+						Description: "One or more custom headers to send with the uptime check. " +
+							"custom_headers has been moved into monitoring.availability. " +
+							"If this field and monitoring.availability.custom_headers are both set an error with be thrown. " +
+							"If this field is set availability must also be set or an error will be thrown.",
+						DeprecationMessage: "custom_headers has been moved into monitoring.availability. " +
 							"Remove this attribute's configuration as it's no longer in use and the attribute will be removed in the next major version of the provider. " +
 							"If this field and monitoring.availability.custom_headers are both set an error with be thrown. " +
 							"If this field is set availability must also be set or an error will be thrown.",
