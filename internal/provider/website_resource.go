@@ -297,19 +297,18 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 			}
 		}
 
-		var customHeaders []swoClient.CustomHeaderInput
-		//monitoring.custom_headers is deprecated. If monitoring.availability.custom_headers is set this will be overridden.
-		if tfPlan.Monitoring.CustomHeaders != nil {
-			customHeaders = convertArray(*tfPlan.Monitoring.CustomHeaders, func(h customHeader) swoClient.CustomHeaderInput {
-				return swoClient.CustomHeaderInput{
-					Name:  h.Name.ValueString(),
-					Value: h.Value.ValueString(),
-				}
-			})
+		var tfPlanCustomHeaders []customHeader
+
+		//monitoring.custom_headers is deprecated. Both custom_headers fields cannot be set at the same time.
+		if tfPlan.Monitoring.Availability.CustomHeaders != nil {
+			tfPlanCustomHeaders = *tfPlan.Monitoring.Availability.CustomHeaders
+		} else {
+			tfPlanCustomHeaders = *tfPlan.Monitoring.CustomHeaders
 		}
 
-		if tfPlan.Monitoring.Availability.CustomHeaders != nil {
-			customHeaders = convertArray(*tfPlan.Monitoring.Availability.CustomHeaders, func(h customHeader) swoClient.CustomHeaderInput {
+		var customHeaders []swoClient.CustomHeaderInput
+		if len(tfPlanCustomHeaders) > 0 {
+			customHeaders = convertArray(tfPlanCustomHeaders, func(h customHeader) swoClient.CustomHeaderInput {
 				return swoClient.CustomHeaderInput{
 					Name:  h.Name.ValueString(),
 					Value: h.Value.ValueString(),
