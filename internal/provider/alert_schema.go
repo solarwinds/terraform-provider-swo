@@ -82,7 +82,9 @@ func (r *alertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"configuration_ids": schema.ListAttribute{
-							Description: "List of configuration_ids in `id:type` format. Example: `[\"4661:email\", \"8112:webhook\", \"2456:newrelic\"]`. Valid `type` values are [`email`|`amazonsns`|`msteams`|`newrelic`|`opsgenie`|`pagerduty`|`pushover`|`servicenow`|`slack`|`webhook`|`zapier`|`swsd`].",
+							Description: "List of configuration_ids in `id:type` format. " +
+								"Example: `[\"4661:email\", \"8112:webhook\", \"2456:newrelic\"]`. " +
+								"Valid `type` values are [`email`|`amazonsns`|`msteams`|`newrelic`|`opsgenie`|`pagerduty`|`pushover`|`servicenow`|`slack`|`webhook`|`zapier`|`swsd`].",
 							Required:    true,
 							ElementType: types.StringType,
 							Validators: []validator.List{
@@ -90,8 +92,9 @@ func (r *alertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 							},
 						},
 						"resend_interval_seconds": schema.Int64Attribute{
-							Description: "How often should the notification be resent in case alert keeps being triggered. Null means notification is sent only once. Valid values are 60, 600, 3600, 86400.",
-							Optional:    true,
+							Description: "How often should the notification be resent in case alert keeps being triggered. " +
+								"Null means notification is sent only once. Valid values are 60, 600, 3600, 86400.",
+							Optional: true,
 							Validators: []validator.Int64{
 								int64validator.OneOf(60, 600, 3600, 86400),
 							},
@@ -136,11 +139,13 @@ func (r *alertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 							Required:    true,
 						},
 						"threshold": schema.StringAttribute{
-							Description: "Operator and value that represent the threshold of an the alert. When the threshold is breached it triggers the alert. For Operator - binaryOperator:(=|!=|>|<|>=|<=), logicalOperator:(AND|OR) E.g. '>=10'",
-							Required:    true,
+							Description: "Operator and value that represent the threshold of an the alert. " +
+								"When the threshold is breached it triggers the alert. " +
+								"For Operator - binaryOperator:(=|!=|>|<|>=|<=), logicalOperator:(AND|OR) E.g. '>=10'",
+							Required: true,
 						},
 						"duration": schema.StringAttribute{
-							Description: "How long the threshold has been met before triggering an alert.",
+							Description: "The duration window determines how frequently the alert is evaluated.",
 							Required:    true,
 						},
 						"aggregation_type": schema.StringAttribute{
@@ -158,7 +163,9 @@ func (r *alertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 							},
 						},
 						"entity_ids": schema.ListAttribute{
-							Description: "A list of Entity IDs that will be used to filter on the alert. The alert will only trigger if the alert matches one or more of the entity IDs. Must match across all alert conditions.",
+							Description: "A list of Entity IDs that will be used to filter on the alert. " +
+								"The alert will only trigger if the alert matches one or more of the entity IDs. " +
+								"Must match across all alert conditions.",
 							Optional:    true,
 							ElementType: types.StringType,
 						},
@@ -207,10 +214,11 @@ func (r *alertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 							ElementType: types.StringType,
 						},
 						"not_reporting": schema.BoolAttribute{
-							Description: "True if the alert should trigger when the metric is not reporting. If true, threshold must be '' and aggregation_type must be 'COUNT'.",
-							Computed:    true,
-							Optional:    true,
-							Default:     booldefault.StaticBool(false),
+							Description: "True if the alert should trigger when the metric is not reporting. " +
+								"If true, threshold must be '' and aggregation_type must be 'COUNT'.",
+							Computed: true,
+							Optional: true,
+							Default:  booldefault.StaticBool(false),
 						},
 					},
 				},
@@ -226,10 +234,11 @@ func (r *alertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 				Optional:    true,
 			},
 			"trigger_delay_seconds": schema.Int64Attribute{
-				Description: "Number of seconds during which the conditions must be continually met before an alert is triggered. Value must be between 60 to 86400 seconds, and value has to be divisible by 60.",
-				Optional:    true,
-				Computed:    true,
-				Default:     int64default.StaticInt64(0),
+				Description: "Trigger the alert after the alert condition persists for a specific duration. This prevents false positives. " +
+					"Value must be between 60 and 86400 seconds, and value has to be divisible by 60.",
+				Optional: true,
+				Computed: true,
+				Default:  int64default.StaticInt64(0),
 			},
 		},
 	}
