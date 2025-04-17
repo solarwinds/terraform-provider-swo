@@ -158,15 +158,13 @@ func (model alertConditionModel) toMetricFieldConditionInput(ctx context.Context
 	var entityFilterTypes, entityFilterIds []string
 	model.TargetEntityTypes.ElementsAs(ctx, &entityFilterTypes, false)
 	model.EntityIds.ElementsAs(ctx, &entityFilterIds, false)
-
-	if len(model.EntityIds.Elements()) > 0 {
-		entityFilter := &swoClient.AlertConditionNodeEntityFilterInput{
-			Types: entityFilterTypes,
-			Ids:   entityFilterIds,
-		}
-
-		metricFieldCondition.EntityFilter = entityFilter
+	querySearch := model.QuerySearch.ValueString()
+	entityFilter := &swoClient.AlertConditionNodeEntityFilterInput{
+		Types: entityFilterTypes,
+		Ids:   entityFilterIds,
+		Query: &querySearch,
 	}
+	metricFieldCondition.EntityFilter = entityFilter
 
 	var includeTags []alertTagsModel
 	var excludeTags []alertTagsModel

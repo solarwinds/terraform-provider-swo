@@ -35,6 +35,7 @@ type alertConditionModel struct {
 	Duration          types.String      `tfsdk:"duration"`
 	AggregationType   types.String      `tfsdk:"aggregation_type"`
 	EntityIds         types.List        `tfsdk:"entity_ids"`
+	QuerySearch       types.String      `tfsdk:"query_search"`
 	TargetEntityTypes types.List        `tfsdk:"target_entity_types"`
 	IncludeTags       *[]alertTagsModel `tfsdk:"include_tags"`
 	ExcludeTags       *[]alertTagsModel `tfsdk:"exclude_tags"`
@@ -161,6 +162,11 @@ func (r *alertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 							Description: "A list of Entity IDs that will be used to filter on the alert. The alert will only trigger if the alert matches one or more of the entity IDs. Must match across all alert conditions.",
 							Optional:    true,
 							ElementType: types.StringType,
+						},
+						"query_search": schema.StringAttribute{
+							Description: "Case-sensitive. System will automatically match existing and newly added " +
+								"entities matching the following query string.",
+							Optional: true,
 						},
 						"target_entity_types": schema.ListAttribute{
 							Description: "The entity types that the alert will be applied to. Must match across all alert conditions.",
