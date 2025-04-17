@@ -23,6 +23,7 @@ resource "swo_alert" "https_response_time" {
         "e-1521946194448543744",
         "e-1521947552186691584"
       ]
+      query_search = "healthScore.categoryV2:good"
       include_tags = [
         {
           name = "probe.city"
