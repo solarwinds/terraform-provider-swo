@@ -115,6 +115,13 @@ func (model *alertResourceModel) validateConditions() diag.Diagnostics {
 				fmt.Sprintf("The list must be same for all conditions, but %v does not match %v.", firstNode.EntityIds, condition.EntityIds))
 			conditionErrors = append(conditionErrors, d)
 		}
+		if !firstNode.QuerySearch.Equal(condition.QuerySearch) {
+			d := diag.NewAttributeErrorDiagnostic(
+				path.Root("querySearch"),
+				"Query search must be same for all conditions",
+				fmt.Sprintf("Query search must be the same for all conditions, but %v does not match %v.", firstNode.QuerySearch, condition.QuerySearch))
+			conditionErrors = append(conditionErrors, d)
+		}
 		if !firstNode.GroupByMetricTag.Equal(condition.GroupByMetricTag) {
 			d := diag.NewAttributeErrorDiagnostic(
 				path.Root("groupByMetricTag"),
