@@ -146,6 +146,8 @@ func Test_ValidateCondition_CompareLists(t *testing.T) {
 	tags0 := []attr.Value{types.StringValue("tags.names")}
 	groupByMetricTag0, _ := types.ListValue(types.StringType, tags0)
 
+	query0 := types.StringValue("healthScore.categoryV2:bad")
+
 	entities1 := []attr.Value{types.StringValue("Uri")}
 	targetEntityTypes1, _ := types.ListValue(types.StringType, entities1)
 
@@ -155,6 +157,8 @@ func Test_ValidateCondition_CompareLists(t *testing.T) {
 	tags1 := []attr.Value{types.StringValue("tags.environment")}
 	groupByMetricTag1, _ := types.ListValue(types.StringType, tags1)
 
+	query1 := types.StringValue("healthScore.categoryV2:good")
+
 	model := alertResourceModel{
 		Conditions: []alertConditionModel{
 			{
@@ -163,6 +167,7 @@ func Test_ValidateCondition_CompareLists(t *testing.T) {
 				AggregationType:   types.StringValue("AVG"),
 				TargetEntityTypes: targetEntityTypes0,
 				EntityIds:         entityIds0,
+				QuerySearch:       query0,
 				GroupByMetricTag:  groupByMetricTag0,
 			},
 			{
@@ -172,6 +177,7 @@ func Test_ValidateCondition_CompareLists(t *testing.T) {
 				// same []types.List as node 0
 				TargetEntityTypes: targetEntityTypes0,
 				EntityIds:         entityIds0,
+				QuerySearch:       query0,
 				GroupByMetricTag:  groupByMetricTag0,
 			},
 			{
@@ -181,6 +187,7 @@ func Test_ValidateCondition_CompareLists(t *testing.T) {
 				// different []types.List from node 0
 				TargetEntityTypes: targetEntityTypes1,
 				EntityIds:         entityIds1,
+				QuerySearch:       query1,
 				GroupByMetricTag:  groupByMetricTag1,
 			},
 		},
@@ -196,6 +203,10 @@ func Test_ValidateCondition_CompareLists(t *testing.T) {
 			path.Root("entityIds"),
 			"The list must be same for all conditions",
 			"The list must be same for all conditions, but [\"123\"] does not match [\"456\"]."),
+		diag.NewAttributeErrorDiagnostic(
+			path.Root("querySearch"),
+			"Query search must be same for all conditions",
+			"Query search must be the same for all conditions, but \"healthScore.categoryV2:bad\" does not match \"healthScore.categoryV2:good\"."),
 		diag.NewAttributeErrorDiagnostic(
 			path.Root("groupByMetricTag"),
 			"The list must be same for all conditions",
