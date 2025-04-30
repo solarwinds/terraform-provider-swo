@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"reflect"
 
 	"github.com/cenkalti/backoff/v5"
@@ -62,8 +63,8 @@ func (r *uriResource) Create(ctx context.Context, req resource.CreateRequest, re
 		TestDefinitions: swoClient.UriTestDefinitionsInput{
 			PlatformOptions: &swoClient.ProbePlatformOptionsInput{
 				TestFromAll: tfPlan.TestDefinitions.PlatformOptions.TestFromAll.ValueBoolPointer(),
-				ProbePlatforms: convertArray(tfPlan.TestDefinitions.PlatformOptions.Platforms,
-					func(v string) swoClient.ProbePlatform { return swoClient.ProbePlatform(v) }),
+				ProbePlatforms: convertArray(tfPlan.TestDefinitions.PlatformOptions.Platforms.Elements(),
+					func(s attr.Value) swoClient.ProbePlatform { return swoClient.ProbePlatform(attrValueToString(s)) }),
 			},
 			TestFrom: swoClient.ProbeLocationInput{
 				Type: swoClient.ProbeLocationType(tfPlan.TestDefinitions.TestFromLocation.ValueString()),
@@ -134,9 +135,11 @@ func (r *uriResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 	tfState.TestDefinitions = &uriResourceTestDefinitions{}
 
 	if testDefs.PlatformOptions != nil {
+		listValue, _ := types.SetValueFrom(ctx, types.StringType, testDefs.PlatformOptions.Platforms)
+
 		tfState.TestDefinitions.PlatformOptions = &uriResourcePlatformOptions{
 			TestFromAll: types.BoolValue(testDefs.PlatformOptions.TestFromAll),
-			Platforms:   testDefs.PlatformOptions.Platforms,
+			Platforms:   listValue,
 		}
 	} else {
 		tfState.TestDefinitions.PlatformOptions = nil
@@ -191,8 +194,8 @@ func (r *uriResource) Update(ctx context.Context, req resource.UpdateRequest, re
 		TestDefinitions: swoClient.UriTestDefinitionsInput{
 			PlatformOptions: &swoClient.ProbePlatformOptionsInput{
 				TestFromAll: tfPlan.TestDefinitions.PlatformOptions.TestFromAll.ValueBoolPointer(),
-				ProbePlatforms: convertArray(tfPlan.TestDefinitions.PlatformOptions.Platforms,
-					func(v string) swoClient.ProbePlatform { return swoClient.ProbePlatform(v) }),
+				ProbePlatforms: convertArray(tfPlan.TestDefinitions.PlatformOptions.Platforms.Elements(),
+					func(s attr.Value) swoClient.ProbePlatform { return swoClient.ProbePlatform(attrValueToString(s)) }),
 			},
 			TestFrom: swoClient.ProbeLocationInput{
 				Type: swoClient.ProbeLocationType(tfPlan.TestDefinitions.TestFromLocation.ValueString()),
@@ -203,6 +206,9 @@ func (r *uriResource) Update(ctx context.Context, req resource.UpdateRequest, re
 			TestIntervalInSeconds: swoClientTypes.TestIntervalInSeconds(int(tfPlan.TestDefinitions.TestIntervalInSeconds.ValueInt64())),
 		},
 	}
+
+	var platforms []string
+	tfPlan.TestDefinitions.PlatformOptions.Platforms.ElementsAs(ctx, &platforms, false)
 
 	bUriToMatch, err := json.Marshal(map[string]interface{}{
 		"id":   updateInput.Id,
@@ -222,7 +228,7 @@ func (r *uriResource) Update(ctx context.Context, req resource.UpdateRequest, re
 			"testIntervalInSeconds": updateInput.TestDefinitions.TestIntervalInSeconds,
 			"platformOptions": map[string]interface{}{
 				"testFromAll": tfPlan.TestDefinitions.PlatformOptions.TestFromAll.ValueBoolPointer(),
-				"platforms":   tfPlan.TestDefinitions.PlatformOptions.Platforms,
+				"platforms":   platforms,
 			},
 		},
 	})

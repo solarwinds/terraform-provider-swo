@@ -52,7 +52,7 @@ type uriResourceProbeLocation struct {
 // uriResourcePlatformOptions represents platform_options field in test_definitions
 type uriResourcePlatformOptions struct {
 	TestFromAll types.Bool `tfsdk:"test_from_all"`
-	Platforms   []string   `tfsdk:"platforms"`
+	Platforms   types.Set  `tfsdk:"platforms"`
 }
 
 func (r *uriResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
