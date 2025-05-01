@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"reflect"
 
 	"github.com/cenkalti/backoff/v5"
@@ -50,6 +51,8 @@ func (r *uriResource) Create(ctx context.Context, req resource.CreateRequest, re
 
 	var locationOptions []uriResourceProbeLocation
 	tfPlan.TestDefinitions.LocationOptions.ElementsAs(ctx, &locationOptions, false)
+	var planPlatformOptions uriResourcePlatformOptions
+	tfPlan.TestDefinitions.PlatformOptions.As(ctx, &planPlatformOptions, basetypes.ObjectAsOptions{})
 
 	// Create our input request.
 	createInput := swoClient.CreateUriInput{
@@ -66,8 +69,8 @@ func (r *uriResource) Create(ctx context.Context, req resource.CreateRequest, re
 		},
 		TestDefinitions: swoClient.UriTestDefinitionsInput{
 			PlatformOptions: &swoClient.ProbePlatformOptionsInput{
-				TestFromAll: tfPlan.TestDefinitions.PlatformOptions.TestFromAll.ValueBoolPointer(),
-				ProbePlatforms: convertArray(tfPlan.TestDefinitions.PlatformOptions.Platforms.Elements(),
+				TestFromAll: planPlatformOptions.TestFromAll.ValueBoolPointer(),
+				ProbePlatforms: convertArray(planPlatformOptions.Platforms.Elements(),
 					func(s attr.Value) swoClient.ProbePlatform { return swoClient.ProbePlatform(attrValueToString(s)) }),
 			},
 			TestFrom: swoClient.ProbeLocationInput{
@@ -137,16 +140,25 @@ func (r *uriResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 	// TestDefinitions
 	testDefs := uri.TestDefinitions
 	tfState.TestDefinitions = &uriResourceTestDefinitions{}
+	elementTypes := map[string]attr.Type{
+		"test_from_all": types.BoolType,
+		"platforms": types.SetType{
+			ElemType: types.StringType,
+		},
+	}
 
 	if testDefs.PlatformOptions != nil {
 		listValue, _ := types.SetValueFrom(ctx, types.StringType, testDefs.PlatformOptions.Platforms)
-
-		tfState.TestDefinitions.PlatformOptions = &uriResourcePlatformOptions{
-			TestFromAll: types.BoolValue(testDefs.PlatformOptions.TestFromAll),
-			Platforms:   listValue,
+		elements := map[string]attr.Value{
+			"test_from_all": types.BoolValue(testDefs.PlatformOptions.TestFromAll),
+			"platforms":     listValue,
 		}
+
+		tfPlatformOptions, _ := types.ObjectValue(elementTypes, elements)
+		tfState.TestDefinitions.PlatformOptions = tfPlatformOptions
 	} else {
-		tfState.TestDefinitions.PlatformOptions = nil
+		tfPlatformOptions := types.ObjectNull(elementTypes)
+		tfState.TestDefinitions.PlatformOptions = tfPlatformOptions
 	}
 
 	if testDefs.TestFromLocation != nil {
@@ -185,6 +197,8 @@ func (r *uriResource) Update(ctx context.Context, req resource.UpdateRequest, re
 
 	var locationOptions []uriResourceProbeLocation
 	tfPlan.TestDefinitions.LocationOptions.ElementsAs(ctx, &locationOptions, false)
+	var planPlatformOptions uriResourcePlatformOptions
+	tfPlan.TestDefinitions.PlatformOptions.As(ctx, &planPlatformOptions, basetypes.ObjectAsOptions{})
 
 	// Create our input request.
 	updateInput := swoClient.UpdateUriInput{
@@ -202,8 +216,8 @@ func (r *uriResource) Update(ctx context.Context, req resource.UpdateRequest, re
 		},
 		TestDefinitions: swoClient.UriTestDefinitionsInput{
 			PlatformOptions: &swoClient.ProbePlatformOptionsInput{
-				TestFromAll: tfPlan.TestDefinitions.PlatformOptions.TestFromAll.ValueBoolPointer(),
-				ProbePlatforms: convertArray(tfPlan.TestDefinitions.PlatformOptions.Platforms.Elements(),
+				TestFromAll: planPlatformOptions.TestFromAll.ValueBoolPointer(),
+				ProbePlatforms: convertArray(planPlatformOptions.Platforms.Elements(),
 					func(s attr.Value) swoClient.ProbePlatform { return swoClient.ProbePlatform(attrValueToString(s)) }),
 			},
 			TestFrom: swoClient.ProbeLocationInput{
@@ -217,7 +231,7 @@ func (r *uriResource) Update(ctx context.Context, req resource.UpdateRequest, re
 	}
 
 	var platforms []string
-	tfPlan.TestDefinitions.PlatformOptions.Platforms.ElementsAs(ctx, &platforms, false)
+	planPlatformOptions.Platforms.ElementsAs(ctx, &platforms, false)
 
 	bUriToMatch, err := json.Marshal(map[string]interface{}{
 		"id":   updateInput.Id,
@@ -236,7 +250,7 @@ func (r *uriResource) Update(ctx context.Context, req resource.UpdateRequest, re
 			"testFromLocation":      updateInput.TestDefinitions.TestFrom.Type,
 			"testIntervalInSeconds": updateInput.TestDefinitions.TestIntervalInSeconds,
 			"platformOptions": map[string]interface{}{
-				"testFromAll": tfPlan.TestDefinitions.PlatformOptions.TestFromAll.ValueBoolPointer(),
+				"testFromAll": planPlatformOptions.TestFromAll.ValueBoolPointer(),
 				"platforms":   platforms,
 			},
 		},

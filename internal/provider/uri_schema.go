@@ -37,10 +37,10 @@ type uriResourceTcpOptions struct {
 
 // uriResourceTestDefinitions represents the test_definitions field in the main resource
 type uriResourceTestDefinitions struct {
-	TestFromLocation      types.String                `tfsdk:"test_from_location"`
-	LocationOptions       types.Set                   `tfsdk:"location_options"`
-	TestIntervalInSeconds types.Int64                 `tfsdk:"test_interval_in_seconds"`
-	PlatformOptions       *uriResourcePlatformOptions `tfsdk:"platform_options"`
+	TestFromLocation      types.String `tfsdk:"test_from_location"`
+	LocationOptions       types.Set    `tfsdk:"location_options"`
+	TestIntervalInSeconds types.Int64  `tfsdk:"test_interval_in_seconds"`
+	PlatformOptions       types.Object `tfsdk:"platform_options"`
 }
 
 // uriResourceProbeLocation represents location_options field in test_definitions
