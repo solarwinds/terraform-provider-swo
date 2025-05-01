@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"reflect"
 
 	"github.com/cenkalti/backoff/v5"
@@ -47,6 +48,9 @@ func (r *uriResource) Create(ctx context.Context, req resource.CreateRequest, re
 		return
 	}
 
+	var locationOptions []uriResourceProbeLocation
+	tfPlan.TestDefinitions.LocationOptions.ElementsAs(ctx, &locationOptions, false)
+
 	// Create our input request.
 	createInput := swoClient.CreateUriInput{
 		Name:       tfPlan.Name.ValueString(),
@@ -68,7 +72,7 @@ func (r *uriResource) Create(ctx context.Context, req resource.CreateRequest, re
 			},
 			TestFrom: swoClient.ProbeLocationInput{
 				Type: swoClient.ProbeLocationType(tfPlan.TestDefinitions.TestFromLocation.ValueString()),
-				Values: convertArray(tfPlan.TestDefinitions.LocationOptions,
+				Values: convertArray(locationOptions,
 					func(v uriResourceProbeLocation) string { return v.Value.ValueString() }),
 			},
 			TestIntervalInSeconds: swoClientTypes.TestIntervalInSeconds(int(tfPlan.TestDefinitions.TestIntervalInSeconds.ValueInt64())),
@@ -157,6 +161,7 @@ func (r *uriResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 		tfState.TestDefinitions.TestIntervalInSeconds = types.Int64Null()
 	}
 
+	//no access to the go client structures, need to convert to the schema then to terraform
 	var locOpts []uriResourceProbeLocation
 	for _, x := range testDefs.LocationOptions {
 		locOpts = append(locOpts, uriResourceProbeLocation{
@@ -164,7 +169,8 @@ func (r *uriResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 			Value: types.StringValue(x.Value),
 		})
 	}
-	tfState.TestDefinitions.LocationOptions = locOpts
+	tfLocOpts, _ := LocationOptionsToTerraform(locOpts)
+	tfState.TestDefinitions.LocationOptions = tfLocOpts
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, tfState)...)
 }
@@ -176,6 +182,9 @@ func (r *uriResource) Update(ctx context.Context, req resource.UpdateRequest, re
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	var locationOptions []uriResourceProbeLocation
+	tfPlan.TestDefinitions.LocationOptions.ElementsAs(ctx, &locationOptions, false)
 
 	// Create our input request.
 	updateInput := swoClient.UpdateUriInput{
@@ -199,7 +208,7 @@ func (r *uriResource) Update(ctx context.Context, req resource.UpdateRequest, re
 			},
 			TestFrom: swoClient.ProbeLocationInput{
 				Type: swoClient.ProbeLocationType(tfPlan.TestDefinitions.TestFromLocation.ValueString()),
-				Values: convertArray(tfPlan.TestDefinitions.LocationOptions,
+				Values: convertArray(locationOptions,
 					func(v uriResourceProbeLocation) string { return v.Value.ValueString() }),
 			},
 
@@ -310,4 +319,32 @@ func (r *uriResource) Delete(ctx context.Context, req resource.DeleteRequest, re
 
 func (r *uriResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
+func LocationOptionsToTerraform(locationOptions []uriResourceProbeLocation) (types.Set, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	var elements []attr.Value
+
+	for _, option := range locationOptions {
+		objectValue, objectDiags := types.ObjectValue(
+			map[string]attr.Type{
+				"type":  types.StringType,
+				"value": types.StringType,
+			},
+			map[string]attr.Value{
+				"type":  types.StringValue(option.Type.ValueString()),
+				"value": types.StringValue(option.Value.ValueString()),
+			},
+		)
+		elements = append(elements, objectValue)
+		diags = append(diags, objectDiags...)
+	}
+
+	setValue, setDiags := types.SetValue(types.ObjectType{AttrTypes: map[string]attr.Type{
+		"type":  types.StringType,
+		"value": types.StringType,
+	}}, elements)
+	diags = append(diags, setDiags...)
+
+	return setValue, diags
 }

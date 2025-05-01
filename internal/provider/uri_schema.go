@@ -38,7 +38,7 @@ type uriResourceTcpOptions struct {
 // uriResourceTestDefinitions represents the test_definitions field in the main resource
 type uriResourceTestDefinitions struct {
 	TestFromLocation      types.String                `tfsdk:"test_from_location"`
-	LocationOptions       []uriResourceProbeLocation  `tfsdk:"location_options"`
+	LocationOptions       types.Set                   `tfsdk:"location_options"`
 	TestIntervalInSeconds types.Int64                 `tfsdk:"test_interval_in_seconds"`
 	PlatformOptions       *uriResourcePlatformOptions `tfsdk:"platform_options"`
 }
