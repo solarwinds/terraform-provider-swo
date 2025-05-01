@@ -24,7 +24,7 @@ type apiTokenResourceModel struct {
 	Type        types.String                `tfsdk:"type"`
 	Token       types.String                `tfsdk:"token"`
 	AccessLevel *swoClient.TokenAccessLevel `tfsdk:"access_level"`
-	Attributes  []apiTokenAttribute         `tfsdk:"attributes"`
+	Attributes  types.Set                   `tfsdk:"attributes"`
 }
 
 // apiTokenAttribute is a custom attribute for the ApiTokenResourceModel.

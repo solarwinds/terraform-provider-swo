@@ -3,6 +3,8 @@ package provider
 import (
 	"context"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -42,12 +44,15 @@ func (r *apiTokenResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
+	var attributes []apiTokenAttribute
+	tfPlan.Attributes.ElementsAs(ctx, &attributes, false)
+
 	// Create our input request.
 	createInput := swoClient.CreateTokenInput{
 		Name:        tfPlan.Name.ValueString(),
 		AccessLevel: *tfPlan.AccessLevel,
 		Type:        tfPlan.Type.ValueStringPointer(),
-		Attributes: convertArray(tfPlan.Attributes, func(v apiTokenAttribute) swoClient.TokenAttributeInput {
+		Attributes: convertArray(attributes, func(v apiTokenAttribute) swoClient.TokenAttributeInput {
 			return swoClient.TokenAttributeInput{
 				Key:   v.Key.ValueString(),
 				Value: v.Value.ValueString(),
@@ -97,6 +102,9 @@ func (r *apiTokenResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
+	var attributes []apiTokenAttribute
+	tfPlan.Attributes.ElementsAs(ctx, &attributes, false)
+
 	// Create our input request.
 	updateInput := swoClient.UpdateTokenInput{
 		Id:          tfState.Id.ValueString(),
@@ -104,7 +112,7 @@ func (r *apiTokenResource) Update(ctx context.Context, req resource.UpdateReques
 		Enabled:     tfPlan.Enabled.ValueBoolPointer(),
 		Type:        tfPlan.Type.ValueStringPointer(),
 		AccessLevel: tfPlan.AccessLevel,
-		Attributes: convertArray(tfPlan.Attributes, func(v apiTokenAttribute) swoClient.TokenAttributeInput {
+		Attributes: convertArray(attributes, func(v apiTokenAttribute) swoClient.TokenAttributeInput {
 			return swoClient.TokenAttributeInput{
 				Key:   v.Key.ValueString(),
 				Value: v.Value.ValueString(),
@@ -149,12 +157,34 @@ func (r *apiTokenResource) updateState(state *apiTokenResourceModel, result *swo
 	state.Type = types.StringPointerValue(result.Type)
 	state.AccessLevel = result.AccessLevel
 
-	var attrs = []apiTokenAttribute{}
-	for _, attr := range result.Attributes {
-		attrs = append(attrs, apiTokenAttribute{
-			Key:   types.StringValue(attr.Key),
-			Value: types.StringValue(attr.Value),
-		})
+	attributes, _ := AttributesToTerraform(result)
+	state.Attributes = attributes
+}
+
+func AttributesToTerraform(result *swoClient.ReadApiTokenResult) (types.Set, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	var elements []attr.Value
+
+	for _, attribute := range result.Attributes {
+		objectValue, objectDiags := types.ObjectValue(
+			map[string]attr.Type{
+				"key":   types.StringType,
+				"value": types.StringType,
+			},
+			map[string]attr.Value{
+				"key":   types.StringValue(attribute.Key),
+				"value": types.StringValue(attribute.Value),
+			},
+		)
+		elements = append(elements, objectValue)
+		diags = append(diags, objectDiags...)
 	}
-	state.Attributes = attrs
+
+	setValue, setDiags := types.SetValue(types.ObjectType{AttrTypes: map[string]attr.Type{
+		"key":   types.StringType,
+		"value": types.StringType,
+	}}, elements)
+	diags = append(diags, setDiags...)
+
+	return setValue, diags
 }
