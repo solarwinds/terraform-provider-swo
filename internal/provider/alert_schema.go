@@ -16,17 +16,17 @@ import (
 
 // The main Alert Resource model that is derived from the schema.
 type alertResourceModel struct {
-	Id                  types.String            `tfsdk:"id"`
-	Name                types.String            `tfsdk:"name"`
-	NotificationActions []alertActionInputModel `tfsdk:"notification_actions"`
-	Description         types.String            `tfsdk:"description"`
-	Severity            types.String            `tfsdk:"severity"`
-	Enabled             types.Bool              `tfsdk:"enabled"`
-	Conditions          []alertConditionModel   `tfsdk:"conditions"`
-	Notifications       types.List              `tfsdk:"notifications"`
-	TriggerResetActions types.Bool              `tfsdk:"trigger_reset_actions"`
-	RunbookLink         types.String            `tfsdk:"runbook_link"`
-	TriggerDelaySeconds types.Int64             `tfsdk:"trigger_delay_seconds"`
+	Id                  types.String          `tfsdk:"id"`
+	Name                types.String          `tfsdk:"name"`
+	NotificationActions types.Set             `tfsdk:"notification_actions"`
+	Description         types.String          `tfsdk:"description"`
+	Severity            types.String          `tfsdk:"severity"`
+	Enabled             types.Bool            `tfsdk:"enabled"`
+	Conditions          []alertConditionModel `tfsdk:"conditions"`
+	Notifications       types.List            `tfsdk:"notifications"`
+	TriggerResetActions types.Bool            `tfsdk:"trigger_reset_actions"`
+	RunbookLink         types.String          `tfsdk:"runbook_link"`
+	TriggerDelaySeconds types.Int64           `tfsdk:"trigger_delay_seconds"`
 }
 
 type alertConditionModel struct {

@@ -318,13 +318,16 @@ func (model *alertResourceModel) toAlertDefinitionInput(ctx context.Context) (sw
 func (model *alertResourceModel) toAlertActionInput(ctx context.Context) []swoClient.AlertActionInput {
 	var inputs []swoClient.AlertActionInput
 
+	var notificationActions []alertActionInputModel
+	model.NotificationActions.ElementsAs(ctx, &notificationActions, false)
+
 	//Notifications is deprecated. NotificationActions should be used instead.
 	// This if/else maintains backwards compatability.
-	if len(model.NotificationActions) > 0 {
+	if len(notificationActions) > 0 {
 		receivingType := swoClient.NotificationReceivingTypeNotSpecified
 		includeDetails := true
 
-		for _, action := range model.NotificationActions {
+		for _, action := range notificationActions {
 			actionsList := make(map[string][]string)
 
 			var configurationIds []string
