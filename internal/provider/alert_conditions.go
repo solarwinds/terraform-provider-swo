@@ -168,14 +168,8 @@ func (model alertConditionModel) toMetricFieldConditionInput(ctx context.Context
 
 	var includeTags []alertTagsModel
 	var excludeTags []alertTagsModel
-
-	if model.IncludeTags != nil {
-		includeTags = *model.IncludeTags
-	}
-
-	if model.ExcludeTags != nil {
-		excludeTags = *model.ExcludeTags
-	}
+	model.IncludeTags.ElementsAs(ctx, &includeTags, false)
+	model.ExcludeTags.ElementsAs(ctx, &excludeTags, false)
 
 	if len(includeTags) > 0 || len(excludeTags) > 0 {
 		metricFieldCondition.MetricFilter = &swoClient.AlertFilterExpressionInput{

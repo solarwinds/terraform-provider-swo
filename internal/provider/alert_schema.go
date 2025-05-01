@@ -30,17 +30,17 @@ type alertResourceModel struct {
 }
 
 type alertConditionModel struct {
-	MetricName        types.String      `tfsdk:"metric_name"`
-	Threshold         types.String      `tfsdk:"threshold"`
-	Duration          types.String      `tfsdk:"duration"`
-	AggregationType   types.String      `tfsdk:"aggregation_type"`
-	EntityIds         types.List        `tfsdk:"entity_ids"`
-	QuerySearch       types.String      `tfsdk:"query_search"`
-	TargetEntityTypes types.List        `tfsdk:"target_entity_types"`
-	IncludeTags       *[]alertTagsModel `tfsdk:"include_tags"`
-	ExcludeTags       *[]alertTagsModel `tfsdk:"exclude_tags"`
-	GroupByMetricTag  types.List        `tfsdk:"group_by_metric_tag"`
-	NotReporting      types.Bool        `tfsdk:"not_reporting"`
+	MetricName        types.String `tfsdk:"metric_name"`
+	Threshold         types.String `tfsdk:"threshold"`
+	Duration          types.String `tfsdk:"duration"`
+	AggregationType   types.String `tfsdk:"aggregation_type"`
+	EntityIds         types.List   `tfsdk:"entity_ids"`
+	QuerySearch       types.String `tfsdk:"query_search"`
+	TargetEntityTypes types.List   `tfsdk:"target_entity_types"`
+	IncludeTags       types.Set    `tfsdk:"include_tags"`
+	ExcludeTags       types.Set    `tfsdk:"exclude_tags"`
+	GroupByMetricTag  types.List   `tfsdk:"group_by_metric_tag"`
+	NotReporting      types.Bool   `tfsdk:"not_reporting"`
 }
 
 type alertTagsModel struct {
