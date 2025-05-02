@@ -50,7 +50,7 @@ func (r *apiTokenResource) Create(ctx context.Context, req resource.CreateReques
 	// Create our input request.
 	createInput := swoClient.CreateTokenInput{
 		Name:        tfPlan.Name.ValueString(),
-		AccessLevel: *tfPlan.AccessLevel,
+		AccessLevel: swoClient.TokenAccessLevel(tfPlan.AccessLevel.ValueString()),
 		Type:        tfPlan.Type.ValueStringPointer(),
 		Attributes: convertArray(attributes, func(v apiTokenAttribute) swoClient.TokenAttributeInput {
 			return swoClient.TokenAttributeInput{
@@ -111,7 +111,7 @@ func (r *apiTokenResource) Update(ctx context.Context, req resource.UpdateReques
 		Name:        tfPlan.Name.ValueStringPointer(),
 		Enabled:     tfPlan.Enabled.ValueBoolPointer(),
 		Type:        tfPlan.Type.ValueStringPointer(),
-		AccessLevel: tfPlan.AccessLevel,
+		AccessLevel: (*swoClient.TokenAccessLevel)(tfPlan.AccessLevel.ValueStringPointer()),
 		Attributes: convertArray(attributes, func(v apiTokenAttribute) swoClient.TokenAttributeInput {
 			return swoClient.TokenAttributeInput{
 				Key:   v.Key.ValueString(),
@@ -155,7 +155,7 @@ func (r *apiTokenResource) updateState(state *apiTokenResourceModel, result *swo
 	state.Name = types.StringPointerValue(result.Name)
 	state.Enabled = types.BoolPointerValue(result.Enabled)
 	state.Type = types.StringPointerValue(result.Type)
-	state.AccessLevel = result.AccessLevel
+	state.AccessLevel = types.StringValue(string(*result.AccessLevel))
 
 	attributes, _ := AttributesToTerraform(result)
 	state.Attributes = attributes

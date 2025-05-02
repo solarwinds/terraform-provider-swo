@@ -18,13 +18,13 @@ import (
 
 // apiTokenResourceModel is the main resource model.
 type apiTokenResourceModel struct {
-	Id          types.String                `tfsdk:"id"`
-	Name        types.String                `tfsdk:"name"`
-	Enabled     types.Bool                  `tfsdk:"enabled"`
-	Type        types.String                `tfsdk:"type"`
-	Token       types.String                `tfsdk:"token"`
-	AccessLevel *swoClient.TokenAccessLevel `tfsdk:"access_level"`
-	Attributes  types.Set                   `tfsdk:"attributes"`
+	Id          types.String `tfsdk:"id"`
+	Name        types.String `tfsdk:"name"`
+	Enabled     types.Bool   `tfsdk:"enabled"`
+	Type        types.String `tfsdk:"type"`
+	Token       types.String `tfsdk:"token"`
+	AccessLevel types.String `tfsdk:"access_level"`
+	Attributes  types.Set    `tfsdk:"attributes"`
 }
 
 // apiTokenAttribute is a custom attribute for the ApiTokenResourceModel.
