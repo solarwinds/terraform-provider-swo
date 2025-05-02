@@ -53,16 +53,18 @@ func (r *uriResource) Create(ctx context.Context, req resource.CreateRequest, re
 	tfPlan.TestDefinitions.LocationOptions.ElementsAs(ctx, &locationOptions, false)
 	var planPlatformOptions uriResourcePlatformOptions
 	tfPlan.TestDefinitions.PlatformOptions.As(ctx, &planPlatformOptions, basetypes.ObjectAsOptions{})
+	var planOptions uriResourceOptions
+	tfPlan.Options.As(ctx, &planOptions, basetypes.ObjectAsOptions{})
 
 	// Create our input request.
 	createInput := swoClient.CreateUriInput{
 		Name:       tfPlan.Name.ValueString(),
 		IpOrDomain: tfPlan.Host.ValueString(),
 		PingOptions: &swoClient.UriPingOptionsInput{
-			Enabled: tfPlan.Options.IsPingEnabled.ValueBool(),
+			Enabled: planOptions.IsPingEnabled.ValueBool(),
 		},
 		TcpOptions: &swoClient.UriTcpOptionsInput{
-			Enabled:        tfPlan.Options.IsTcpEnabled.ValueBool(),
+			Enabled:        planOptions.IsTcpEnabled.ValueBool(),
 			Port:           int(tfPlan.TcpOptions.Port.ValueInt64()),
 			StringToExpect: tfPlan.TcpOptions.StringToExpect.ValueStringPointer(),
 			StringToSend:   tfPlan.TcpOptions.StringToSend.ValueStringPointer(),
@@ -116,10 +118,16 @@ func (r *uriResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 
 	// Options
 	options := uri.Options
-	tfState.Options = &uriResourceOptions{
-		IsPingEnabled: types.BoolValue(options.IsPingEnabled),
-		IsTcpEnabled:  types.BoolValue(options.IsTcpEnabled),
+	optionsElementTypes := map[string]attr.Type{
+		"is_ping_enabled": types.BoolType,
+		"is_tcp_enabled":  types.BoolType,
 	}
+	optionsElements := map[string]attr.Value{
+		"is_ping_enabled": types.BoolValue(options.IsPingEnabled),
+		"is_tcp_enabled":  types.BoolValue(options.IsTcpEnabled),
+	}
+	tfOptions, _ := types.ObjectValue(optionsElementTypes, optionsElements)
+	tfState.Options = tfOptions
 
 	// TcpOptions
 	if uri.TcpOptions != nil {
@@ -140,7 +148,7 @@ func (r *uriResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 	// TestDefinitions
 	testDefs := uri.TestDefinitions
 	tfState.TestDefinitions = &uriResourceTestDefinitions{}
-	elementTypes := map[string]attr.Type{
+	platformElementTypes := map[string]attr.Type{
 		"test_from_all": types.BoolType,
 		"platforms": types.SetType{
 			ElemType: types.StringType,
@@ -149,15 +157,15 @@ func (r *uriResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 
 	if testDefs.PlatformOptions != nil {
 		listValue, _ := types.SetValueFrom(ctx, types.StringType, testDefs.PlatformOptions.Platforms)
-		elements := map[string]attr.Value{
+		platformElements := map[string]attr.Value{
 			"test_from_all": types.BoolValue(testDefs.PlatformOptions.TestFromAll),
 			"platforms":     listValue,
 		}
 
-		tfPlatformOptions, _ := types.ObjectValue(elementTypes, elements)
+		tfPlatformOptions, _ := types.ObjectValue(platformElementTypes, platformElements)
 		tfState.TestDefinitions.PlatformOptions = tfPlatformOptions
 	} else {
-		tfPlatformOptions := types.ObjectNull(elementTypes)
+		tfPlatformOptions := types.ObjectNull(platformElementTypes)
 		tfState.TestDefinitions.PlatformOptions = tfPlatformOptions
 	}
 
@@ -199,6 +207,8 @@ func (r *uriResource) Update(ctx context.Context, req resource.UpdateRequest, re
 	tfPlan.TestDefinitions.LocationOptions.ElementsAs(ctx, &locationOptions, false)
 	var planPlatformOptions uriResourcePlatformOptions
 	tfPlan.TestDefinitions.PlatformOptions.As(ctx, &planPlatformOptions, basetypes.ObjectAsOptions{})
+	var planOptions uriResourceOptions
+	tfPlan.Options.As(ctx, &planOptions, basetypes.ObjectAsOptions{})
 
 	// Create our input request.
 	updateInput := swoClient.UpdateUriInput{
@@ -206,10 +216,10 @@ func (r *uriResource) Update(ctx context.Context, req resource.UpdateRequest, re
 		Name:       tfPlan.Name.ValueString(),
 		IpOrDomain: tfPlan.Host.ValueString(),
 		PingOptions: &swoClient.UriPingOptionsInput{
-			Enabled: tfPlan.Options.IsPingEnabled.ValueBool(),
+			Enabled: planOptions.IsPingEnabled.ValueBool(),
 		},
 		TcpOptions: &swoClient.UriTcpOptionsInput{
-			Enabled:        tfPlan.Options.IsTcpEnabled.ValueBool(),
+			Enabled:        planOptions.IsTcpEnabled.ValueBool(),
 			Port:           int(tfPlan.TcpOptions.Port.ValueInt64()),
 			StringToExpect: tfPlan.TcpOptions.StringToExpect.ValueStringPointer(),
 			StringToSend:   tfPlan.TcpOptions.StringToSend.ValueStringPointer(),
