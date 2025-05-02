@@ -18,7 +18,7 @@ type uriResourceModel struct {
 	Name            types.String                `tfsdk:"name"`
 	Host            types.String                `tfsdk:"host"`
 	Options         types.Object                `tfsdk:"options"`
-	TcpOptions      *uriResourceTcpOptions      `tfsdk:"tcp_options"`
+	TcpOptions      types.Object                `tfsdk:"tcp_options"`
 	TestDefinitions *uriResourceTestDefinitions `tfsdk:"test_definitions"`
 }
 

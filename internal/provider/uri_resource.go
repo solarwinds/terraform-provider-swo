@@ -55,6 +55,8 @@ func (r *uriResource) Create(ctx context.Context, req resource.CreateRequest, re
 	tfPlan.TestDefinitions.PlatformOptions.As(ctx, &planPlatformOptions, basetypes.ObjectAsOptions{})
 	var planOptions uriResourceOptions
 	tfPlan.Options.As(ctx, &planOptions, basetypes.ObjectAsOptions{})
+	var tcpOptions uriResourceTcpOptions
+	tfPlan.TcpOptions.As(ctx, &tcpOptions, basetypes.ObjectAsOptions{})
 
 	// Create our input request.
 	createInput := swoClient.CreateUriInput{
@@ -65,9 +67,9 @@ func (r *uriResource) Create(ctx context.Context, req resource.CreateRequest, re
 		},
 		TcpOptions: &swoClient.UriTcpOptionsInput{
 			Enabled:        planOptions.IsTcpEnabled.ValueBool(),
-			Port:           int(tfPlan.TcpOptions.Port.ValueInt64()),
-			StringToExpect: tfPlan.TcpOptions.StringToExpect.ValueStringPointer(),
-			StringToSend:   tfPlan.TcpOptions.StringToSend.ValueStringPointer(),
+			Port:           int(tcpOptions.Port.ValueInt64()),
+			StringToExpect: tcpOptions.StringToExpect.ValueStringPointer(),
+			StringToSend:   tcpOptions.StringToSend.ValueStringPointer(),
 		},
 		TestDefinitions: swoClient.UriTestDefinitionsInput{
 			PlatformOptions: &swoClient.ProbePlatformOptionsInput{
@@ -130,19 +132,31 @@ func (r *uriResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 	tfState.Options = tfOptions
 
 	// TcpOptions
+	tcpElementTypes := map[string]attr.Type{
+		"port":             types.Int64Type,
+		"string_to_expect": types.StringType,
+		"string_to_send":   types.StringType,
+	}
 	if uri.TcpOptions != nil {
 		tcpOptions := uri.TcpOptions
-		tfState.TcpOptions = &uriResourceTcpOptions{
-			Port: types.Int64Value(int64(tcpOptions.Port)),
+		tcpElements := map[string]attr.Value{
+			"port":             types.Int64Value(int64(tcpOptions.Port)),
+			"string_to_expect": types.StringNull(),
+			"string_to_send":   types.StringNull(),
+		}
+		tfTcpOptions, _ := types.ObjectValue(tcpElementTypes, tcpElements)
+		tfState.TcpOptions = tfTcpOptions
+
+		if tcpOptions.StringToExpect != nil {
+			tcpElements["string_to_expect"] = types.StringValue(*tcpOptions.StringToExpect)
 		}
 		if tcpOptions.StringToSend != nil {
-			tfState.TcpOptions.StringToSend = types.StringValue(*tcpOptions.StringToSend)
+			tcpElements["string_to_send"] = types.StringValue(*tcpOptions.StringToSend)
 		}
-		if tcpOptions.StringToExpect != nil {
-			tfState.TcpOptions.StringToExpect = types.StringValue(*tcpOptions.StringToExpect)
-		}
+
 	} else {
-		tfState.TcpOptions = nil
+		tfTcpOptions := types.ObjectNull(tcpElementTypes)
+		tfState.TcpOptions = tfTcpOptions
 	}
 
 	// TestDefinitions
@@ -209,6 +223,8 @@ func (r *uriResource) Update(ctx context.Context, req resource.UpdateRequest, re
 	tfPlan.TestDefinitions.PlatformOptions.As(ctx, &planPlatformOptions, basetypes.ObjectAsOptions{})
 	var planOptions uriResourceOptions
 	tfPlan.Options.As(ctx, &planOptions, basetypes.ObjectAsOptions{})
+	var tcpOptions uriResourceTcpOptions
+	tfPlan.TcpOptions.As(ctx, &tcpOptions, basetypes.ObjectAsOptions{})
 
 	// Create our input request.
 	updateInput := swoClient.UpdateUriInput{
@@ -220,9 +236,9 @@ func (r *uriResource) Update(ctx context.Context, req resource.UpdateRequest, re
 		},
 		TcpOptions: &swoClient.UriTcpOptionsInput{
 			Enabled:        planOptions.IsTcpEnabled.ValueBool(),
-			Port:           int(tfPlan.TcpOptions.Port.ValueInt64()),
-			StringToExpect: tfPlan.TcpOptions.StringToExpect.ValueStringPointer(),
-			StringToSend:   tfPlan.TcpOptions.StringToSend.ValueStringPointer(),
+			Port:           int(tcpOptions.Port.ValueInt64()),
+			StringToExpect: tcpOptions.StringToExpect.ValueStringPointer(),
+			StringToSend:   tcpOptions.StringToSend.ValueStringPointer(),
 		},
 		TestDefinitions: swoClient.UriTestDefinitionsInput{
 			PlatformOptions: &swoClient.ProbePlatformOptionsInput{
