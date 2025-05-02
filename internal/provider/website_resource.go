@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/cenkalti/backoff/v5"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"reflect"
 	"strings"
 
@@ -56,10 +57,13 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 
 	if tfPlan.Monitoring.Availability != nil {
 		var checkForString *swoClient.CheckForStringInput
-		if tfPlan.Monitoring.Availability.CheckForString != nil {
+		if !tfPlan.Monitoring.Availability.CheckForString.IsNull() {
+			var planCheckForString checkForStringType
+			tfPlan.Monitoring.Availability.CheckForString.As(ctx, &planCheckForString, basetypes.ObjectAsOptions{})
+
 			checkForString = &swoClient.CheckForStringInput{
-				Operator: swoClient.CheckStringOperator(tfPlan.Monitoring.Availability.CheckForString.Operator.ValueString()),
-				Value:    tfPlan.Monitoring.Availability.CheckForString.Value.ValueString(),
+				Operator: swoClient.CheckStringOperator(planCheckForString.Operator.ValueString()),
+				Value:    planCheckForString.Value.ValueString(),
 			}
 		}
 
@@ -178,10 +182,24 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 		if availability != nil && website.Monitoring.Options.IsAvailabilityActive {
 			tfState.Monitoring.Availability = &availabilityMonitoring{}
 			if availability.CheckForString != nil {
-				tfState.Monitoring.Availability.CheckForString = &checkForStringType{
-					Operator: types.StringValue(string(availability.CheckForString.Operator)),
-					Value:    types.StringValue(availability.CheckForString.Value),
+				elementTypes := map[string]attr.Type{
+					"operator": types.StringType,
+					"value":    types.StringType,
 				}
+				elements := map[string]attr.Value{
+					"operator": types.StringValue(string(availability.CheckForString.Operator)),
+					"value":    types.StringValue(availability.CheckForString.Value),
+				}
+				checkForString, _ := types.ObjectValue(elementTypes, elements)
+
+				tfState.Monitoring.Availability.CheckForString = checkForString
+			} else {
+				elementTypes := map[string]attr.Type{
+					"operator": types.StringType,
+					"value":    types.StringType,
+				}
+				checkForString := types.ObjectNull(elementTypes)
+				tfState.Monitoring.Availability.CheckForString = checkForString
 			}
 
 			if availability.TestIntervalInSeconds != nil {
@@ -282,10 +300,13 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 
 	if tfPlan.Monitoring.Availability != nil {
 		var checkForString *swoClient.CheckForStringInput
-		if tfPlan.Monitoring.Availability.CheckForString != nil {
+		if !tfPlan.Monitoring.Availability.CheckForString.IsNull() {
+			var planCheckForString checkForStringType
+			tfPlan.Monitoring.Availability.CheckForString.As(ctx, &planCheckForString, basetypes.ObjectAsOptions{})
+
 			checkForString = &swoClient.CheckForStringInput{
-				Operator: swoClient.CheckStringOperator(tfPlan.Monitoring.Availability.CheckForString.Operator.ValueString()),
-				Value:    tfPlan.Monitoring.Availability.CheckForString.Value.ValueString(),
+				Operator: swoClient.CheckStringOperator(planCheckForString.Operator.ValueString()),
+				Value:    planCheckForString.Value.ValueString(),
 			}
 		}
 		var ssl *swoClient.SslMonitoringInput
