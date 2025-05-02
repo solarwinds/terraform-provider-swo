@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/cenkalti/backoff/v5"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"reflect"
 	"strings"
@@ -77,12 +78,11 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 		}
 
 		var tfPlanCustomHeaders []customHeader
-
 		//monitoring.custom_headers is deprecated. Both custom_headers fields cannot be set at the same time.
-		if tfPlan.Monitoring.Availability.CustomHeaders != nil {
-			tfPlanCustomHeaders = *tfPlan.Monitoring.Availability.CustomHeaders
+		if !tfPlan.Monitoring.Availability.CustomHeaders.IsNull() {
+			tfPlan.Monitoring.Availability.CustomHeaders.ElementsAs(ctx, &tfPlanCustomHeaders, false)
 		} else {
-			tfPlanCustomHeaders = *tfPlan.Monitoring.CustomHeaders
+			tfPlan.Monitoring.CustomHeaders.ElementsAs(ctx, &tfPlanCustomHeaders, false)
 		}
 
 		var customHeaders []swoClient.CustomHeaderInput
@@ -141,9 +141,9 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
-	// Get the latest Website state from the server so we can get the 'snippet' field. Ideally we need to update
+	// Get the latest Website state from the server so we can get the 'snippet' field. Ideally, we need to update
 	// the API to return the 'snippet' field in the create response.
-	// only set the snippet field if the user has RUM enabled.
+	// Only set the snippet field if the user has RUM enabled.
 	if tfPlan.Monitoring.Rum != nil {
 		tfPlan.Monitoring.Rum.Snippet = types.StringValue(*website.Monitoring.Rum.Snippet)
 	}
@@ -168,9 +168,7 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
-	tfStateCopy := tfState
-
-	// Update the Terraform state with latest values from the server.
+	// Update the Terraform state with the latest values from the server.
 	tfState.Url = types.StringValue(website.Url)
 	tfState.Name = types.StringPointerValue(website.Name)
 
@@ -249,19 +247,38 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 			}
 		}
 
+		customHeaderElementTypes := map[string]attr.Type{
+			"name":  types.StringType,
+			"value": types.StringType,
+		}
+		nullCustomHeader := types.SetNull(types.ObjectType{AttrTypes: customHeaderElementTypes})
 		if len(monitoring.CustomHeaders) > 0 {
-			var customHeaders []customHeader
+			var diags diag.Diagnostics
+			var elements []attr.Value
 			for _, h := range monitoring.CustomHeaders {
-				customHeaders = append(customHeaders, customHeader{
-					Name:  types.StringValue(h.Name),
-					Value: types.StringValue(h.Value),
-				})
+				objectValue, objectDiags := types.ObjectValue(
+					customHeaderElementTypes,
+					map[string]attr.Value{
+						"name":  types.StringValue(h.Name),
+						"value": types.StringValue(h.Value),
+					},
+				)
+				elements = append(elements, objectValue)
+				diags = append(diags, objectDiags...)
 			}
-			if tfStateCopy.Monitoring.CustomHeaders != nil {
-				tfState.Monitoring.CustomHeaders = &customHeaders
+			setValue, setDiags := types.SetValue(types.ObjectType{AttrTypes: customHeaderElementTypes}, elements)
+			diags = append(diags, setDiags...)
+
+			if !tfState.Monitoring.Availability.CustomHeaders.IsNull() {
+				tfState.Monitoring.Availability.CustomHeaders = setValue
+				tfState.Monitoring.CustomHeaders = nullCustomHeader
 			} else {
-				tfState.Monitoring.Availability.CustomHeaders = &customHeaders
+				tfState.Monitoring.Availability.CustomHeaders = nullCustomHeader
+				tfState.Monitoring.CustomHeaders = setValue
 			}
+		} else {
+			tfState.Monitoring.Availability.CustomHeaders = nullCustomHeader
+			tfState.Monitoring.CustomHeaders = nullCustomHeader
 		}
 
 		if monitoring.Options.IsRumActive && monitoring.Rum != nil {
@@ -319,12 +336,11 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 		}
 
 		var tfPlanCustomHeaders []customHeader
-
 		//monitoring.custom_headers is deprecated. Both custom_headers fields cannot be set at the same time.
-		if tfPlan.Monitoring.Availability.CustomHeaders != nil {
-			tfPlanCustomHeaders = *tfPlan.Monitoring.Availability.CustomHeaders
+		if !tfPlan.Monitoring.Availability.CustomHeaders.IsNull() {
+			tfPlan.Monitoring.Availability.CustomHeaders.ElementsAs(ctx, &tfPlanCustomHeaders, false)
 		} else {
-			tfPlanCustomHeaders = *tfPlan.Monitoring.CustomHeaders
+			tfPlan.Monitoring.CustomHeaders.ElementsAs(ctx, &tfPlanCustomHeaders, false)
 		}
 
 		var customHeaders []swoClient.CustomHeaderInput

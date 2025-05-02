@@ -45,7 +45,7 @@ type websiteMonitoring struct {
 	Options       *monitoringOptions      `tfsdk:"options"`
 	Availability  *availabilityMonitoring `tfsdk:"availability"`
 	Rum           *rumMonitoring          `tfsdk:"rum"`
-	CustomHeaders *[]customHeader         `tfsdk:"custom_headers"` //deprecated
+	CustomHeaders types.Set               `tfsdk:"custom_headers"` //deprecated
 }
 
 // Deprecated: Options are not used anymore
@@ -62,7 +62,7 @@ type availabilityMonitoring struct {
 	TestIntervalInSeconds types.Int64     `tfsdk:"test_interval_in_seconds"`
 	LocationOptions       []probeLocation `tfsdk:"location_options"`
 	PlatformOptions       platformOptions `tfsdk:"platform_options"`
-	CustomHeaders         *[]customHeader `tfsdk:"custom_headers"`
+	CustomHeaders         types.Set       `tfsdk:"custom_headers"`
 }
 
 type rumMonitoring struct {
