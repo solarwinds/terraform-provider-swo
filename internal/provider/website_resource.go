@@ -69,11 +69,15 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 		}
 
 		var ssl *swoClient.SslMonitoringInput
-		if tfPlan.Monitoring.Availability.SSL != nil && tfPlan.Monitoring.Availability.SSL.Enabled.ValueBool() {
-			ssl = &swoClient.SslMonitoringInput{
-				Enabled:                        tfPlan.Monitoring.Availability.SSL.Enabled.ValueBoolPointer(),
-				DaysPriorToExpiration:          swoClient.Ptr(int(tfPlan.Monitoring.Availability.SSL.DaysPriorToExpiration.ValueInt64())),
-				IgnoreIntermediateCertificates: tfPlan.Monitoring.Availability.SSL.IgnoreIntermediateCertificates.ValueBoolPointer(),
+		if !tfPlan.Monitoring.Availability.SSL.IsUnknown() {
+			var tfSslMonitoring sslMonitoring
+			tfPlan.Monitoring.Availability.SSL.As(ctx, &tfSslMonitoring, basetypes.ObjectAsOptions{})
+			if tfSslMonitoring.Enabled.ValueBool() {
+				ssl = &swoClient.SslMonitoringInput{
+					Enabled:                        tfSslMonitoring.Enabled.ValueBoolPointer(),
+					DaysPriorToExpiration:          swoClient.Ptr(int(tfSslMonitoring.DaysPriorToExpiration.ValueInt64())),
+					IgnoreIntermediateCertificates: tfSslMonitoring.IgnoreIntermediateCertificates.ValueBoolPointer(),
+				}
 			}
 		}
 
@@ -249,16 +253,25 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 				tfState.Monitoring.Availability.LocationOptions = nullValue
 			}
 
+			sslTypes := map[string]attr.Type{
+				"days_prior_to_expiration":         types.Int64Type,
+				"enabled":                          types.BoolType,
+				"ignore_intermediate_certificates": types.BoolType,
+			}
 			if availability.Ssl != nil && availability.Ssl.Enabled {
-				tfState.Monitoring.Availability.SSL = &sslMonitoring{
-					Enabled:                        types.BoolValue(availability.Ssl.Enabled),
-					IgnoreIntermediateCertificates: types.BoolValue(availability.Ssl.IgnoreIntermediateCertificates),
+				sslValues := map[string]attr.Value{
+					"enabled":                          types.BoolValue(availability.Ssl.Enabled),
+					"ignore_intermediate_certificates": types.BoolValue(availability.Ssl.IgnoreIntermediateCertificates),
+					"days_prior_to_expiration":         types.Int64Null(),
 				}
 				if availability.Ssl.DaysPriorToExpiration != nil {
-					tfState.Monitoring.Availability.SSL.DaysPriorToExpiration = types.Int64Value(int64(*availability.Ssl.DaysPriorToExpiration))
-				} else {
-					tfState.Monitoring.Availability.SSL.DaysPriorToExpiration = types.Int64Null()
+					sslValues["days_prior_to_expiration"] = types.Int64Value(int64(*availability.Ssl.DaysPriorToExpiration))
 				}
+				objectValue, _ := types.ObjectValue(sslTypes, sslValues)
+				tfState.Monitoring.Availability.SSL = objectValue
+			} else {
+				nullValue := types.ObjectNull(sslTypes)
+				tfState.Monitoring.Availability.SSL = nullValue
 			}
 		}
 
@@ -342,11 +355,15 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 			}
 		}
 		var ssl *swoClient.SslMonitoringInput
-		if tfPlan.Monitoring.Availability.SSL != nil && tfPlan.Monitoring.Availability.SSL.Enabled.ValueBool() {
-			ssl = &swoClient.SslMonitoringInput{
-				Enabled:                        tfPlan.Monitoring.Availability.SSL.Enabled.ValueBoolPointer(),
-				DaysPriorToExpiration:          swoClient.Ptr(int(tfPlan.Monitoring.Availability.SSL.DaysPriorToExpiration.ValueInt64())),
-				IgnoreIntermediateCertificates: tfPlan.Monitoring.Availability.SSL.IgnoreIntermediateCertificates.ValueBoolPointer(),
+		if !tfPlan.Monitoring.Availability.SSL.IsUnknown() {
+			var tfSslMonitoring sslMonitoring
+			tfPlan.Monitoring.Availability.SSL.As(ctx, &tfSslMonitoring, basetypes.ObjectAsOptions{})
+			if tfSslMonitoring.Enabled.ValueBool() {
+				ssl = &swoClient.SslMonitoringInput{
+					Enabled:                        tfSslMonitoring.Enabled.ValueBoolPointer(),
+					DaysPriorToExpiration:          swoClient.Ptr(int(tfSslMonitoring.DaysPriorToExpiration.ValueInt64())),
+					IgnoreIntermediateCertificates: tfSslMonitoring.IgnoreIntermediateCertificates.ValueBoolPointer(),
+				}
 			}
 		}
 
@@ -483,7 +500,7 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 		}
 
 		// default values for ssl are returned if ssl is not set
-		if tfPlan.Monitoring.Availability != nil && tfPlan.Monitoring.Availability.SSL == nil {
+		if tfPlan.Monitoring.Availability != nil && tfPlan.Monitoring.Availability.SSL.IsUnknown() {
 			websiteToMatch.Monitoring.Availability.Ssl = website.Monitoring.Availability.Ssl
 		}
 
