@@ -165,12 +165,14 @@ func AttributesToTerraform(result *swoClient.ReadApiTokenResult) (types.Set, dia
 	var diags diag.Diagnostics
 	var elements []attr.Value
 
+	var attributeTypes = map[string]attr.Type{
+		"key":   types.StringType,
+		"value": types.StringType,
+	}
+
 	for _, attribute := range result.Attributes {
 		objectValue, objectDiags := types.ObjectValue(
-			map[string]attr.Type{
-				"key":   types.StringType,
-				"value": types.StringType,
-			},
+			attributeTypes,
 			map[string]attr.Value{
 				"key":   types.StringValue(attribute.Key),
 				"value": types.StringValue(attribute.Value),
@@ -180,10 +182,7 @@ func AttributesToTerraform(result *swoClient.ReadApiTokenResult) (types.Set, dia
 		diags = append(diags, objectDiags...)
 	}
 
-	setValue, setDiags := types.SetValue(types.ObjectType{AttrTypes: map[string]attr.Type{
-		"key":   types.StringType,
-		"value": types.StringType,
-	}}, elements)
+	setValue, setDiags := types.SetValue(types.ObjectType{AttrTypes: attributeTypes}, elements)
 	diags = append(diags, setDiags...)
 
 	return setValue, diags
