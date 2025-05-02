@@ -49,14 +49,16 @@ func (r *uriResource) Create(ctx context.Context, req resource.CreateRequest, re
 		return
 	}
 
-	var locationOptions []uriResourceProbeLocation
-	tfPlan.TestDefinitions.LocationOptions.ElementsAs(ctx, &locationOptions, false)
-	var planPlatformOptions uriResourcePlatformOptions
-	tfPlan.TestDefinitions.PlatformOptions.As(ctx, &planPlatformOptions, basetypes.ObjectAsOptions{})
 	var planOptions uriResourceOptions
 	tfPlan.Options.As(ctx, &planOptions, basetypes.ObjectAsOptions{})
 	var tcpOptions uriResourceTcpOptions
 	tfPlan.TcpOptions.As(ctx, &tcpOptions, basetypes.ObjectAsOptions{})
+	var testDefinitions uriResourceTestDefinitions
+	tfPlan.TestDefinitions.As(ctx, &testDefinitions, basetypes.ObjectAsOptions{})
+	var planPlatformOptions uriResourcePlatformOptions
+	testDefinitions.PlatformOptions.As(ctx, &planPlatformOptions, basetypes.ObjectAsOptions{})
+	var locationOptions []uriResourceProbeLocation
+	testDefinitions.LocationOptions.ElementsAs(ctx, &locationOptions, false)
 
 	// Create our input request.
 	createInput := swoClient.CreateUriInput{
@@ -78,11 +80,11 @@ func (r *uriResource) Create(ctx context.Context, req resource.CreateRequest, re
 					func(s attr.Value) swoClient.ProbePlatform { return swoClient.ProbePlatform(attrValueToString(s)) }),
 			},
 			TestFrom: swoClient.ProbeLocationInput{
-				Type: swoClient.ProbeLocationType(tfPlan.TestDefinitions.TestFromLocation.ValueString()),
+				Type: swoClient.ProbeLocationType(testDefinitions.TestFromLocation.ValueString()),
 				Values: convertArray(locationOptions,
 					func(v uriResourceProbeLocation) string { return v.Value.ValueString() }),
 			},
-			TestIntervalInSeconds: swoClientTypes.TestIntervalInSeconds(int(tfPlan.TestDefinitions.TestIntervalInSeconds.ValueInt64())),
+			TestIntervalInSeconds: swoClientTypes.TestIntervalInSeconds(int(testDefinitions.TestIntervalInSeconds.ValueInt64())),
 		},
 	}
 
@@ -161,12 +163,53 @@ func (r *uriResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 
 	// TestDefinitions
 	testDefs := uri.TestDefinitions
-	tfState.TestDefinitions = &uriResourceTestDefinitions{}
+
 	platformElementTypes := map[string]attr.Type{
 		"test_from_all": types.BoolType,
 		"platforms": types.SetType{
 			ElemType: types.StringType,
 		},
+	}
+	locationOptsElementTypes := map[string]attr.Type{
+		"type":  types.StringType,
+		"value": types.StringType,
+	}
+	testDefsElementTypes := map[string]attr.Type{
+		"test_from_location":       types.StringType,
+		"location_options":         types.SetType{ElemType: types.ObjectType{AttrTypes: locationOptsElementTypes}},
+		"test_interval_in_seconds": types.Int64Type,
+		"platform_options":         types.ObjectType{AttrTypes: platformElementTypes},
+	}
+	testDefsElements := map[string]attr.Value{
+		"test_from_location":       types.StringNull(),
+		"location_options":         types.SetUnknown(types.ObjectType{AttrTypes: locationOptsElementTypes}),
+		"test_interval_in_seconds": types.Int64Null(),
+		"platform_options":         types.ObjectNull(platformElementTypes),
+	}
+
+	if testDefs.TestFromLocation != nil {
+		testDefsElements["test_from_location"] = types.StringValue(string(*testDefs.TestFromLocation))
+	}
+
+	var diags diag.Diagnostics
+	var locationOptsElements []attr.Value
+	for _, x := range testDefs.LocationOptions {
+		objectValue, objectDiags := types.ObjectValue(
+			locationOptsElementTypes,
+			map[string]attr.Value{
+				"type":  types.StringValue(string(x.Type)),
+				"value": types.StringValue(x.Value),
+			},
+		)
+
+		locationOptsElements = append(locationOptsElements, objectValue)
+		diags = append(diags, objectDiags...)
+	}
+	locationOpts, _ := types.SetValue(types.ObjectType{AttrTypes: locationOptsElementTypes}, locationOptsElements)
+	testDefsElements["location_options"] = locationOpts
+
+	if testDefs.TestIntervalInSeconds != nil {
+		testDefsElements["test_interval_in_seconds"] = types.Int64Value(int64(*testDefs.TestIntervalInSeconds))
 	}
 
 	if testDefs.PlatformOptions != nil {
@@ -177,35 +220,11 @@ func (r *uriResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 		}
 
 		tfPlatformOptions, _ := types.ObjectValue(platformElementTypes, platformElements)
-		tfState.TestDefinitions.PlatformOptions = tfPlatformOptions
-	} else {
-		tfPlatformOptions := types.ObjectNull(platformElementTypes)
-		tfState.TestDefinitions.PlatformOptions = tfPlatformOptions
+		testDefsElements["platform_options"] = tfPlatformOptions
 	}
 
-	if testDefs.TestFromLocation != nil {
-		tfState.TestDefinitions.TestFromLocation = types.StringValue(string(*testDefs.TestFromLocation))
-	} else {
-		tfState.TestDefinitions.TestFromLocation = types.StringNull()
-	}
-
-	if testDefs.TestIntervalInSeconds != nil {
-		tfState.TestDefinitions.TestIntervalInSeconds = types.Int64Value(int64(*testDefs.TestIntervalInSeconds))
-	} else {
-		tfState.TestDefinitions.TestIntervalInSeconds = types.Int64Null()
-	}
-
-	//no access to the go client structures, need to convert to the schema then to terraform
-	var locOpts []uriResourceProbeLocation
-	for _, x := range testDefs.LocationOptions {
-		locOpts = append(locOpts, uriResourceProbeLocation{
-			Type:  types.StringValue(string(x.Type)),
-			Value: types.StringValue(x.Value),
-		})
-	}
-	tfLocOpts, _ := LocationOptionsToTerraform(locOpts)
-	tfState.TestDefinitions.LocationOptions = tfLocOpts
-
+	objectValue, _ := types.ObjectValue(testDefsElementTypes, testDefsElements)
+	tfState.TestDefinitions = objectValue
 	resp.Diagnostics.Append(resp.State.Set(ctx, tfState)...)
 }
 
@@ -217,14 +236,16 @@ func (r *uriResource) Update(ctx context.Context, req resource.UpdateRequest, re
 		return
 	}
 
-	var locationOptions []uriResourceProbeLocation
-	tfPlan.TestDefinitions.LocationOptions.ElementsAs(ctx, &locationOptions, false)
-	var planPlatformOptions uriResourcePlatformOptions
-	tfPlan.TestDefinitions.PlatformOptions.As(ctx, &planPlatformOptions, basetypes.ObjectAsOptions{})
 	var planOptions uriResourceOptions
 	tfPlan.Options.As(ctx, &planOptions, basetypes.ObjectAsOptions{})
 	var tcpOptions uriResourceTcpOptions
 	tfPlan.TcpOptions.As(ctx, &tcpOptions, basetypes.ObjectAsOptions{})
+	var testDefinitions uriResourceTestDefinitions
+	tfPlan.TestDefinitions.As(ctx, &testDefinitions, basetypes.ObjectAsOptions{})
+	var planPlatformOptions uriResourcePlatformOptions
+	testDefinitions.PlatformOptions.As(ctx, &planPlatformOptions, basetypes.ObjectAsOptions{})
+	var locationOptions []uriResourceProbeLocation
+	testDefinitions.LocationOptions.ElementsAs(ctx, &locationOptions, false)
 
 	// Create our input request.
 	updateInput := swoClient.UpdateUriInput{
@@ -247,12 +268,12 @@ func (r *uriResource) Update(ctx context.Context, req resource.UpdateRequest, re
 					func(s attr.Value) swoClient.ProbePlatform { return swoClient.ProbePlatform(attrValueToString(s)) }),
 			},
 			TestFrom: swoClient.ProbeLocationInput{
-				Type: swoClient.ProbeLocationType(tfPlan.TestDefinitions.TestFromLocation.ValueString()),
+				Type: swoClient.ProbeLocationType(testDefinitions.TestFromLocation.ValueString()),
 				Values: convertArray(locationOptions,
 					func(v uriResourceProbeLocation) string { return v.Value.ValueString() }),
 			},
 
-			TestIntervalInSeconds: swoClientTypes.TestIntervalInSeconds(int(tfPlan.TestDefinitions.TestIntervalInSeconds.ValueInt64())),
+			TestIntervalInSeconds: swoClientTypes.TestIntervalInSeconds(int(testDefinitions.TestIntervalInSeconds.ValueInt64())),
 		},
 	}
 
@@ -359,32 +380,4 @@ func (r *uriResource) Delete(ctx context.Context, req resource.DeleteRequest, re
 
 func (r *uriResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
-}
-
-func LocationOptionsToTerraform(locationOptions []uriResourceProbeLocation) (types.Set, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	var elements []attr.Value
-
-	for _, option := range locationOptions {
-		objectValue, objectDiags := types.ObjectValue(
-			map[string]attr.Type{
-				"type":  types.StringType,
-				"value": types.StringType,
-			},
-			map[string]attr.Value{
-				"type":  types.StringValue(option.Type.ValueString()),
-				"value": types.StringValue(option.Value.ValueString()),
-			},
-		)
-		elements = append(elements, objectValue)
-		diags = append(diags, objectDiags...)
-	}
-
-	setValue, setDiags := types.SetValue(types.ObjectType{AttrTypes: map[string]attr.Type{
-		"type":  types.StringType,
-		"value": types.StringType,
-	}}, elements)
-	diags = append(diags, setDiags...)
-
-	return setValue, diags
 }
