@@ -23,8 +23,8 @@ type logFilterResourceModel struct {
 
 // LogFilterResourceOptions represents the options field in the main resource
 type logFilterExpression struct {
-	Kind       swoClient.ExclusionFilterExpressionKind `tfsdk:"kind"`
-	Expression string                                  `tfsdk:"expression"`
+	Kind       types.String `tfsdk:"kind"`
+	Expression types.String `tfsdk:"expression"`
 }
 
 func (r *logFilterResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {

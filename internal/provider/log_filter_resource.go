@@ -49,8 +49,8 @@ func (r *logFilterResource) Create(ctx context.Context, req resource.CreateReque
 		TokenSignature: tfPlan.TokenSignature.ValueStringPointer(),
 		Expressions: convertArray(tfPlan.Expressions, func(e logFilterExpression) swoClient.CreateExclusionFilterExpressionInput {
 			return swoClient.CreateExclusionFilterExpressionInput{
-				Kind:       swoClient.ExclusionFilterExpressionKind(e.Kind),
-				Expression: e.Expression,
+				Kind:       swoClient.ExclusionFilterExpressionKind(e.Kind.ValueString()),
+				Expression: e.Expression.ValueString(),
 			}
 		}),
 	}
@@ -95,8 +95,8 @@ func (r *logFilterResource) Read(ctx context.Context, req resource.ReadRequest, 
 	var lfe []logFilterExpression
 	for _, p := range logFilter.Expressions {
 		lfe = append(lfe, logFilterExpression{
-			Kind:       swoClient.ExclusionFilterExpressionKind(p.Kind),
-			Expression: p.Expression,
+			Kind:       types.StringValue(string(p.Kind)),
+			Expression: types.StringValue(p.Expression),
 		})
 	}
 	tfState.Expressions = lfe
@@ -120,8 +120,8 @@ func (r *logFilterResource) Update(ctx context.Context, req resource.UpdateReque
 		Description: tfPlan.Description.ValueString(),
 		Expressions: convertArray(tfPlan.Expressions, func(e logFilterExpression) swoClient.UpdateExclusionFilterExpressionInput {
 			return swoClient.UpdateExclusionFilterExpressionInput{
-				Kind:       swoClient.ExclusionFilterExpressionKind(e.Kind),
-				Expression: e.Expression,
+				Kind:       swoClient.ExclusionFilterExpressionKind(e.Kind.ValueString()),
+				Expression: e.Expression.ValueString(),
 			}
 		}),
 	})
