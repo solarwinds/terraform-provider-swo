@@ -26,9 +26,9 @@ func TestAccWebsiteResource(t *testing.T) {
 			),
 			createTestStep(
 				testAccWebsiteResourceConfig,
-				"test-acc create without [CREATE_TEST]",
+				"test-acc create without options [CREATE_TEST]",
 				"https://solarwinds.com",
-				websiteMonitoringConfigWithoutAvailabilityOptionals,
+				websiteMonitoringConfigWithoutAvailabilityOptions,
 				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.protocols.0", "HTTP"),
 				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.protocols.1", "HTTPS"),
 			),
@@ -59,15 +59,15 @@ func TestAccWebsiteResource(t *testing.T) {
 			),
 			createTestStep(
 				testAccWebsiteResourceConfig,
-				"test-acc test update without [UPDATE_TEST]",
+				"test-acc test update without options [UPDATE_TEST]",
 				"https://solarwinds.com",
-				websiteMonitoringConfigWithoutAvailabilityOptionals,
+				websiteMonitoringConfigWithoutAvailabilityOptions,
 				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.protocols.0", "HTTP"),
 				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.protocols.1", "HTTPS"),
 			),
 			createTestStep(
 				testAccWebsiteResourceConfig,
-				"test-acc test update without [UPDATE_TEST]",
+				"test-acc test update without availability [UPDATE_TEST]",
 				"https://solarwinds.com",
 				websiteMonitoringConfigWithoutAvailability,
 				resource.TestCheckResourceAttr("swo_website.test", "monitoring.rum.apdex_time_in_seconds", "4"),
@@ -79,9 +79,9 @@ func TestAccWebsiteResource(t *testing.T) {
 }
 
 var (
-	websiteMonitoringConfig                             = monitoringConfig(availabilityConfig(true, true), "null", true)
-	websiteMonitoringConfigWithoutAvailability          = monitoringConfig("null", rumConfig(), false)
-	websiteMonitoringConfigWithoutAvailabilityOptionals = monitoringConfig(availabilityConfig(false, false), rumConfig(), true)
+	websiteMonitoringConfig                           = monitoringConfig(availabilityConfig(true, true), "null", true)
+	websiteMonitoringConfigWithoutAvailability        = monitoringConfig("null", rumConfig(), false)
+	websiteMonitoringConfigWithoutAvailabilityOptions = monitoringConfig(availabilityConfig(false, false), rumConfig(), true)
 )
 
 func createTestStep(configFunc func(string, string, string) string, name, url string, monitoring string, additionalChecks ...resource.TestCheckFunc) resource.TestStep {

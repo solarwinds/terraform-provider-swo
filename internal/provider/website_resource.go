@@ -95,6 +95,8 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 			})
 		}
 
+		var locationOptions []probeLocation
+		tfPlan.Monitoring.Availability.LocationOptions.ElementsAs(ctx, &locationOptions, false)
 		createInput.AvailabilityCheckSettings = &swoClient.AvailabilityCheckSettingsInput{
 			CheckForString:        checkForString,
 			TestIntervalInSeconds: swoClientTypes.TestIntervalInSeconds(int(tfPlan.Monitoring.Availability.TestIntervalInSeconds.ValueInt64())),
@@ -109,7 +111,7 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 			},
 			TestFrom: swoClient.ProbeLocationInput{
 				Type: swoClient.ProbeLocationType(tfPlan.Monitoring.Availability.TestFromLocation.ValueString()),
-				Values: convertArray(tfPlan.Monitoring.Availability.LocationOptions, func(p probeLocation) string {
+				Values: convertArray(locationOptions, func(p probeLocation) string {
 					return p.Value.ValueString()
 				}),
 			},
@@ -223,15 +225,28 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 				tfState.Monitoring.Availability.TestFromLocation = types.StringValue(string(*availability.TestFromLocation))
 			}
 
+			elementTypes := map[string]attr.Type{
+				"type":  types.StringType,
+				"value": types.StringType,
+			}
+			var elements []attr.Value
 			if len(availability.LocationOptions) > 0 {
-				var locOpts []probeLocation
 				for _, p := range availability.LocationOptions {
-					locOpts = append(locOpts, probeLocation{
-						Type:  types.StringValue(string(p.Type)),
-						Value: types.StringValue(p.Value),
-					})
+					objectValue, _ := types.ObjectValue(
+						elementTypes,
+						map[string]attr.Value{
+							"type":  types.StringValue(string(p.Type)),
+							"value": types.StringValue(p.Value),
+						},
+					)
+					elements = append(elements, objectValue)
 				}
+
+				locOpts, _ := types.SetValue(types.ObjectType{AttrTypes: elementTypes}, elements)
 				tfState.Monitoring.Availability.LocationOptions = locOpts
+			} else {
+				nullValue := types.SetNull(types.ObjectType{AttrTypes: elementTypes})
+				tfState.Monitoring.Availability.LocationOptions = nullValue
 			}
 
 			if availability.Ssl != nil && availability.Ssl.Enabled {
@@ -353,6 +368,8 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 			})
 		}
 
+		var locationOptions []probeLocation
+		tfPlan.Monitoring.Availability.LocationOptions.ElementsAs(ctx, &locationOptions, false)
 		updateInput.AvailabilityCheckSettings = &swoClient.AvailabilityCheckSettingsInput{
 			CheckForString:        checkForString,
 			TestIntervalInSeconds: swoClientTypes.TestIntervalInSeconds(int(tfPlan.Monitoring.Availability.TestIntervalInSeconds.ValueInt64())),
@@ -367,7 +384,7 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 			},
 			TestFrom: swoClient.ProbeLocationInput{
 				Type: swoClient.ProbeLocationType(tfPlan.Monitoring.Availability.TestFromLocation.ValueString()),
-				Values: convertArray(tfPlan.Monitoring.Availability.LocationOptions, func(p probeLocation) string {
+				Values: convertArray(locationOptions, func(p probeLocation) string {
 					return p.Value.ValueString()
 				}),
 			},

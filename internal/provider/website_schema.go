@@ -60,7 +60,7 @@ type availabilityMonitoring struct {
 	Protocols             types.List      `tfsdk:"protocols"`
 	TestFromLocation      types.String    `tfsdk:"test_from_location"`
 	TestIntervalInSeconds types.Int64     `tfsdk:"test_interval_in_seconds"`
-	LocationOptions       []probeLocation `tfsdk:"location_options"`
+	LocationOptions       types.Set       `tfsdk:"location_options"`
 	PlatformOptions       platformOptions `tfsdk:"platform_options"`
 	CustomHeaders         types.Set       `tfsdk:"custom_headers"`
 }
