@@ -3,6 +3,8 @@ package provider
 import (
 	"context"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -42,12 +44,15 @@ func (r *logFilterResource) Create(ctx context.Context, req resource.CreateReque
 		return
 	}
 
+	var expressions []logFilterExpression
+	tfPlan.Expressions.ElementsAs(ctx, &expressions, false)
+
 	// Create our input request.
 	createInput := swoClient.CreateExclusionFilterInput{
 		Name:           tfPlan.Name.ValueString(),
 		Description:    tfPlan.Description.ValueString(),
 		TokenSignature: tfPlan.TokenSignature.ValueStringPointer(),
-		Expressions: convertArray(tfPlan.Expressions, func(e logFilterExpression) swoClient.CreateExclusionFilterExpressionInput {
+		Expressions: convertArray(expressions, func(e logFilterExpression) swoClient.CreateExclusionFilterExpressionInput {
 			return swoClient.CreateExclusionFilterExpressionInput{
 				Kind:       swoClient.ExclusionFilterExpressionKind(e.Kind.ValueString()),
 				Expression: e.Expression.ValueString(),
@@ -55,7 +60,7 @@ func (r *logFilterResource) Create(ctx context.Context, req resource.CreateReque
 		}),
 	}
 
-	// Create the LogFilter...
+	// Create the LogFilter
 	result, err := r.client.LogFilterService().Create(ctx, createInput)
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error",
@@ -99,7 +104,27 @@ func (r *logFilterResource) Read(ctx context.Context, req resource.ReadRequest, 
 			Expression: types.StringValue(p.Expression),
 		})
 	}
-	tfState.Expressions = lfe
+
+	var diags diag.Diagnostics
+	var elements []attr.Value
+	var attributeTypes = map[string]attr.Type{
+		"kind":       types.StringType,
+		"expression": types.StringType,
+	}
+	for _, p := range logFilter.Expressions {
+		objectValue, objectDiags := types.ObjectValue(
+			attributeTypes,
+			map[string]attr.Value{
+				"kind":       types.StringValue(string(p.Kind)),
+				"expression": types.StringValue(p.Expression),
+			},
+		)
+		elements = append(elements, objectValue)
+		diags = append(diags, objectDiags...)
+	}
+	expressions, setDiags := types.ListValue(types.ObjectType{AttrTypes: attributeTypes}, elements)
+	diags = append(diags, setDiags...)
+	tfState.Expressions = expressions
 
 	// Save to Terraform state.
 	resp.Diagnostics.Append(resp.State.Set(ctx, tfState)...)
@@ -113,12 +138,14 @@ func (r *logFilterResource) Update(ctx context.Context, req resource.UpdateReque
 		return
 	}
 
-	// Update the LogFilter...
+	var expressions []logFilterExpression
+	tfPlan.Expressions.ElementsAs(ctx, &expressions, false)
+
 	err := r.client.LogFilterService().Update(ctx, swoClient.UpdateExclusionFilterInput{
 		Id:          tfState.Id.ValueString(),
 		Name:        tfPlan.Name.ValueString(),
 		Description: tfPlan.Description.ValueString(),
-		Expressions: convertArray(tfPlan.Expressions, func(e logFilterExpression) swoClient.UpdateExclusionFilterExpressionInput {
+		Expressions: convertArray(expressions, func(e logFilterExpression) swoClient.UpdateExclusionFilterExpressionInput {
 			return swoClient.UpdateExclusionFilterExpressionInput{
 				Kind:       swoClient.ExclusionFilterExpressionKind(e.Kind.ValueString()),
 				Expression: e.Expression.ValueString(),

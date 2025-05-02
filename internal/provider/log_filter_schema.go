@@ -14,11 +14,11 @@ import (
 
 // logFilterResourceModel is the main resource structure
 type logFilterResourceModel struct {
-	Id             types.String          `tfsdk:"id"`
-	Name           types.String          `tfsdk:"name"`
-	Description    types.String          `tfsdk:"description"`
-	TokenSignature types.String          `tfsdk:"token_signature"`
-	Expressions    []logFilterExpression `tfsdk:"expressions"`
+	Id             types.String `tfsdk:"id"`
+	Name           types.String `tfsdk:"name"`
+	Description    types.String `tfsdk:"description"`
+	TokenSignature types.String `tfsdk:"token_signature"`
+	Expressions    types.List   `tfsdk:"expressions"`
 }
 
 // LogFilterResourceOptions represents the options field in the main resource
