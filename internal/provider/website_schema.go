@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	swoClient "github.com/solarwinds/swo-client-go/pkg/client"
 	"github.com/solarwinds/terraform-provider-swo/internal/validators"
@@ -30,15 +31,37 @@ type probeLocation struct {
 	Value types.String `tfsdk:"value"`
 }
 
+func ProbeLocationAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"type":  types.StringType,
+		"value": types.StringType,
+	}
+}
+
 type platformOptions struct {
 	TestFromAll types.Bool `tfsdk:"test_from_all"`
 	Platforms   types.Set  `tfsdk:"platforms"`
+}
+
+func PlatformOptionsAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"test_from_all": types.BoolType,
+		"platforms":     types.SetType{ElemType: types.StringType},
+	}
 }
 
 type sslMonitoring struct {
 	DaysPriorToExpiration          types.Int64 `tfsdk:"days_prior_to_expiration"`
 	Enabled                        types.Bool  `tfsdk:"enabled"`
 	IgnoreIntermediateCertificates types.Bool  `tfsdk:"ignore_intermediate_certificates"`
+}
+
+func SslMonitoringAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"days_prior_to_expiration":         types.Int64Type,
+		"enabled":                          types.BoolType,
+		"ignore_intermediate_certificates": types.BoolType,
+	}
 }
 
 type websiteMonitoring struct {
@@ -76,9 +99,23 @@ type customHeader struct {
 	Value types.String `tfsdk:"value"`
 }
 
+func CustomHeaderAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"name":  types.StringType,
+		"value": types.StringType,
+	}
+}
+
 type checkForStringType struct {
 	Operator types.String `tfsdk:"operator"`
 	Value    types.String `tfsdk:"value"`
+}
+
+func CheckForStringTypeAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"operator": types.StringType,
+		"value":    types.StringType,
+	}
 }
 
 func (r *websiteResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {

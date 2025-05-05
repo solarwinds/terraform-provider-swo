@@ -185,24 +185,17 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 		availability := monitoring.Availability
 		if availability != nil && website.Monitoring.Options.IsAvailabilityActive {
 			tfState.Monitoring.Availability = &availabilityMonitoring{}
+			checkForStringAttributeTypes := CheckForStringTypeAttributeTypes()
 			if availability.CheckForString != nil {
-				elementTypes := map[string]attr.Type{
-					"operator": types.StringType,
-					"value":    types.StringType,
+				elements := checkForStringType{
+					Operator: types.StringValue(string(availability.CheckForString.Operator)),
+					Value:    types.StringValue(availability.CheckForString.Value),
 				}
-				elements := map[string]attr.Value{
-					"operator": types.StringValue(string(availability.CheckForString.Operator)),
-					"value":    types.StringValue(availability.CheckForString.Value),
-				}
-				checkForString, _ := types.ObjectValue(elementTypes, elements)
+				checkForString, _ := types.ObjectValueFrom(ctx, checkForStringAttributeTypes, elements)
 
 				tfState.Monitoring.Availability.CheckForString = checkForString
 			} else {
-				elementTypes := map[string]attr.Type{
-					"operator": types.StringType,
-					"value":    types.StringType,
-				}
-				checkForString := types.ObjectNull(elementTypes)
+				checkForString := types.ObjectNull(checkForStringAttributeTypes)
 				tfState.Monitoring.Availability.CheckForString = checkForString
 			}
 
@@ -216,28 +209,21 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 				})
 			}
 
+			platformOptionsAttributeTypes := PlatformOptionsAttributeTypes()
 			if availability.PlatformOptions != nil {
 				platforms := convertArray(availability.PlatformOptions.Platforms, func(p string) types.String {
 					return types.StringValue(p)
 				})
-				listValue, _ := types.SetValueFrom(ctx, types.StringType, platforms)
+				platformValue, _ := types.SetValueFrom(ctx, types.StringType, platforms)
 
-				elementTypes := map[string]attr.Type{
-					"test_from_all": types.BoolType,
-					"platforms":     types.SetType{ElemType: types.StringType},
+				platformElements := platformOptions{
+					TestFromAll: types.BoolValue(availability.PlatformOptions.TestFromAll),
+					Platforms:   platformValue,
 				}
-				elements := map[string]attr.Value{
-					"test_from_all": types.BoolValue(availability.PlatformOptions.TestFromAll),
-					"platforms":     listValue,
-				}
-				platformOpts, _ := types.ObjectValue(elementTypes, elements)
+				platformOpts, _ := types.ObjectValueFrom(ctx, platformOptionsAttributeTypes, platformElements)
 				tfState.Monitoring.Availability.PlatformOptions = platformOpts
 			} else {
-				elementTypes := map[string]attr.Type{
-					"test_from_all": types.BoolType,
-					"platforms":     types.SetType{ElemType: types.StringType},
-				}
-				platformOpts := types.ObjectNull(elementTypes)
+				platformOpts := types.ObjectNull(platformOptionsAttributeTypes)
 				tfState.Monitoring.Availability.PlatformOptions = platformOpts
 			}
 
@@ -245,45 +231,39 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 				tfState.Monitoring.Availability.TestFromLocation = types.StringValue(string(*availability.TestFromLocation))
 			}
 
-			elementTypes := map[string]attr.Type{
-				"type":  types.StringType,
-				"value": types.StringType,
-			}
+			locationAttributeTypes := ProbeLocationAttributeTypes()
 			var elements []attr.Value
 			if len(availability.LocationOptions) > 0 {
 				for _, p := range availability.LocationOptions {
-					objectValue, _ := types.ObjectValue(
-						elementTypes,
-						map[string]attr.Value{
-							"type":  types.StringValue(string(p.Type)),
-							"value": types.StringValue(p.Value),
+					objectValue, _ := types.ObjectValueFrom(
+						ctx,
+						locationAttributeTypes,
+						probeLocation{
+							Type:  types.StringValue(string(p.Type)),
+							Value: types.StringValue(p.Value),
 						},
 					)
 					elements = append(elements, objectValue)
 				}
 
-				locOpts, _ := types.SetValue(types.ObjectType{AttrTypes: elementTypes}, elements)
+				locOpts, _ := types.SetValueFrom(ctx, types.ObjectType{AttrTypes: locationAttributeTypes}, elements)
 				tfState.Monitoring.Availability.LocationOptions = locOpts
 			} else {
-				nullValue := types.SetNull(types.ObjectType{AttrTypes: elementTypes})
+				nullValue := types.SetNull(types.ObjectType{AttrTypes: locationAttributeTypes})
 				tfState.Monitoring.Availability.LocationOptions = nullValue
 			}
 
-			sslTypes := map[string]attr.Type{
-				"days_prior_to_expiration":         types.Int64Type,
-				"enabled":                          types.BoolType,
-				"ignore_intermediate_certificates": types.BoolType,
-			}
+			sslTypes := SslMonitoringAttributeTypes()
 			if availability.Ssl != nil && availability.Ssl.Enabled {
-				sslValues := map[string]attr.Value{
-					"enabled":                          types.BoolValue(availability.Ssl.Enabled),
-					"ignore_intermediate_certificates": types.BoolValue(availability.Ssl.IgnoreIntermediateCertificates),
-					"days_prior_to_expiration":         types.Int64Null(),
+				sslValues := sslMonitoring{
+					Enabled:                        types.BoolValue(availability.Ssl.Enabled),
+					IgnoreIntermediateCertificates: types.BoolValue(availability.Ssl.IgnoreIntermediateCertificates),
+					DaysPriorToExpiration:          types.Int64Null(),
 				}
 				if availability.Ssl.DaysPriorToExpiration != nil {
-					sslValues["days_prior_to_expiration"] = types.Int64Value(int64(*availability.Ssl.DaysPriorToExpiration))
+					sslValues.DaysPriorToExpiration = types.Int64Value(int64(*availability.Ssl.DaysPriorToExpiration))
 				}
-				objectValue, _ := types.ObjectValue(sslTypes, sslValues)
+				objectValue, _ := types.ObjectValueFrom(ctx, sslTypes, sslValues)
 				tfState.Monitoring.Availability.SSL = objectValue
 			} else {
 				nullValue := types.ObjectNull(sslTypes)
@@ -291,34 +271,32 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 			}
 		}
 
-		customHeaderElementTypes := map[string]attr.Type{
-			"name":  types.StringType,
-			"value": types.StringType,
-		}
+		customHeaderElementTypes := CustomHeaderAttributeTypes()
 		nullCustomHeader := types.SetNull(types.ObjectType{AttrTypes: customHeaderElementTypes})
 		if len(monitoring.CustomHeaders) > 0 {
 			var diags diag.Diagnostics
 			var elements []attr.Value
 			for _, h := range monitoring.CustomHeaders {
-				objectValue, objectDiags := types.ObjectValue(
+				objectValue, objectDiags := types.ObjectValueFrom(
+					ctx,
 					customHeaderElementTypes,
-					map[string]attr.Value{
-						"name":  types.StringValue(h.Name),
-						"value": types.StringValue(h.Value),
+					customHeader{
+						Name:  types.StringValue(h.Name),
+						Value: types.StringValue(h.Value),
 					},
 				)
 				elements = append(elements, objectValue)
 				diags = append(diags, objectDiags...)
 			}
-			setValue, setDiags := types.SetValue(types.ObjectType{AttrTypes: customHeaderElementTypes}, elements)
+			customHeaderValue, setDiags := types.SetValueFrom(ctx, types.ObjectType{AttrTypes: customHeaderElementTypes}, elements)
 			diags = append(diags, setDiags...)
 
 			if !tfState.Monitoring.Availability.CustomHeaders.IsNull() {
-				tfState.Monitoring.Availability.CustomHeaders = setValue
+				tfState.Monitoring.Availability.CustomHeaders = customHeaderValue
 				tfState.Monitoring.CustomHeaders = nullCustomHeader
 			} else {
 				tfState.Monitoring.Availability.CustomHeaders = nullCustomHeader
-				tfState.Monitoring.CustomHeaders = setValue
+				tfState.Monitoring.CustomHeaders = customHeaderValue
 			}
 		} else {
 			tfState.Monitoring.Availability.CustomHeaders = nullCustomHeader
