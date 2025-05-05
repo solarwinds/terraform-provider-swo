@@ -54,11 +54,14 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 		Url:  tfPlan.Url.ValueString(),
 	}
 
-	if tfPlan.Monitoring.Availability != nil {
+	if !tfPlan.Monitoring.Availability.IsNull() {
+		var availability availabilityMonitoring
+		tfPlan.Monitoring.Availability.As(ctx, &availability, basetypes.ObjectAsOptions{})
+
 		var checkForString *swoClient.CheckForStringInput
-		if !tfPlan.Monitoring.Availability.CheckForString.IsNull() {
+		if !availability.CheckForString.IsNull() {
 			var planCheckForString checkForStringType
-			tfPlan.Monitoring.Availability.CheckForString.As(ctx, &planCheckForString, basetypes.ObjectAsOptions{})
+			availability.CheckForString.As(ctx, &planCheckForString, basetypes.ObjectAsOptions{})
 
 			checkForString = &swoClient.CheckForStringInput{
 				Operator: swoClient.CheckStringOperator(planCheckForString.Operator.ValueString()),
@@ -67,9 +70,9 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 		}
 
 		var ssl *swoClient.SslMonitoringInput
-		if !tfPlan.Monitoring.Availability.SSL.IsUnknown() {
+		if !availability.SSL.IsUnknown() {
 			var tfSslMonitoring sslMonitoring
-			tfPlan.Monitoring.Availability.SSL.As(ctx, &tfSslMonitoring, basetypes.ObjectAsOptions{})
+			availability.SSL.As(ctx, &tfSslMonitoring, basetypes.ObjectAsOptions{})
 			if tfSslMonitoring.Enabled.ValueBool() {
 				ssl = &swoClient.SslMonitoringInput{
 					Enabled:                        tfSslMonitoring.Enabled.ValueBoolPointer(),
@@ -81,8 +84,8 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 
 		var tfPlanCustomHeaders []customHeader
 		//monitoring.custom_headers is deprecated. Both custom_headers fields cannot be set at the same time.
-		if !tfPlan.Monitoring.Availability.CustomHeaders.IsNull() {
-			tfPlan.Monitoring.Availability.CustomHeaders.ElementsAs(ctx, &tfPlanCustomHeaders, false)
+		if !availability.CustomHeaders.IsNull() {
+			availability.CustomHeaders.ElementsAs(ctx, &tfPlanCustomHeaders, false)
 		} else {
 			tfPlan.Monitoring.CustomHeaders.ElementsAs(ctx, &tfPlanCustomHeaders, false)
 		}
@@ -98,14 +101,14 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 		}
 
 		var locationOptions []probeLocation
-		tfPlan.Monitoring.Availability.LocationOptions.ElementsAs(ctx, &locationOptions, false)
+		availability.LocationOptions.ElementsAs(ctx, &locationOptions, false)
 		var platformOpts platformOptions
-		tfPlan.Monitoring.Availability.PlatformOptions.As(ctx, &platformOpts, basetypes.ObjectAsOptions{})
+		availability.PlatformOptions.As(ctx, &platformOpts, basetypes.ObjectAsOptions{})
 
 		createInput.AvailabilityCheckSettings = &swoClient.AvailabilityCheckSettingsInput{
 			CheckForString:        checkForString,
-			TestIntervalInSeconds: swoClientTypes.TestIntervalInSeconds(int(tfPlan.Monitoring.Availability.TestIntervalInSeconds.ValueInt64())),
-			Protocols: convertArray(tfPlan.Monitoring.Availability.Protocols.Elements(), func(s attr.Value) swoClient.WebsiteProtocol {
+			TestIntervalInSeconds: swoClientTypes.TestIntervalInSeconds(int(availability.TestIntervalInSeconds.ValueInt64())),
+			Protocols: convertArray(availability.Protocols.Elements(), func(s attr.Value) swoClient.WebsiteProtocol {
 				return swoClient.WebsiteProtocol(attrValueToString(s))
 			}),
 			PlatformOptions: &swoClient.ProbePlatformOptionsInput{
@@ -114,7 +117,7 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 					func(s attr.Value) swoClient.ProbePlatform { return swoClient.ProbePlatform(attrValueToString(s)) }),
 			},
 			TestFrom: swoClient.ProbeLocationInput{
-				Type: swoClient.ProbeLocationType(tfPlan.Monitoring.Availability.TestFromLocation.ValueString()),
+				Type: swoClient.ProbeLocationType(availability.TestFromLocation.ValueString()),
 				Values: convertArray(locationOptions, func(p probeLocation) string {
 					return p.Value.ValueString()
 				}),
@@ -148,7 +151,7 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 
 	if err != nil {
 		resp.Diagnostics.AddWarning("Client Error",
-			fmt.Sprintf("error reading webiste after create '%s' - error: %s", tfPlan.Name, err))
+			fmt.Sprintf("error reading website after create '%s' - error: %s", tfPlan.Name, err))
 		return
 	}
 
@@ -194,8 +197,8 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 		tfState.Monitoring = &websiteMonitoring{}
 
 		availability := monitoring.Availability
+		availabilityMonitoringValue := availabilityMonitoring{}
 		if availability != nil && website.Monitoring.Options.IsAvailabilityActive {
-			tfState.Monitoring.Availability = &availabilityMonitoring{}
 			checkForStringAttributeTypes := CheckForStringTypeAttributeTypes()
 			if availability.CheckForString != nil {
 				elements := checkForStringType{
@@ -204,18 +207,18 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 				}
 				checkForString, _ := types.ObjectValueFrom(ctx, checkForStringAttributeTypes, elements)
 
-				tfState.Monitoring.Availability.CheckForString = checkForString
+				availabilityMonitoringValue.CheckForString = checkForString
 			} else {
 				checkForString := types.ObjectNull(checkForStringAttributeTypes)
-				tfState.Monitoring.Availability.CheckForString = checkForString
+				availabilityMonitoringValue.CheckForString = checkForString
 			}
 
 			if availability.TestIntervalInSeconds != nil {
-				tfState.Monitoring.Availability.TestIntervalInSeconds = types.Int64Value(int64(*availability.TestIntervalInSeconds))
+				availabilityMonitoringValue.TestIntervalInSeconds = types.Int64Value(int64(*availability.TestIntervalInSeconds))
 			}
 
 			if len(availability.Protocols) > 0 {
-				tfState.Monitoring.Availability.Protocols = sliceToStringList(availability.Protocols, func(s swoClient.WebsiteProtocol) string {
+				availabilityMonitoringValue.Protocols = sliceToStringList(availability.Protocols, func(s swoClient.WebsiteProtocol) string {
 					return string(s)
 				})
 			}
@@ -232,14 +235,14 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 					Platforms:   platformValue,
 				}
 				platformOpts, _ := types.ObjectValueFrom(ctx, platformOptionsAttributeTypes, platformElements)
-				tfState.Monitoring.Availability.PlatformOptions = platformOpts
+				availabilityMonitoringValue.PlatformOptions = platformOpts
 			} else {
 				platformOpts := types.ObjectNull(platformOptionsAttributeTypes)
-				tfState.Monitoring.Availability.PlatformOptions = platformOpts
+				availabilityMonitoringValue.PlatformOptions = platformOpts
 			}
 
 			if availability.TestFromLocation != nil {
-				tfState.Monitoring.Availability.TestFromLocation = types.StringValue(string(*availability.TestFromLocation))
+				availabilityMonitoringValue.TestFromLocation = types.StringValue(string(*availability.TestFromLocation))
 			}
 
 			locationAttributeTypes := ProbeLocationAttributeTypes()
@@ -258,10 +261,10 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 				}
 
 				locOpts, _ := types.SetValueFrom(ctx, types.ObjectType{AttrTypes: locationAttributeTypes}, elements)
-				tfState.Monitoring.Availability.LocationOptions = locOpts
+				availabilityMonitoringValue.LocationOptions = locOpts
 			} else {
 				nullValue := types.SetNull(types.ObjectType{AttrTypes: locationAttributeTypes})
-				tfState.Monitoring.Availability.LocationOptions = nullValue
+				availabilityMonitoringValue.LocationOptions = nullValue
 			}
 
 			sslTypes := SslMonitoringAttributeTypes()
@@ -275,10 +278,10 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 					sslValues.DaysPriorToExpiration = types.Int64Value(int64(*availability.Ssl.DaysPriorToExpiration))
 				}
 				objectValue, _ := types.ObjectValueFrom(ctx, sslTypes, sslValues)
-				tfState.Monitoring.Availability.SSL = objectValue
+				availabilityMonitoringValue.SSL = objectValue
 			} else {
 				nullValue := types.ObjectNull(sslTypes)
-				tfState.Monitoring.Availability.SSL = nullValue
+				availabilityMonitoringValue.SSL = nullValue
 			}
 		}
 
@@ -302,17 +305,20 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 			customHeaderValue, setDiags := types.SetValueFrom(ctx, types.ObjectType{AttrTypes: customHeaderElementTypes}, elements)
 			diags = append(diags, setDiags...)
 
-			if !tfState.Monitoring.Availability.CustomHeaders.IsNull() {
-				tfState.Monitoring.Availability.CustomHeaders = customHeaderValue
+			if !availabilityMonitoringValue.CustomHeaders.IsNull() {
+				availabilityMonitoringValue.CustomHeaders = customHeaderValue
 				tfState.Monitoring.CustomHeaders = nullCustomHeader
 			} else {
-				tfState.Monitoring.Availability.CustomHeaders = nullCustomHeader
+				availabilityMonitoringValue.CustomHeaders = nullCustomHeader
 				tfState.Monitoring.CustomHeaders = customHeaderValue
 			}
 		} else {
-			tfState.Monitoring.Availability.CustomHeaders = nullCustomHeader
+			availabilityMonitoringValue.CustomHeaders = nullCustomHeader
 			tfState.Monitoring.CustomHeaders = nullCustomHeader
 		}
+
+		availabilityValue, _ := types.ObjectValueFrom(ctx, AvailabilityMonitoringAttributeTypes(), availabilityMonitoringValue)
+		tfState.Monitoring.Availability = availabilityValue
 
 		if monitoring.Options.IsRumActive && monitoring.Rum != nil {
 			rumAttributeTypes := RumMonitoringAttributeTypes()
@@ -357,11 +363,14 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 		Url:  tfPlan.Url.ValueString(),
 	}
 
-	if tfPlan.Monitoring.Availability != nil {
+	if !tfPlan.Monitoring.Availability.IsNull() {
+		var availability availabilityMonitoring
+		tfPlan.Monitoring.Availability.As(ctx, &availability, basetypes.ObjectAsOptions{})
+
 		var checkForString *swoClient.CheckForStringInput
-		if !tfPlan.Monitoring.Availability.CheckForString.IsNull() {
+		if !availability.CheckForString.IsNull() {
 			var planCheckForString checkForStringType
-			tfPlan.Monitoring.Availability.CheckForString.As(ctx, &planCheckForString, basetypes.ObjectAsOptions{})
+			availability.CheckForString.As(ctx, &planCheckForString, basetypes.ObjectAsOptions{})
 
 			checkForString = &swoClient.CheckForStringInput{
 				Operator: swoClient.CheckStringOperator(planCheckForString.Operator.ValueString()),
@@ -369,9 +378,9 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 			}
 		}
 		var ssl *swoClient.SslMonitoringInput
-		if !tfPlan.Monitoring.Availability.SSL.IsUnknown() {
+		if !availability.SSL.IsUnknown() {
 			var tfSslMonitoring sslMonitoring
-			tfPlan.Monitoring.Availability.SSL.As(ctx, &tfSslMonitoring, basetypes.ObjectAsOptions{})
+			availability.SSL.As(ctx, &tfSslMonitoring, basetypes.ObjectAsOptions{})
 			if tfSslMonitoring.Enabled.ValueBool() {
 				ssl = &swoClient.SslMonitoringInput{
 					Enabled:                        tfSslMonitoring.Enabled.ValueBoolPointer(),
@@ -383,8 +392,8 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 
 		var tfPlanCustomHeaders []customHeader
 		//monitoring.custom_headers is deprecated. Both custom_headers fields cannot be set at the same time.
-		if !tfPlan.Monitoring.Availability.CustomHeaders.IsNull() {
-			tfPlan.Monitoring.Availability.CustomHeaders.ElementsAs(ctx, &tfPlanCustomHeaders, false)
+		if !availability.CustomHeaders.IsNull() {
+			availability.CustomHeaders.ElementsAs(ctx, &tfPlanCustomHeaders, false)
 		} else {
 			tfPlan.Monitoring.CustomHeaders.ElementsAs(ctx, &tfPlanCustomHeaders, false)
 		}
@@ -400,14 +409,14 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 		}
 
 		var locationOptions []probeLocation
-		tfPlan.Monitoring.Availability.LocationOptions.ElementsAs(ctx, &locationOptions, false)
+		availability.LocationOptions.ElementsAs(ctx, &locationOptions, false)
 		var platformOpts platformOptions
-		tfPlan.Monitoring.Availability.PlatformOptions.As(ctx, &platformOpts, basetypes.ObjectAsOptions{})
+		availability.PlatformOptions.As(ctx, &platformOpts, basetypes.ObjectAsOptions{})
 
 		updateInput.AvailabilityCheckSettings = &swoClient.AvailabilityCheckSettingsInput{
 			CheckForString:        checkForString,
-			TestIntervalInSeconds: swoClientTypes.TestIntervalInSeconds(int(tfPlan.Monitoring.Availability.TestIntervalInSeconds.ValueInt64())),
-			Protocols: convertArray(tfPlan.Monitoring.Availability.Protocols.Elements(), func(s attr.Value) swoClient.WebsiteProtocol {
+			TestIntervalInSeconds: swoClientTypes.TestIntervalInSeconds(int(availability.TestIntervalInSeconds.ValueInt64())),
+			Protocols: convertArray(availability.Protocols.Elements(), func(s attr.Value) swoClient.WebsiteProtocol {
 				return swoClient.WebsiteProtocol(attrValueToString(s))
 			}),
 			PlatformOptions: &swoClient.ProbePlatformOptionsInput{
@@ -416,7 +425,7 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 					func(s attr.Value) swoClient.ProbePlatform { return swoClient.ProbePlatform(attrValueToString(s)) }),
 			},
 			TestFrom: swoClient.ProbeLocationInput{
-				Type: swoClient.ProbeLocationType(tfPlan.Monitoring.Availability.TestFromLocation.ValueString()),
+				Type: swoClient.ProbeLocationType(availability.TestFromLocation.ValueString()),
 				Values: convertArray(locationOptions, func(p probeLocation) string {
 					return p.Value.ValueString()
 				}),
@@ -514,13 +523,17 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 		}
 
 		// default values for availability are returned if availability is not set
-		if tfPlan.Monitoring.Availability == nil {
+		if !tfPlan.Monitoring.Availability.IsNull() {
 			websiteToMatch.Monitoring.Availability = website.Monitoring.Availability
 		}
 
 		// default values for ssl are returned if ssl is not set
-		if tfPlan.Monitoring.Availability != nil && tfPlan.Monitoring.Availability.SSL.IsUnknown() {
-			websiteToMatch.Monitoring.Availability.Ssl = website.Monitoring.Availability.Ssl
+		if tfPlan.Monitoring.Availability.IsNull() {
+			var availability availabilityMonitoring
+			tfPlan.Monitoring.Availability.As(ctx, &availability, basetypes.ObjectAsOptions{})
+			if availability.SSL.IsUnknown() {
+				websiteToMatch.Monitoring.Availability.Ssl = website.Monitoring.Availability.Ssl
+			}
 		}
 
 		if websiteToMatch.Monitoring.CustomHeaders == nil && len(website.Monitoring.CustomHeaders) == 0 {

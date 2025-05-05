@@ -65,10 +65,10 @@ func SslMonitoringAttributeTypes() map[string]attr.Type {
 }
 
 type websiteMonitoring struct {
-	Options       *monitoringOptions      `tfsdk:"options"`
-	Availability  *availabilityMonitoring `tfsdk:"availability"`
-	Rum           types.Object            `tfsdk:"rum"`
-	CustomHeaders types.Set               `tfsdk:"custom_headers"` //deprecated
+	Options       *monitoringOptions `tfsdk:"options"`
+	Availability  types.Object       `tfsdk:"availability"`
+	Rum           types.Object       `tfsdk:"rum"`
+	CustomHeaders types.Set          `tfsdk:"custom_headers"` //deprecated
 }
 
 // Deprecated: Options are not used anymore
@@ -87,6 +87,21 @@ type availabilityMonitoring struct {
 	PlatformOptions       types.Object `tfsdk:"platform_options"`
 	CustomHeaders         types.Set    `tfsdk:"custom_headers"`
 }
+
+func AvailabilityMonitoringAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"check_for_string":         types.ObjectType{AttrTypes: CheckForStringTypeAttributeTypes()},
+		"ssl":                      types.ObjectType{AttrTypes: SslMonitoringAttributeTypes()},
+		"protocols":                types.ListType{ElemType: types.StringType},
+		"test_from_location":       types.StringType,
+		"test_interval_in_seconds": types.Int64Type,
+		"location_options":         types.SetType{ElemType: types.ObjectType{AttrTypes: ProbeLocationAttributeTypes()}},
+		"platform_options":         types.ObjectType{AttrTypes: PlatformOptionsAttributeTypes()},
+		"custom_headers":           types.SetType{ElemType: types.ObjectType{AttrTypes: CustomHeaderAttributeTypes()}},
+	}
+}
+
+//todo this needs an attribute mapping
 
 type rumMonitoring struct {
 	ApdexTimeInSeconds types.Int64  `tfsdk:"apdex_time_in_seconds"`
