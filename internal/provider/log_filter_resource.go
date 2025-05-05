@@ -97,14 +97,6 @@ func (r *logFilterResource) Read(ctx context.Context, req resource.ReadRequest, 
 	tfState.Description = types.StringValue(*logFilter.Description)
 	tfState.TokenSignature = types.StringValue(*logFilter.TokenSignature)
 
-	var lfe []logFilterExpression
-	for _, p := range logFilter.Expressions {
-		lfe = append(lfe, logFilterExpression{
-			Kind:       types.StringValue(string(p.Kind)),
-			Expression: types.StringValue(p.Expression),
-		})
-	}
-
 	var diags diag.Diagnostics
 	var elements []attr.Value
 	var attributeTypes = ExpressionAttributeTypes()

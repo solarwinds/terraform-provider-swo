@@ -90,7 +90,7 @@ func (r *apiTokenResource) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	r.updateState(&tfState, apiToken)
+	r.updateState(ctx, &tfState, apiToken)
 	resp.Diagnostics.Append(resp.State.Set(ctx, tfState)...)
 }
 
@@ -150,40 +150,30 @@ func (r *apiTokenResource) ImportState(ctx context.Context, req resource.ImportS
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-func (r *apiTokenResource) updateState(state *apiTokenResourceModel, result *swoClient.ReadApiTokenResult) {
+func (r *apiTokenResource) updateState(ctx context.Context, state *apiTokenResourceModel, result *swoClient.ReadApiTokenResult) {
 	state.Id = types.StringValue(result.Id)
 	state.Name = types.StringPointerValue(result.Name)
 	state.Enabled = types.BoolPointerValue(result.Enabled)
 	state.Type = types.StringPointerValue(result.Type)
 	state.AccessLevel = types.StringValue(string(*result.AccessLevel))
 
-	attributes, _ := AttributesToTerraform(result)
-	state.Attributes = attributes
-}
-
-func AttributesToTerraform(result *swoClient.ReadApiTokenResult) (types.Set, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var elements []attr.Value
-
-	var attributeTypes = map[string]attr.Type{
-		"key":   types.StringType,
-		"value": types.StringType,
-	}
-
+	var attributeTypes = TokenAttributeTypes()
 	for _, attribute := range result.Attributes {
-		objectValue, objectDiags := types.ObjectValue(
+		objectValue, objectDiags := types.ObjectValueFrom(
+			ctx,
 			attributeTypes,
-			map[string]attr.Value{
-				"key":   types.StringValue(attribute.Key),
-				"value": types.StringValue(attribute.Value),
+			apiTokenAttribute{
+				Key:   types.StringValue(attribute.Key),
+				Value: types.StringValue(attribute.Value),
 			},
 		)
 		elements = append(elements, objectValue)
 		diags = append(diags, objectDiags...)
 	}
 
-	setValue, setDiags := types.SetValue(types.ObjectType{AttrTypes: attributeTypes}, elements)
+	attributes, setDiags := types.SetValueFrom(ctx, types.ObjectType{AttrTypes: attributeTypes}, elements)
 	diags = append(diags, setDiags...)
-
-	return setValue, diags
+	state.Attributes = attributes
 }

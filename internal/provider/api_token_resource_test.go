@@ -19,6 +19,11 @@ func TestAccApiTokenResource(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet("swo_apitoken.test", "id"),
 					resource.TestCheckResourceAttr("swo_apitoken.test", "name", "test-acc test one"),
+					resource.TestCheckResourceAttr("swo_apitoken.test", "access_level", "API_FULL"),
+					resource.TestCheckResourceAttr("swo_apitoken.test", "type", "public-api"),
+					resource.TestCheckResourceAttr("swo_apitoken.test", "enabled", "true"),
+					resource.TestCheckResourceAttr("swo_apitoken.test", "attributes.0.key", "attribute-key"),
+					resource.TestCheckResourceAttr("swo_apitoken.test", "attributes.0.value", "attribute value"),
 				),
 			},
 			// ImportState testing
