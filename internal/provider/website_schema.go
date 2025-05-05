@@ -31,8 +31,8 @@ type probeLocation struct {
 }
 
 type platformOptions struct {
-	TestFromAll types.Bool     `tfsdk:"test_from_all"`
-	Platforms   []types.String `tfsdk:"platforms"`
+	TestFromAll types.Bool `tfsdk:"test_from_all"`
+	Platforms   types.Set  `tfsdk:"platforms"`
 }
 
 type sslMonitoring struct {
@@ -55,14 +55,14 @@ type monitoringOptions struct {
 }
 
 type availabilityMonitoring struct {
-	CheckForString        types.Object    `tfsdk:"check_for_string"`
-	SSL                   types.Object    `tfsdk:"ssl"`
-	Protocols             types.List      `tfsdk:"protocols"`
-	TestFromLocation      types.String    `tfsdk:"test_from_location"`
-	TestIntervalInSeconds types.Int64     `tfsdk:"test_interval_in_seconds"`
-	LocationOptions       types.Set       `tfsdk:"location_options"`
-	PlatformOptions       platformOptions `tfsdk:"platform_options"`
-	CustomHeaders         types.Set       `tfsdk:"custom_headers"`
+	CheckForString        types.Object `tfsdk:"check_for_string"`
+	SSL                   types.Object `tfsdk:"ssl"`
+	Protocols             types.List   `tfsdk:"protocols"`
+	TestFromLocation      types.String `tfsdk:"test_from_location"`
+	TestIntervalInSeconds types.Int64  `tfsdk:"test_interval_in_seconds"`
+	LocationOptions       types.Set    `tfsdk:"location_options"`
+	PlatformOptions       types.Object `tfsdk:"platform_options"`
+	CustomHeaders         types.Set    `tfsdk:"custom_headers"`
 }
 
 type rumMonitoring struct {
@@ -209,7 +209,7 @@ func (r *websiteResource) Schema(ctx context.Context, req resource.SchemaRequest
 										Description: "Test from all platforms?",
 										Required:    true,
 									},
-									"platforms": schema.ListAttribute{
+									"platforms": schema.SetAttribute{
 										Description: "The Website availability monitoring platform options. Valid values are [AWS, AZURE, GOOGLE_CLOUD].",
 										Required:    true,
 										ElementType: types.StringType,

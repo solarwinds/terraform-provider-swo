@@ -8,15 +8,13 @@ import (
 	"github.com/cenkalti/backoff/v5"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
-	"reflect"
-	"strings"
-
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	swoClient "github.com/solarwinds/swo-client-go/pkg/client"
 	swoClientTypes "github.com/solarwinds/swo-client-go/types"
+	"reflect"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
@@ -101,6 +99,9 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 
 		var locationOptions []probeLocation
 		tfPlan.Monitoring.Availability.LocationOptions.ElementsAs(ctx, &locationOptions, false)
+		var platformOpts platformOptions
+		tfPlan.Monitoring.Availability.PlatformOptions.As(ctx, &platformOpts, basetypes.ObjectAsOptions{})
+
 		createInput.AvailabilityCheckSettings = &swoClient.AvailabilityCheckSettingsInput{
 			CheckForString:        checkForString,
 			TestIntervalInSeconds: swoClientTypes.TestIntervalInSeconds(int(tfPlan.Monitoring.Availability.TestIntervalInSeconds.ValueInt64())),
@@ -108,10 +109,9 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 				return swoClient.WebsiteProtocol(attrValueToString(s))
 			}),
 			PlatformOptions: &swoClient.ProbePlatformOptionsInput{
-				TestFromAll: tfPlan.Monitoring.Availability.PlatformOptions.TestFromAll.ValueBoolPointer(),
-				ProbePlatforms: convertArray(tfPlan.Monitoring.Availability.PlatformOptions.Platforms, func(s types.String) swoClient.ProbePlatform {
-					return swoClient.ProbePlatform(strings.Trim(s.String(), "\""))
-				}),
+				TestFromAll: platformOpts.TestFromAll.ValueBoolPointer(),
+				ProbePlatforms: convertArray(platformOpts.Platforms.Elements(),
+					func(s attr.Value) swoClient.ProbePlatform { return swoClient.ProbePlatform(attrValueToString(s)) }),
 			},
 			TestFrom: swoClient.ProbeLocationInput{
 				Type: swoClient.ProbeLocationType(tfPlan.Monitoring.Availability.TestFromLocation.ValueString()),
@@ -217,12 +217,28 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 			}
 
 			if availability.PlatformOptions != nil {
-				tfState.Monitoring.Availability.PlatformOptions = platformOptions{
-					TestFromAll: types.BoolValue(availability.PlatformOptions.TestFromAll),
-					Platforms: convertArray(availability.PlatformOptions.Platforms, func(p string) types.String {
-						return types.StringValue(p)
-					}),
+				platforms := convertArray(availability.PlatformOptions.Platforms, func(p string) types.String {
+					return types.StringValue(p)
+				})
+				listValue, _ := types.SetValueFrom(ctx, types.StringType, platforms)
+
+				elementTypes := map[string]attr.Type{
+					"test_from_all": types.BoolType,
+					"platforms":     types.SetType{ElemType: types.StringType},
 				}
+				elements := map[string]attr.Value{
+					"test_from_all": types.BoolValue(availability.PlatformOptions.TestFromAll),
+					"platforms":     listValue,
+				}
+				platformOpts, _ := types.ObjectValue(elementTypes, elements)
+				tfState.Monitoring.Availability.PlatformOptions = platformOpts
+			} else {
+				elementTypes := map[string]attr.Type{
+					"test_from_all": types.BoolType,
+					"platforms":     types.SetType{ElemType: types.StringType},
+				}
+				platformOpts := types.ObjectNull(elementTypes)
+				tfState.Monitoring.Availability.PlatformOptions = platformOpts
 			}
 
 			if availability.TestFromLocation != nil {
@@ -387,6 +403,9 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 
 		var locationOptions []probeLocation
 		tfPlan.Monitoring.Availability.LocationOptions.ElementsAs(ctx, &locationOptions, false)
+		var platformOpts platformOptions
+		tfPlan.Monitoring.Availability.PlatformOptions.As(ctx, &platformOpts, basetypes.ObjectAsOptions{})
+
 		updateInput.AvailabilityCheckSettings = &swoClient.AvailabilityCheckSettingsInput{
 			CheckForString:        checkForString,
 			TestIntervalInSeconds: swoClientTypes.TestIntervalInSeconds(int(tfPlan.Monitoring.Availability.TestIntervalInSeconds.ValueInt64())),
@@ -394,10 +413,9 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 				return swoClient.WebsiteProtocol(attrValueToString(s))
 			}),
 			PlatformOptions: &swoClient.ProbePlatformOptionsInput{
-				TestFromAll: swoClient.Ptr(tfPlan.Monitoring.Availability.PlatformOptions.TestFromAll.ValueBool()),
-				ProbePlatforms: convertArray(tfPlan.Monitoring.Availability.PlatformOptions.Platforms, func(s types.String) swoClient.ProbePlatform {
-					return swoClient.ProbePlatform(attrValueToString(s))
-				}),
+				TestFromAll: platformOpts.TestFromAll.ValueBoolPointer(),
+				ProbePlatforms: convertArray(platformOpts.Platforms.Elements(),
+					func(s attr.Value) swoClient.ProbePlatform { return swoClient.ProbePlatform(attrValueToString(s)) }),
 			},
 			TestFrom: swoClient.ProbeLocationInput{
 				Type: swoClient.ProbeLocationType(tfPlan.Monitoring.Availability.TestFromLocation.ValueString()),
