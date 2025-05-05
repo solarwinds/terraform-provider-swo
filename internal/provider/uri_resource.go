@@ -121,41 +121,32 @@ func (r *uriResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 	tfState.Name = types.StringPointerValue(uri.Name)
 
 	// Options
-	options := uri.Options
-	optionsElementTypes := map[string]attr.Type{
-		"is_ping_enabled": types.BoolType,
-		"is_tcp_enabled":  types.BoolType,
+	optionsElementTypes := UriResourceOptionsAttributeTypes()
+	optionsElement := uriResourceOptions{
+		IsPingEnabled: types.BoolValue(uri.Options.IsPingEnabled),
+		IsTcpEnabled:  types.BoolValue(uri.Options.IsTcpEnabled),
 	}
-	optionsElements := map[string]attr.Value{
-		"is_ping_enabled": types.BoolValue(options.IsPingEnabled),
-		"is_tcp_enabled":  types.BoolValue(options.IsTcpEnabled),
-	}
-	tfOptions, _ := types.ObjectValue(optionsElementTypes, optionsElements)
+	tfOptions, _ := types.ObjectValueFrom(ctx, optionsElementTypes, optionsElement)
 	tfState.Options = tfOptions
 
 	// TcpOptions
-	tcpElementTypes := map[string]attr.Type{
-		"port":             types.Int64Type,
-		"string_to_expect": types.StringType,
-		"string_to_send":   types.StringType,
-	}
+	tcpElementTypes := UriTcpOptionsAttributeTypes()
 	if uri.TcpOptions != nil {
 		tcpOptions := uri.TcpOptions
-		tcpElements := map[string]attr.Value{
-			"port":             types.Int64Value(int64(tcpOptions.Port)),
-			"string_to_expect": types.StringNull(),
-			"string_to_send":   types.StringNull(),
+		tcpElement := uriResourceTcpOptions{
+			Port:           types.Int64Value(int64(tcpOptions.Port)),
+			StringToExpect: types.StringNull(),
+			StringToSend:   types.StringNull(),
 		}
-		tfTcpOptions, _ := types.ObjectValue(tcpElementTypes, tcpElements)
-		tfState.TcpOptions = tfTcpOptions
-
 		if tcpOptions.StringToExpect != nil {
-			tcpElements["string_to_expect"] = types.StringValue(*tcpOptions.StringToExpect)
+			tcpElement.StringToExpect = types.StringValue(*tcpOptions.StringToExpect)
 		}
 		if tcpOptions.StringToSend != nil {
-			tcpElements["string_to_send"] = types.StringValue(*tcpOptions.StringToSend)
+			tcpElement.StringToSend = types.StringValue(*tcpOptions.StringToSend)
 		}
 
+		tfTcpOptions, _ := types.ObjectValueFrom(ctx, tcpElementTypes, tcpElement)
+		tfState.TcpOptions = tfTcpOptions
 	} else {
 		tfTcpOptions := types.ObjectNull(tcpElementTypes)
 		tfState.TcpOptions = tfTcpOptions
@@ -163,67 +154,54 @@ func (r *uriResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 
 	// TestDefinitions
 	testDefs := uri.TestDefinitions
+	platformElementTypes := UriPlatformOptionsAttributeTypes()
+	locationOptsElementTypes := UriProbeLocationAttributeTypes()
+	testDefsElementTypes := UriTestDefAttributeTypes()
 
-	platformElementTypes := map[string]attr.Type{
-		"test_from_all": types.BoolType,
-		"platforms": types.SetType{
-			ElemType: types.StringType,
-		},
+	testDefsElements := uriResourceTestDefinitions{
+		TestFromLocation:      types.StringNull(),
+		LocationOptions:       types.SetUnknown(types.ObjectType{AttrTypes: locationOptsElementTypes}),
+		TestIntervalInSeconds: types.Int64Null(),
+		PlatformOptions:       types.ObjectNull(platformElementTypes),
 	}
-	locationOptsElementTypes := map[string]attr.Type{
-		"type":  types.StringType,
-		"value": types.StringType,
-	}
-	testDefsElementTypes := map[string]attr.Type{
-		"test_from_location":       types.StringType,
-		"location_options":         types.SetType{ElemType: types.ObjectType{AttrTypes: locationOptsElementTypes}},
-		"test_interval_in_seconds": types.Int64Type,
-		"platform_options":         types.ObjectType{AttrTypes: platformElementTypes},
-	}
-	testDefsElements := map[string]attr.Value{
-		"test_from_location":       types.StringNull(),
-		"location_options":         types.SetUnknown(types.ObjectType{AttrTypes: locationOptsElementTypes}),
-		"test_interval_in_seconds": types.Int64Null(),
-		"platform_options":         types.ObjectNull(platformElementTypes),
-	}
-
 	if testDefs.TestFromLocation != nil {
-		testDefsElements["test_from_location"] = types.StringValue(string(*testDefs.TestFromLocation))
+		testDefsElements.TestFromLocation = types.StringValue(string(*testDefs.TestFromLocation))
 	}
 
 	var diags diag.Diagnostics
 	var locationOptsElements []attr.Value
 	for _, x := range testDefs.LocationOptions {
-		objectValue, objectDiags := types.ObjectValue(
+		objectValue, objectDiags := types.ObjectValueFrom(
+			ctx,
 			locationOptsElementTypes,
-			map[string]attr.Value{
-				"type":  types.StringValue(string(x.Type)),
-				"value": types.StringValue(x.Value),
+			uriResourceProbeLocation{
+				Type:  types.StringValue(string(x.Type)),
+				Value: types.StringValue(x.Value),
 			},
 		)
 
 		locationOptsElements = append(locationOptsElements, objectValue)
 		diags = append(diags, objectDiags...)
 	}
-	locationOpts, _ := types.SetValue(types.ObjectType{AttrTypes: locationOptsElementTypes}, locationOptsElements)
-	testDefsElements["location_options"] = locationOpts
+	locationOpts, _ := types.SetValueFrom(ctx, types.ObjectType{AttrTypes: locationOptsElementTypes}, locationOptsElements)
+	testDefsElements.LocationOptions = locationOpts
 
 	if testDefs.TestIntervalInSeconds != nil {
-		testDefsElements["test_interval_in_seconds"] = types.Int64Value(int64(*testDefs.TestIntervalInSeconds))
+		testDefsElements.TestIntervalInSeconds = types.Int64Value(int64(*testDefs.TestIntervalInSeconds))
 	}
 
 	if testDefs.PlatformOptions != nil {
 		listValue, _ := types.SetValueFrom(ctx, types.StringType, testDefs.PlatformOptions.Platforms)
-		platformElements := map[string]attr.Value{
-			"test_from_all": types.BoolValue(testDefs.PlatformOptions.TestFromAll),
-			"platforms":     listValue,
+		platformElements := uriResourcePlatformOptions{
+			TestFromAll: types.BoolValue(testDefs.PlatformOptions.TestFromAll),
+			Platforms:   listValue,
 		}
 
-		tfPlatformOptions, _ := types.ObjectValue(platformElementTypes, platformElements)
-		testDefsElements["platform_options"] = tfPlatformOptions
+		tfPlatformOptions, _ := types.ObjectValueFrom(ctx, platformElementTypes, platformElements)
+		testDefsElements.PlatformOptions = tfPlatformOptions
 	}
 
-	objectValue, _ := types.ObjectValue(testDefsElementTypes, testDefsElements)
+	objectValue, _ := types.ObjectValueFrom(ctx, testDefsElementTypes, testDefsElements)
 	tfState.TestDefinitions = objectValue
 	resp.Diagnostics.Append(resp.State.Set(ctx, tfState)...)
 }

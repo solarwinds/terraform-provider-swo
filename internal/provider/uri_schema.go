@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -28,11 +29,26 @@ type uriResourceOptions struct {
 	IsTcpEnabled  types.Bool `tfsdk:"is_tcp_enabled"`
 }
 
+func UriResourceOptionsAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"is_ping_enabled": types.BoolType,
+		"is_tcp_enabled":  types.BoolType,
+	}
+}
+
 // uriResourceTcpOptions represents the tcp_options field in the main resource
 type uriResourceTcpOptions struct {
 	Port           types.Int64  `tfsdk:"port"`
 	StringToExpect types.String `tfsdk:"string_to_expect"`
 	StringToSend   types.String `tfsdk:"string_to_send"`
+}
+
+func UriTcpOptionsAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"port":             types.Int64Type,
+		"string_to_expect": types.StringType,
+		"string_to_send":   types.StringType,
+	}
 }
 
 // uriResourceTestDefinitions represents the test_definitions field in the main resource
@@ -43,16 +59,39 @@ type uriResourceTestDefinitions struct {
 	PlatformOptions       types.Object `tfsdk:"platform_options"`
 }
 
+func UriTestDefAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"test_from_location":       types.StringType,
+		"location_options":         types.SetType{ElemType: types.ObjectType{AttrTypes: UriProbeLocationAttributeTypes()}},
+		"test_interval_in_seconds": types.Int64Type,
+		"platform_options":         types.ObjectType{AttrTypes: UriPlatformOptionsAttributeTypes()},
+	}
+}
+
 // uriResourceProbeLocation represents location_options field in test_definitions
 type uriResourceProbeLocation struct {
 	Type  types.String `tfsdk:"type"`
 	Value types.String `tfsdk:"value"`
 }
 
+func UriProbeLocationAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"type":  types.StringType,
+		"value": types.StringType,
+	}
+}
+
 // uriResourcePlatformOptions represents platform_options field in test_definitions
 type uriResourcePlatformOptions struct {
 	TestFromAll types.Bool `tfsdk:"test_from_all"`
 	Platforms   types.Set  `tfsdk:"platforms"`
+}
+
+func UriPlatformOptionsAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"test_from_all": types.BoolType,
+		"platforms":     types.SetType{ElemType: types.StringType},
+	}
 }
 
 func (r *uriResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
