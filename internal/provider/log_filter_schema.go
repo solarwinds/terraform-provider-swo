@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 
 	swoClient "github.com/solarwinds/swo-client-go/pkg/client"
 	"github.com/solarwinds/terraform-provider-swo/internal/validators"
@@ -25,6 +26,13 @@ type logFilterResourceModel struct {
 type logFilterExpression struct {
 	Kind       types.String `tfsdk:"kind"`
 	Expression types.String `tfsdk:"expression"`
+}
+
+func ExpressionAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"kind":       types.StringType,
+		"expression": types.StringType,
+	}
 }
 
 func (r *logFilterResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {

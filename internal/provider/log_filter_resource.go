@@ -107,22 +107,20 @@ func (r *logFilterResource) Read(ctx context.Context, req resource.ReadRequest, 
 
 	var diags diag.Diagnostics
 	var elements []attr.Value
-	var attributeTypes = map[string]attr.Type{
-		"kind":       types.StringType,
-		"expression": types.StringType,
-	}
+	var attributeTypes = ExpressionAttributeTypes()
 	for _, p := range logFilter.Expressions {
-		objectValue, objectDiags := types.ObjectValue(
+		objectValue, objectDiags := types.ObjectValueFrom(
+			ctx,
 			attributeTypes,
-			map[string]attr.Value{
-				"kind":       types.StringValue(string(p.Kind)),
-				"expression": types.StringValue(p.Expression),
+			logFilterExpression{
+				Kind:       types.StringValue(string(p.Kind)),
+				Expression: types.StringValue(p.Expression),
 			},
 		)
 		elements = append(elements, objectValue)
 		diags = append(diags, objectDiags...)
 	}
-	expressions, setDiags := types.ListValue(types.ObjectType{AttrTypes: attributeTypes}, elements)
+	expressions, setDiags := types.ListValueFrom(ctx, types.ObjectType{AttrTypes: attributeTypes}, elements)
 	diags = append(diags, setDiags...)
 	tfState.Expressions = expressions
 
