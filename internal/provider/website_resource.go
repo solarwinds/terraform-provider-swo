@@ -124,11 +124,16 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 		}
 	}
 
-	if tfPlan.Monitoring.Rum != nil {
+	if !tfPlan.Monitoring.Rum.IsNull() {
+		var rum rumMonitoring
+		tfPlan.Monitoring.Rum.As(ctx, &rum, basetypes.ObjectAsOptions{})
+
 		createInput.Rum = &swoClient.RumMonitoringInput{
-			ApdexTimeInSeconds: swoClient.Ptr(int(tfPlan.Monitoring.Rum.ApdexTimeInSeconds.ValueInt64())),
-			Spa:                swoClient.Ptr(tfPlan.Monitoring.Rum.Spa.ValueBool()),
+			ApdexTimeInSeconds: swoClient.Ptr(int(rum.ApdexTimeInSeconds.ValueInt64())),
+			Spa:                rum.Spa.ValueBoolPointer(),
 		}
+	} else {
+		createInput.Rum = nil
 	}
 
 	// Create the Website...
@@ -150,8 +155,14 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 	// Get the latest Website state from the server so we can get the 'snippet' field. Ideally, we need to update
 	// the API to return the 'snippet' field in the create response.
 	// Only set the snippet field if the user has RUM enabled.
-	if tfPlan.Monitoring.Rum != nil {
-		tfPlan.Monitoring.Rum.Snippet = types.StringValue(*website.Monitoring.Rum.Snippet)
+	if !tfPlan.Monitoring.Rum.IsNull() {
+		var rum rumMonitoring
+		tfPlan.Monitoring.Rum.As(ctx, &rum, basetypes.ObjectAsOptions{})
+
+		rum.Snippet = types.StringValue(*website.Monitoring.Rum.Snippet)
+
+		rumObject, _ := types.ObjectValueFrom(ctx, RumMonitoringAttributeTypes(), rum)
+		tfPlan.Monitoring.Rum = rumObject
 	}
 
 	tfPlan.Id = types.StringValue(result.Id)
@@ -304,17 +315,26 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 		}
 
 		if monitoring.Options.IsRumActive && monitoring.Rum != nil {
-			tfState.Monitoring.Rum = &rumMonitoring{
-				Spa: types.BoolValue(monitoring.Rum.Spa),
+			rumAttributeTypes := RumMonitoringAttributeTypes()
+			rumValue := rumMonitoring{
+				Spa:                types.BoolValue(monitoring.Rum.Spa),
+				ApdexTimeInSeconds: types.Int64Null(),
+				Snippet:            types.StringNull(),
 			}
 
 			if monitoring.Rum.ApdexTimeInSeconds != nil {
-				tfState.Monitoring.Rum.ApdexTimeInSeconds = types.Int64Value(int64(*monitoring.Rum.ApdexTimeInSeconds))
+				rumValue.ApdexTimeInSeconds = types.Int64Value(int64(*monitoring.Rum.ApdexTimeInSeconds))
 			}
 
 			if monitoring.Rum.Snippet != nil {
-				tfState.Monitoring.Rum.Snippet = types.StringValue(*monitoring.Rum.Snippet)
+				rumValue.Snippet = types.StringValue(*monitoring.Rum.Snippet)
 			}
+
+			rum, _ := types.ObjectValueFrom(ctx, rumAttributeTypes, rumValue)
+			tfState.Monitoring.Rum = rum
+		} else {
+			nullValues := types.ObjectNull(RumMonitoringAttributeTypes())
+			tfState.Monitoring.Rum = nullValues
 		}
 	} else {
 		tfState.Monitoring = nil
@@ -406,10 +426,13 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 		}
 	}
 
-	if tfPlan.Monitoring.Rum != nil {
+	if !tfPlan.Monitoring.Rum.IsNull() {
+		var rum rumMonitoring
+		tfPlan.Monitoring.Rum.As(ctx, &rum, basetypes.ObjectAsOptions{})
+
 		updateInput.Rum = &swoClient.RumMonitoringInput{
-			ApdexTimeInSeconds: swoClient.Ptr(int(tfPlan.Monitoring.Rum.ApdexTimeInSeconds.ValueInt64())),
-			Spa:                tfPlan.Monitoring.Rum.Spa.ValueBoolPointer(),
+			ApdexTimeInSeconds: swoClient.Ptr(int(rum.ApdexTimeInSeconds.ValueInt64())),
+			Spa:                rum.Spa.ValueBoolPointer(),
 		}
 	} else {
 		updateInput.Rum = nil
@@ -520,8 +543,14 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
-	if tfPlan.Monitoring.Rum != nil && website.Monitoring.Options.IsRumActive {
-		tfPlan.Monitoring.Rum.Snippet = types.StringValue(*website.Monitoring.Rum.Snippet)
+	if !tfPlan.Monitoring.Rum.IsNull() && website.Monitoring.Options.IsRumActive {
+		var rum rumMonitoring
+		tfPlan.Monitoring.Rum.As(ctx, &rum, basetypes.ObjectAsOptions{})
+
+		rum.Snippet = types.StringValue(*website.Monitoring.Rum.Snippet)
+
+		rumObject, _ := types.ObjectValueFrom(ctx, RumMonitoringAttributeTypes(), rum)
+		tfPlan.Monitoring.Rum = rumObject
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &tfPlan)...)

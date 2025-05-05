@@ -67,7 +67,7 @@ func SslMonitoringAttributeTypes() map[string]attr.Type {
 type websiteMonitoring struct {
 	Options       *monitoringOptions      `tfsdk:"options"`
 	Availability  *availabilityMonitoring `tfsdk:"availability"`
-	Rum           *rumMonitoring          `tfsdk:"rum"`
+	Rum           types.Object            `tfsdk:"rum"`
 	CustomHeaders types.Set               `tfsdk:"custom_headers"` //deprecated
 }
 
@@ -92,6 +92,14 @@ type rumMonitoring struct {
 	ApdexTimeInSeconds types.Int64  `tfsdk:"apdex_time_in_seconds"`
 	Snippet            types.String `tfsdk:"snippet"`
 	Spa                types.Bool   `tfsdk:"spa"`
+}
+
+func RumMonitoringAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"apdex_time_in_seconds": types.Int64Type,
+		"snippet":               types.StringType,
+		"spa":                   types.BoolType,
+	}
 }
 
 type customHeader struct {
