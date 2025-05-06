@@ -229,9 +229,6 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 				}
 				checkForString, _ := types.ObjectValueFrom(ctx, CheckForStringTypeAttributeTypes(), elements)
 				tfStateAvailability.CheckForString = checkForString
-			} else {
-				//todo remove
-				tfStateAvailability.CheckForString = types.ObjectNull(CheckForStringTypeAttributeTypes())
 			}
 
 			if availability.TestIntervalInSeconds != nil {
@@ -256,23 +253,18 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 				}
 				tfPlatformOptions, _ := types.ObjectValueFrom(ctx, PlatformOptionsAttributeTypes(), platformOptionsValue)
 				tfStateAvailability.PlatformOptions = tfPlatformOptions
-			} else {
-				//todo remove
-				platformOpts := types.ObjectNull(PlatformOptionsAttributeTypes())
-				tfStateAvailability.PlatformOptions = platformOpts
 			}
 
 			if availability.TestFromLocation != nil {
 				tfStateAvailability.TestFromLocation = types.StringValue(string(*availability.TestFromLocation))
 			}
 
-			locationAttributeTypes := ProbeLocationAttributeTypes()
 			var locOpts []attr.Value
 			if len(availability.LocationOptions) > 0 {
 				for _, p := range availability.LocationOptions {
 					objectValue, _ := types.ObjectValueFrom(
 						ctx,
-						locationAttributeTypes,
+						ProbeLocationAttributeTypes(),
 						probeLocation{
 							Type:  types.StringValue(string(p.Type)),
 							Value: types.StringValue(p.Value),
@@ -281,11 +273,8 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 					locOpts = append(locOpts, objectValue)
 				}
 
-				tfLocationOptions, _ := types.SetValueFrom(ctx, types.ObjectType{AttrTypes: locationAttributeTypes}, locOpts)
+				tfLocationOptions, _ := types.SetValueFrom(ctx, types.ObjectType{AttrTypes: ProbeLocationAttributeTypes()}, locOpts)
 				tfStateAvailability.LocationOptions = tfLocationOptions
-			} else {
-				//todo remove
-				tfStateAvailability.LocationOptions = types.SetNull(types.ObjectType{AttrTypes: locationAttributeTypes})
 			}
 
 			sslTypes := SslMonitoringAttributeTypes()
@@ -307,9 +296,6 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 
 			availabilityValue, _ := types.ObjectValueFrom(ctx, AvailabilityMonitoringAttributeTypes(), tfStateAvailability)
 			tfStateMonitoring.Availability = availabilityValue
-		} else {
-			//todo remove
-			tfStateMonitoring.Availability = types.ObjectNull(AvailabilityMonitoringAttributeTypes())
 		}
 
 		customHeaderElementTypes := CustomHeaderAttributeTypes()
@@ -374,9 +360,6 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 
 		tfState2, _ := types.ObjectValueFrom(ctx, WebsiteMonitoringAttributeTypes(), tfStateMonitoring)
 		tfState.Monitoring = tfState2
-	} else {
-		//todo remove
-		tfState.Monitoring = types.ObjectNull(WebsiteMonitoringAttributeTypes())
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, tfState)...)
@@ -569,7 +552,7 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 		if !tfMonitoring.Availability.IsNull() {
 			var tfAvailability availabilityMonitoring
 			tfMonitoring.Availability.As(ctx, &tfAvailability, basetypes.ObjectAsOptions{})
-			if tfAvailability.SSL.IsUnknown() {
+			if tfAvailability.SSL.IsNull() {
 				websiteToMatch.Monitoring.Availability.Ssl = website.Monitoring.Availability.Ssl
 			}
 		}
