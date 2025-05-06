@@ -121,16 +121,14 @@ func (r *uriResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 	tfState.Name = types.StringPointerValue(uri.Name)
 
 	// Options
-	optionsElementTypes := UriResourceOptionsAttributeTypes()
 	optionsElement := uriResourceOptions{
 		IsPingEnabled: types.BoolValue(uri.Options.IsPingEnabled),
 		IsTcpEnabled:  types.BoolValue(uri.Options.IsTcpEnabled),
 	}
-	tfOptions, _ := types.ObjectValueFrom(ctx, optionsElementTypes, optionsElement)
+	tfOptions, _ := types.ObjectValueFrom(ctx, UriResourceOptionsAttributeTypes(), optionsElement)
 	tfState.Options = tfOptions
 
 	// TcpOptions
-	tcpElementTypes := UriTcpOptionsAttributeTypes()
 	if uri.TcpOptions != nil {
 		tcpOptions := uri.TcpOptions
 		tcpElement := uriResourceTcpOptions{
@@ -145,11 +143,10 @@ func (r *uriResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 			tcpElement.StringToSend = types.StringValue(*tcpOptions.StringToSend)
 		}
 
-		tfTcpOptions, _ := types.ObjectValueFrom(ctx, tcpElementTypes, tcpElement)
+		tfTcpOptions, _ := types.ObjectValueFrom(ctx, UriTcpOptionsAttributeTypes(), tcpElement)
 		tfState.TcpOptions = tfTcpOptions
 	} else {
-		tfTcpOptions := types.ObjectNull(tcpElementTypes)
-		tfState.TcpOptions = tfTcpOptions
+		tfState.TcpOptions = types.ObjectNull(UriTcpOptionsAttributeTypes())
 	}
 
 	// TestDefinitions
@@ -162,7 +159,7 @@ func (r *uriResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 		TestFromLocation:      types.StringNull(),
 		LocationOptions:       types.SetUnknown(types.ObjectType{AttrTypes: locationOptsElementTypes}),
 		TestIntervalInSeconds: types.Int64Null(),
-		PlatformOptions:       types.ObjectNull(platformElementTypes),
+		PlatformOptions:       types.ObjectNull(UriPlatformOptionsAttributeTypes()),
 	}
 	if testDefs.TestFromLocation != nil {
 		testDefsElements.TestFromLocation = types.StringValue(string(*testDefs.TestFromLocation))

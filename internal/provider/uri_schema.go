@@ -18,12 +18,11 @@ type uriResourceModel struct {
 	Id              types.String `tfsdk:"id"`
 	Name            types.String `tfsdk:"name"`
 	Host            types.String `tfsdk:"host"`
-	Options         types.Object `tfsdk:"options"`
-	TcpOptions      types.Object `tfsdk:"tcp_options"`
-	TestDefinitions types.Object `tfsdk:"test_definitions"`
+	Options         types.Object `tfsdk:"options"`          //uriResourceOptions
+	TcpOptions      types.Object `tfsdk:"tcp_options"`      //uriResourceTcpOptions
+	TestDefinitions types.Object `tfsdk:"test_definitions"` //uriResourceTestDefinitions
 }
 
-// uriResourceOptions represents the options field in the main resource
 type uriResourceOptions struct {
 	IsPingEnabled types.Bool `tfsdk:"is_ping_enabled"`
 	IsTcpEnabled  types.Bool `tfsdk:"is_tcp_enabled"`
@@ -36,7 +35,6 @@ func UriResourceOptionsAttributeTypes() map[string]attr.Type {
 	}
 }
 
-// uriResourceTcpOptions represents the tcp_options field in the main resource
 type uriResourceTcpOptions struct {
 	Port           types.Int64  `tfsdk:"port"`
 	StringToExpect types.String `tfsdk:"string_to_expect"`
@@ -51,12 +49,11 @@ func UriTcpOptionsAttributeTypes() map[string]attr.Type {
 	}
 }
 
-// uriResourceTestDefinitions represents the test_definitions field in the main resource
 type uriResourceTestDefinitions struct {
 	TestFromLocation      types.String `tfsdk:"test_from_location"`
-	LocationOptions       types.Set    `tfsdk:"location_options"`
+	LocationOptions       types.Set    `tfsdk:"location_options"` // uriResourceProbeLocation
 	TestIntervalInSeconds types.Int64  `tfsdk:"test_interval_in_seconds"`
-	PlatformOptions       types.Object `tfsdk:"platform_options"`
+	PlatformOptions       types.Object `tfsdk:"platform_options"` //uriResourcePlatformOptions
 }
 
 func UriTestDefAttributeTypes() map[string]attr.Type {
@@ -68,7 +65,6 @@ func UriTestDefAttributeTypes() map[string]attr.Type {
 	}
 }
 
-// uriResourceProbeLocation represents location_options field in test_definitions
 type uriResourceProbeLocation struct {
 	Type  types.String `tfsdk:"type"`
 	Value types.String `tfsdk:"value"`
@@ -81,7 +77,6 @@ func UriProbeLocationAttributeTypes() map[string]attr.Type {
 	}
 }
 
-// uriResourcePlatformOptions represents platform_options field in test_definitions
 type uriResourcePlatformOptions struct {
 	TestFromAll types.Bool `tfsdk:"test_from_all"`
 	Platforms   types.Set  `tfsdk:"platforms"`
