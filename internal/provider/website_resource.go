@@ -559,7 +559,6 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 		}
 
 		// default values for availability are returned if availability is not set
-		//todo this may be incorrect
 		if monitoring.Availability.IsNull() {
 			websiteToMatch.Monitoring.Availability = website.Monitoring.Availability
 		}
