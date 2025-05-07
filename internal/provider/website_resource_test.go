@@ -16,7 +16,7 @@ func TestAccWebsiteResource(t *testing.T) {
 			// Create and Read testing
 			createTestStep(
 				testAccWebsiteResourceConfig,
-				"test-acc test one [CREATE_TEST]",
+				"test-acc test two [CREATE_TEST]",
 				"https://example.com",
 				websiteMonitoringConfig,
 				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.check_for_string.operator", "CONTAINS"),
