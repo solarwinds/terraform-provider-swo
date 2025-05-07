@@ -44,11 +44,14 @@ func (r *alertResource) ValidateConfig(ctx context.Context, req resource.Validat
 		return
 	}
 
-	resp.Diagnostics.Append(data.validateConditions()...)
+	resp.Diagnostics.Append(data.validateConditions(ctx)...)
 }
 
-func (model *alertResourceModel) validateConditions() diag.Diagnostics {
-	if len(model.Conditions) > 5 || len(model.Conditions) < 1 {
+func (model *alertResourceModel) validateConditions(ctx context.Context) diag.Diagnostics {
+	var planConditions []alertConditionModel
+	model.Conditions.ElementsAs(ctx, &planConditions, false)
+
+	if len(planConditions) > 5 || len(planConditions) < 1 {
 		return diag.Diagnostics{
 			diag.NewAttributeErrorDiagnostic(
 				path.Root("conditions"),
@@ -59,8 +62,8 @@ func (model *alertResourceModel) validateConditions() diag.Diagnostics {
 	// validate each alert condition
 	// do not need to validate required fields, those have been validated by schema validation at this point
 	var conditionErrors diag.Diagnostics
-	firstNode := model.Conditions[0] // get first node with which to compare each nodes' targetEntityTypes, entityIds, groupByMetricTag against
-	for _, condition := range model.Conditions {
+	firstNode := planConditions[0] // get first node with which to compare each nodes' targetEntityTypes, entityIds, groupByMetricTag against
+	for _, condition := range planConditions {
 		// Validation if not_reporting = true
 		notReporting := condition.NotReporting.ValueBool()
 		if notReporting {
@@ -258,8 +261,10 @@ func (model *alertResourceModel) toAlertDefinitionInput(ctx context.Context) (sw
 	var conditions []swoClient.AlertConditionNodeInput
 	var err error
 
-	if len(model.Conditions) == 1 {
-		conditions, err = model.Conditions[0].toAlertConditionInputs(ctx, 0)
+	var planConditions []alertConditionModel
+	model.Conditions.ElementsAs(ctx, &planConditions, false)
+	if len(planConditions) == 1 {
+		conditions, err = planConditions[0].toAlertConditionInputs(ctx, 0)
 		if err != nil {
 			return swoClient.AlertDefinitionInput{}, err
 		}
@@ -274,7 +279,7 @@ func (model *alertResourceModel) toAlertDefinitionInput(ctx context.Context) (sw
 		rootLogicalOperator.Operator = &logicalOperator
 
 		// Pre-computed child operator IDs
-		numConditions := len(model.Conditions)
+		numConditions := len(planConditions)
 		rootOperandIds := make([]int, numConditions)
 		// We need to create 5 flat tree nodes to build an alert condition:
 		// - binaryOperator (comparisonOperator)
@@ -293,7 +298,7 @@ func (model *alertResourceModel) toAlertDefinitionInput(ctx context.Context) (sw
 		// Create an alert condition for each
 		for i := 0; i < numConditions; i++ {
 			childRootNodeId := rootOperandIds[i]
-			childConditions, err := model.Conditions[i].toAlertConditionInputs(ctx, childRootNodeId)
+			childConditions, err := planConditions[i].toAlertConditionInputs(ctx, childRootNodeId)
 			if err != nil {
 				return swoClient.AlertDefinitionInput{}, err
 			}

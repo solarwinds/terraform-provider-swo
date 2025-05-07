@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"context"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -11,10 +12,14 @@ import (
 
 func Test_ValidateConditions_LengthLessThanOne(t *testing.T) {
 
+	ctx := context.Background()
+	var alertConditions []alertConditionModel
+	conditions, _ := types.SetValueFrom(ctx, types.ObjectType{AttrTypes: AlertConditionAttributeTypes()}, alertConditions)
+
 	model := alertResourceModel{
-		Conditions: []alertConditionModel{},
+		Conditions: conditions,
 	}
-	result := model.validateConditions()
+	result := model.validateConditions(ctx)
 
 	expected := diag.Diagnostics{
 		diag.NewAttributeErrorDiagnostic(
@@ -30,12 +35,16 @@ func Test_ValidateConditions_LengthLessThanOne(t *testing.T) {
 
 func Test_ValidateConditions_LengthGreaterThanFive(t *testing.T) {
 
-	model := alertResourceModel{
-		Conditions: []alertConditionModel{
-			{}, {}, {}, {}, {}, {},
-		},
+	ctx := context.Background()
+	alertConditions := []alertConditionModel{
+		{}, {}, {}, {}, {}, {},
 	}
-	result := model.validateConditions()
+	conditions, _ := types.SetValueFrom(ctx, types.ObjectType{AttrTypes: AlertConditionAttributeTypes()}, alertConditions)
+
+	model := alertResourceModel{
+		Conditions: conditions,
+	}
+	result := model.validateConditions(ctx)
 
 	expected := diag.Diagnostics{
 		diag.NewAttributeErrorDiagnostic(
@@ -53,19 +62,28 @@ func Test_ValidateCondition_HappyPath(t *testing.T) {
 	entities := []attr.Value{types.StringValue("Website")}
 	targetEntityTypes, _ := types.ListValue(types.StringType, entities)
 
-	model := alertResourceModel{
-		Conditions: []alertConditionModel{
-			{
-				NotReporting:      types.BoolValue(false),
-				Threshold:         types.StringValue("<300"),
-				AggregationType:   types.StringValue("AVG"),
-				TargetEntityTypes: targetEntityTypes,
-				EntityIds:         types.ListNull(attr.Type(types.StringType)),
-				GroupByMetricTag:  types.ListNull(attr.Type(types.StringType)),
-			},
+	alertConditions := []alertConditionModel{
+		{
+			MetricName:        types.StringValue("metric_name"),
+			Threshold:         types.StringValue("<300"),
+			Duration:          types.StringValue("10s"),
+			AggregationType:   types.StringValue("AVG"),
+			EntityIds:         types.ListNull(attr.Type(types.StringType)),
+			QuerySearch:       types.StringNull(),
+			TargetEntityTypes: targetEntityTypes,
+			IncludeTags:       types.SetNull(types.ObjectType{AttrTypes: AlertTagAttributeTypes()}),
+			ExcludeTags:       types.SetNull(types.ObjectType{AttrTypes: AlertTagAttributeTypes()}),
+			GroupByMetricTag:  types.ListNull(attr.Type(types.StringType)),
+			NotReporting:      types.BoolValue(false),
 		},
 	}
-	diagnosticError := model.validateConditions()
+	ctx := context.Background()
+	conditions, _ := types.SetValueFrom(ctx, types.ObjectType{AttrTypes: AlertConditionAttributeTypes()}, alertConditions)
+	model := alertResourceModel{
+		Conditions: conditions,
+	}
+
+	diagnosticError := model.validateConditions(ctx)
 
 	if len(diagnosticError) != 0 {
 		t.Fatal("expected 0 diagnosticError")
@@ -75,16 +93,19 @@ func Test_ValidateCondition_HappyPath(t *testing.T) {
 func Test_ValidateCondition_NotReporting(t *testing.T) {
 	entities := []attr.Value{types.StringValue("Website")}
 	targetEntityTypes, _ := types.ListValue(types.StringType, entities)
-	model := alertResourceModel{
-		Conditions: []alertConditionModel{
-			{
-				NotReporting:      types.BoolValue(true),
-				Threshold:         types.StringValue("<300"), // should be ""
-				AggregationType:   types.StringValue("AVG"),  // should be COUNT
-				TargetEntityTypes: targetEntityTypes,
-				EntityIds:         types.ListNull(attr.Type(types.StringType)),
-				GroupByMetricTag:  types.ListNull(attr.Type(types.StringType)),
-			},
+	alertConditions := []alertConditionModel{
+		{
+			MetricName:        types.StringValue("metric_name"),
+			Threshold:         types.StringValue("<300"), // should be ""
+			Duration:          types.StringValue("10s"),
+			AggregationType:   types.StringValue("AVG"), // should be COUNT
+			EntityIds:         types.ListNull(attr.Type(types.StringType)),
+			QuerySearch:       types.StringNull(),
+			TargetEntityTypes: targetEntityTypes,
+			IncludeTags:       types.SetNull(types.ObjectType{AttrTypes: AlertTagAttributeTypes()}),
+			ExcludeTags:       types.SetNull(types.ObjectType{AttrTypes: AlertTagAttributeTypes()}),
+			GroupByMetricTag:  types.ListNull(attr.Type(types.StringType)),
+			NotReporting:      types.BoolValue(true),
 		},
 	}
 
@@ -99,7 +120,12 @@ func Test_ValidateCondition_NotReporting(t *testing.T) {
 			"Aggregation type must be COUNT when not_reporting is set to true."),
 	}
 
-	result := model.validateConditions()
+	ctx := context.Background()
+	conditions, _ := types.SetValueFrom(ctx, types.ObjectType{AttrTypes: AlertConditionAttributeTypes()}, alertConditions)
+	model := alertResourceModel{
+		Conditions: conditions,
+	}
+	result := model.validateConditions(ctx)
 
 	if !result.Equal(expected) {
 		t.Errorf("expected %v but got %v", expected, result)
@@ -109,16 +135,19 @@ func Test_ValidateCondition_NotReporting(t *testing.T) {
 func Test_ValidateCondition_Reporting(t *testing.T) {
 	entities := []attr.Value{types.StringValue("Website")}
 	targetEntityTypes, _ := types.ListValue(types.StringType, entities)
-	model := alertResourceModel{
-		Conditions: []alertConditionModel{
-			{
-				NotReporting:      types.BoolValue(false),
-				Threshold:         types.StringValue(""), // is required
-				AggregationType:   types.StringValue("AVG"),
-				TargetEntityTypes: targetEntityTypes,
-				EntityIds:         types.ListNull(attr.Type(types.StringType)),
-				GroupByMetricTag:  types.ListNull(attr.Type(types.StringType)),
-			},
+	alertConditions := []alertConditionModel{
+		{
+			MetricName:        types.StringValue("metric_name"),
+			Threshold:         types.StringValue(""), // is required
+			Duration:          types.StringValue("10s"),
+			AggregationType:   types.StringValue("AVG"),
+			EntityIds:         types.ListNull(attr.Type(types.StringType)),
+			QuerySearch:       types.StringNull(),
+			TargetEntityTypes: targetEntityTypes,
+			IncludeTags:       types.SetNull(types.ObjectType{AttrTypes: AlertTagAttributeTypes()}),
+			ExcludeTags:       types.SetNull(types.ObjectType{AttrTypes: AlertTagAttributeTypes()}),
+			GroupByMetricTag:  types.ListNull(attr.Type(types.StringType)),
+			NotReporting:      types.BoolValue(false),
 		},
 	}
 
@@ -129,7 +158,12 @@ func Test_ValidateCondition_Reporting(t *testing.T) {
 			"Required field when not_reporting is set to false."),
 	}
 
-	result := model.validateConditions()
+	ctx := context.Background()
+	conditions, _ := types.SetValueFrom(ctx, types.ObjectType{AttrTypes: AlertConditionAttributeTypes()}, alertConditions)
+	model := alertResourceModel{
+		Conditions: conditions,
+	}
+	result := model.validateConditions(ctx)
 
 	if !result.Equal(expected) {
 		t.Errorf("expected %v but got %v", expected, result)
@@ -159,40 +193,54 @@ func Test_ValidateCondition_CompareLists(t *testing.T) {
 
 	query1 := types.StringValue("healthScore.categoryV2:good")
 
-	model := alertResourceModel{
-		Conditions: []alertConditionModel{
-			{
-				NotReporting:      types.BoolValue(false),
-				Threshold:         types.StringValue("<300"),
-				AggregationType:   types.StringValue("AVG"),
-				TargetEntityTypes: targetEntityTypes0,
-				EntityIds:         entityIds0,
-				QuerySearch:       query0,
-				GroupByMetricTag:  groupByMetricTag0,
-			},
-			{
-				NotReporting:    types.BoolValue(true),
-				Threshold:       types.StringValue(""),
-				AggregationType: types.StringValue("COUNT"),
-				// same []types.List as node 0
-				TargetEntityTypes: targetEntityTypes0,
-				EntityIds:         entityIds0,
-				QuerySearch:       query0,
-				GroupByMetricTag:  groupByMetricTag0,
-			},
-			{
-				NotReporting:    types.BoolValue(false),
-				Threshold:       types.StringValue("<300"),
-				AggregationType: types.StringValue("AVG"),
-				// different []types.List from node 0
-				TargetEntityTypes: targetEntityTypes1,
-				EntityIds:         entityIds1,
-				QuerySearch:       query1,
-				GroupByMetricTag:  groupByMetricTag1,
-			},
+	alertConditions := []alertConditionModel{
+		{
+			MetricName:        types.StringValue("metric_name"),
+			Threshold:         types.StringValue("<300"),
+			Duration:          types.StringValue("10s"),
+			AggregationType:   types.StringValue("AVG"),
+			EntityIds:         entityIds0,
+			QuerySearch:       query0,
+			TargetEntityTypes: targetEntityTypes0,
+			IncludeTags:       types.SetNull(types.ObjectType{AttrTypes: AlertTagAttributeTypes()}),
+			ExcludeTags:       types.SetNull(types.ObjectType{AttrTypes: AlertTagAttributeTypes()}),
+			GroupByMetricTag:  groupByMetricTag0,
+			NotReporting:      types.BoolValue(false),
+		},
+		{
+			// same values as node 0
+			MetricName:        types.StringValue("metric_name"),
+			Threshold:         types.StringValue(""),
+			Duration:          types.StringValue("10s"),
+			AggregationType:   types.StringValue("COUNT"),
+			EntityIds:         entityIds0,
+			QuerySearch:       query0,
+			TargetEntityTypes: targetEntityTypes0,
+			IncludeTags:       types.SetNull(types.ObjectType{AttrTypes: AlertTagAttributeTypes()}),
+			ExcludeTags:       types.SetNull(types.ObjectType{AttrTypes: AlertTagAttributeTypes()}),
+			GroupByMetricTag:  groupByMetricTag0,
+			NotReporting:      types.BoolValue(true),
+		},
+		{
+			// different values from node 0
+			MetricName:        types.StringValue("metric_name"),
+			Threshold:         types.StringValue("<300"),
+			Duration:          types.StringValue("10s"),
+			AggregationType:   types.StringValue("AVG"),
+			EntityIds:         entityIds1,
+			QuerySearch:       query1,
+			TargetEntityTypes: targetEntityTypes1,
+			IncludeTags:       types.SetNull(types.ObjectType{AttrTypes: AlertTagAttributeTypes()}),
+			ExcludeTags:       types.SetNull(types.ObjectType{AttrTypes: AlertTagAttributeTypes()}),
+			GroupByMetricTag:  groupByMetricTag1,
+			NotReporting:      types.BoolValue(false),
 		},
 	}
-	result := model.validateConditions()
+
+	ctx := context.Background()
+	conditions, _ := types.SetValueFrom(ctx, types.ObjectType{AttrTypes: AlertConditionAttributeTypes()}, alertConditions)
+	model := alertResourceModel{Conditions: conditions}
+	result := model.validateConditions(ctx)
 
 	expected := diag.Diagnostics{
 		diag.NewAttributeErrorDiagnostic(
