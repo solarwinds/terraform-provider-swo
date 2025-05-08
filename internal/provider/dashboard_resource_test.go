@@ -20,9 +20,21 @@ func TestAccDashboardResource(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet("swo_dashboard.test", "id"),
 					resource.TestCheckResourceAttr("swo_dashboard.test", "name", "test-acc swo-terraform-provider [CREATE_TEST]"),
+					resource.TestCheckResourceAttr("swo_dashboard.test", "is_private", "true"),
+
 					resource.TestCheckResourceAttr("swo_dashboard.test", "widgets.#", "2"),
+
 					resource.TestCheckResourceAttr("swo_dashboard.test", "widgets.0.type", "TimeSeries"),
+					resource.TestCheckResourceAttr("swo_dashboard.test", "widgets.0.x", "4"),
+					resource.TestCheckResourceAttr("swo_dashboard.test", "widgets.0.y", "0"),
+					resource.TestCheckResourceAttr("swo_dashboard.test", "widgets.0.width", "4"),
+					resource.TestCheckResourceAttr("swo_dashboard.test", "widgets.0.height", "2"),
+
+					resource.TestCheckResourceAttr("swo_dashboard.test", "widgets.1.type", "Kpi"),
+					resource.TestCheckResourceAttr("swo_dashboard.test", "widgets.1.x", "0"),
+					resource.TestCheckResourceAttr("swo_dashboard.test", "widgets.1.y", "0"),
 					resource.TestCheckResourceAttr("swo_dashboard.test", "widgets.1.width", "4"),
+					resource.TestCheckResourceAttr("swo_dashboard.test", "widgets.1.height", "2"),
 				),
 			},
 			// ImportState testing
