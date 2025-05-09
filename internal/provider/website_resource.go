@@ -54,15 +54,28 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 	}
 
 	var tfMonitoring websiteMonitoring
-	tfPlan.Monitoring.As(ctx, &tfMonitoring, basetypes.ObjectAsOptions{})
+	d := tfPlan.Monitoring.As(ctx, &tfMonitoring, basetypes.ObjectAsOptions{})
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	if !tfMonitoring.Availability.IsNull() {
 		var tfAvailability availabilityMonitoring
-		tfMonitoring.Availability.As(ctx, &tfAvailability, basetypes.ObjectAsOptions{})
+		d = tfMonitoring.Availability.As(ctx, &tfAvailability, basetypes.ObjectAsOptions{})
+		resp.Diagnostics.Append(d...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 
 		var checkForString *swoClient.CheckForStringInput
 		if !tfAvailability.CheckForString.IsNull() {
 			var tfCheckForString checkForStringType
-			tfAvailability.CheckForString.As(ctx, &tfCheckForString, basetypes.ObjectAsOptions{})
+			d = tfAvailability.CheckForString.As(ctx, &tfCheckForString, basetypes.ObjectAsOptions{})
+			resp.Diagnostics.Append(d...)
+			if resp.Diagnostics.HasError() {
+				return
+			}
 
 			checkForString = &swoClient.CheckForStringInput{
 				Operator: swoClient.CheckStringOperator(tfCheckForString.Operator.ValueString()),
@@ -73,7 +86,11 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 		var ssl *swoClient.SslMonitoringInput
 		if !tfAvailability.SSL.IsUnknown() {
 			var tfSslMonitoring sslMonitoring
-			tfAvailability.SSL.As(ctx, &tfSslMonitoring, basetypes.ObjectAsOptions{})
+			d = tfAvailability.SSL.As(ctx, &tfSslMonitoring, basetypes.ObjectAsOptions{})
+			resp.Diagnostics.Append(d...)
+			if resp.Diagnostics.HasError() {
+				return
+			}
 			if tfSslMonitoring.Enabled.ValueBool() {
 				ssl = &swoClient.SslMonitoringInput{
 					Enabled:                        tfSslMonitoring.Enabled.ValueBoolPointer(),
@@ -148,7 +165,11 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 
 	if !tfMonitoring.Rum.IsNull() {
 		var tfRum rumMonitoring
-		tfMonitoring.Rum.As(ctx, &tfRum, basetypes.ObjectAsOptions{})
+		d = tfMonitoring.Rum.As(ctx, &tfRum, basetypes.ObjectAsOptions{})
+		resp.Diagnostics.Append(d...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 
 		createInput.Rum = &swoClient.RumMonitoringInput{
 			ApdexTimeInSeconds: swoClient.Ptr(int(tfRum.ApdexTimeInSeconds.ValueInt64())),
@@ -179,7 +200,11 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 	// Only set the snippet field if the user has RUM enabled.
 	if !tfMonitoring.Rum.IsNull() {
 		var rum rumMonitoring
-		tfMonitoring.Rum.As(ctx, &rum, basetypes.ObjectAsOptions{})
+		d = tfMonitoring.Rum.As(ctx, &rum, basetypes.ObjectAsOptions{})
+		resp.Diagnostics.Append(d...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 
 		rum.Snippet = types.StringValue(*website.Monitoring.Rum.Snippet)
 
@@ -373,7 +398,12 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 			}
 
 			var m availabilityMonitoring
-			tfStateMonitoring.Availability.As(ctx, &m, basetypes.ObjectAsOptions{})
+			d = tfStateMonitoring.Availability.As(ctx, &m, basetypes.ObjectAsOptions{})
+			resp.Diagnostics.Append(d...)
+			if resp.Diagnostics.HasError() {
+				return
+			}
+
 			if !m.CustomHeaders.IsNull() {
 				m.CustomHeaders = customHeaderValue
 				tfStateMonitoring.CustomHeaders = nullCustomHeader
@@ -450,16 +480,28 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 	}
 
 	var tfMonitoring websiteMonitoring
-	tfPlan.Monitoring.As(ctx, &tfMonitoring, basetypes.ObjectAsOptions{})
+	d := tfPlan.Monitoring.As(ctx, &tfMonitoring, basetypes.ObjectAsOptions{})
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	if !tfMonitoring.Availability.IsNull() {
 		var tfAvailability availabilityMonitoring
-		tfMonitoring.Availability.As(ctx, &tfAvailability, basetypes.ObjectAsOptions{})
+		d = tfMonitoring.Availability.As(ctx, &tfAvailability, basetypes.ObjectAsOptions{})
+		resp.Diagnostics.Append(d...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 
 		var checkForString *swoClient.CheckForStringInput
 		if !tfAvailability.CheckForString.IsNull() {
 			var tfCheckForString checkForStringType
-			tfAvailability.CheckForString.As(ctx, &tfCheckForString, basetypes.ObjectAsOptions{})
+			d = tfAvailability.CheckForString.As(ctx, &tfCheckForString, basetypes.ObjectAsOptions{})
+			resp.Diagnostics.Append(d...)
+			if resp.Diagnostics.HasError() {
+				return
+			}
 
 			checkForString = &swoClient.CheckForStringInput{
 				Operator: swoClient.CheckStringOperator(tfCheckForString.Operator.ValueString()),
@@ -469,7 +511,12 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 		var ssl *swoClient.SslMonitoringInput
 		if !tfAvailability.SSL.IsUnknown() {
 			var tfSslMonitoring sslMonitoring
-			tfAvailability.SSL.As(ctx, &tfSslMonitoring, basetypes.ObjectAsOptions{})
+			d = tfAvailability.SSL.As(ctx, &tfSslMonitoring, basetypes.ObjectAsOptions{})
+			resp.Diagnostics.Append(d...)
+			if resp.Diagnostics.HasError() {
+				return
+			}
+
 			if tfSslMonitoring.Enabled.ValueBool() {
 				ssl = &swoClient.SslMonitoringInput{
 					Enabled:                        tfSslMonitoring.Enabled.ValueBoolPointer(),
@@ -544,7 +591,11 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 
 	if !tfMonitoring.Rum.IsNull() {
 		var tfRum rumMonitoring
-		tfMonitoring.Rum.As(ctx, &tfRum, basetypes.ObjectAsOptions{})
+		d = tfMonitoring.Rum.As(ctx, &tfRum, basetypes.ObjectAsOptions{})
+		resp.Diagnostics.Append(d...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 
 		updateInput.Rum = &swoClient.RumMonitoringInput{
 			ApdexTimeInSeconds: swoClient.Ptr(int(tfRum.ApdexTimeInSeconds.ValueInt64())),
@@ -637,7 +688,12 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 		// default values for ssl are returned if ssl is not set
 		if !tfMonitoring.Availability.IsNull() {
 			var tfAvailability availabilityMonitoring
-			tfMonitoring.Availability.As(ctx, &tfAvailability, basetypes.ObjectAsOptions{})
+			d = tfMonitoring.Availability.As(ctx, &tfAvailability, basetypes.ObjectAsOptions{})
+			resp.Diagnostics.Append(d...)
+			if resp.Diagnostics.HasError() {
+				return nil, nil
+			}
+
 			if tfAvailability.SSL.IsNull() {
 				websiteToMatch.Monitoring.Availability.Ssl = website.Monitoring.Availability.Ssl
 			}
@@ -662,10 +718,17 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 			fmt.Sprintf("error updating website %s. err: %s", tfState.Id, err))
 		return
 	}
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	if !tfMonitoring.Rum.IsNull() && website.Monitoring.Options.IsRumActive {
 		var tfRum rumMonitoring
-		tfMonitoring.Rum.As(ctx, &tfRum, basetypes.ObjectAsOptions{})
+		d = tfMonitoring.Rum.As(ctx, &tfRum, basetypes.ObjectAsOptions{})
+		resp.Diagnostics.Append(d...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 
 		tfRum.Snippet = types.StringValue(*website.Monitoring.Rum.Snippet)
 
