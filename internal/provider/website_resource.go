@@ -86,9 +86,17 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 		var tfCustomHeaders []customHeader
 		//monitoring.custom_headers is deprecated. Both custom_headers fields cannot be set at the same time.
 		if !tfAvailability.CustomHeaders.IsNull() {
-			tfAvailability.CustomHeaders.ElementsAs(ctx, &tfCustomHeaders, false)
+			d := tfAvailability.CustomHeaders.ElementsAs(ctx, &tfCustomHeaders, false)
+			resp.Diagnostics.Append(d...)
+			if resp.Diagnostics.HasError() {
+				return
+			}
 		} else {
-			tfMonitoring.CustomHeaders.ElementsAs(ctx, &tfCustomHeaders, false)
+			d := tfMonitoring.CustomHeaders.ElementsAs(ctx, &tfCustomHeaders, false)
+			resp.Diagnostics.Append(d...)
+			if resp.Diagnostics.HasError() {
+				return
+			}
 		}
 
 		var customHeaders []swoClient.CustomHeaderInput
@@ -102,9 +110,17 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 		}
 
 		var tfLocationOptions []probeLocation
-		tfAvailability.LocationOptions.ElementsAs(ctx, &tfLocationOptions, false)
+		d := tfAvailability.LocationOptions.ElementsAs(ctx, &tfLocationOptions, false)
+		resp.Diagnostics.Append(d...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 		var tfPlatformOpts platformOptions
-		tfAvailability.PlatformOptions.As(ctx, &tfPlatformOpts, basetypes.ObjectAsOptions{})
+		d = tfAvailability.PlatformOptions.As(ctx, &tfPlatformOpts, basetypes.ObjectAsOptions{})
+		resp.Diagnostics.Append(d...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 
 		createInput.AvailabilityCheckSettings = &swoClient.AvailabilityCheckSettingsInput{
 			CheckForString:        checkForString,
@@ -466,9 +482,17 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 		var tfCustomHeaders []customHeader
 		//monitoring.custom_headers is deprecated. Both custom_headers fields cannot be set at the same time.
 		if !tfAvailability.CustomHeaders.IsNull() {
-			tfAvailability.CustomHeaders.ElementsAs(ctx, &tfCustomHeaders, false)
+			d := tfAvailability.CustomHeaders.ElementsAs(ctx, &tfCustomHeaders, false)
+			resp.Diagnostics.Append(d...)
+			if resp.Diagnostics.HasError() {
+				return
+			}
 		} else {
-			tfMonitoring.CustomHeaders.ElementsAs(ctx, &tfCustomHeaders, false)
+			d := tfMonitoring.CustomHeaders.ElementsAs(ctx, &tfCustomHeaders, false)
+			resp.Diagnostics.Append(d...)
+			if resp.Diagnostics.HasError() {
+				return
+			}
 		}
 
 		var customHeaders []swoClient.CustomHeaderInput
@@ -482,9 +506,17 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 		}
 
 		var tfLocationOptions []probeLocation
-		tfAvailability.LocationOptions.ElementsAs(ctx, &tfLocationOptions, false)
+		d := tfAvailability.LocationOptions.ElementsAs(ctx, &tfLocationOptions, false)
+		resp.Diagnostics.Append(d...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 		var tfPlatformOpts platformOptions
-		tfAvailability.PlatformOptions.As(ctx, &tfPlatformOpts, basetypes.ObjectAsOptions{})
+		d = tfAvailability.PlatformOptions.As(ctx, &tfPlatformOpts, basetypes.ObjectAsOptions{})
+		resp.Diagnostics.Append(d...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 
 		updateInput.AvailabilityCheckSettings = &swoClient.AvailabilityCheckSettingsInput{
 			CheckForString:        checkForString,
@@ -638,9 +670,17 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 		tfRum.Snippet = types.StringValue(*website.Monitoring.Rum.Snippet)
 
 		rumValue, d := types.ObjectValueFrom(ctx, RumMonitoringAttributeTypes(), tfRum)
+		resp.Diagnostics.Append(d...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 		tfMonitoring.Rum = rumValue
 
 		monitoringValue, d := types.ObjectValueFrom(ctx, WebsiteMonitoringAttributeTypes(), tfMonitoring)
+		resp.Diagnostics.Append(d...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 		tfPlan.Monitoring = monitoringValue
 	}
 

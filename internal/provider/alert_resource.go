@@ -49,7 +49,10 @@ func (r *alertResource) ValidateConfig(ctx context.Context, req resource.Validat
 
 func (model *alertResourceModel) validateConditions(ctx context.Context) diag.Diagnostics {
 	var planConditions []alertConditionModel
-	model.Conditions.ElementsAs(ctx, &planConditions, false)
+	d := model.Conditions.ElementsAs(ctx, &planConditions, false)
+	if d.HasError() {
+		return d
+	}
 
 	if len(planConditions) > 5 || len(planConditions) < 1 {
 		return diag.Diagnostics{
@@ -145,10 +148,13 @@ func (r *alertResource) Create(ctx context.Context, req resource.CreateRequest, 
 	}
 
 	// Create the alert from the provided Terraform model...
-	input, defError := tfPlan.toAlertDefinitionInput(ctx)
+	input, defError := tfPlan.toAlertDefinitionInput(ctx, &resp.Diagnostics)
 	if defError != nil {
 		resp.Diagnostics.AddError("Bad input in terraform resource",
 			fmt.Sprintf("error parsing terraform resource: %s", defError))
+		return
+	}
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
@@ -195,10 +201,13 @@ func (r *alertResource) Update(ctx context.Context, req resource.UpdateRequest, 
 	}
 
 	alertId := tfState.Id.ValueString()
-	input, defError := tfPlan.toAlertDefinitionInput(ctx)
+	input, defError := tfPlan.toAlertDefinitionInput(ctx, &resp.Diagnostics)
 	if defError != nil {
 		resp.Diagnostics.AddError("Bad input in terraform resource",
 			fmt.Sprintf("error parsing terraform resource: %s", defError))
+		return
+	}
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
@@ -256,16 +265,20 @@ func (r *alertResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 //
 // The function will first create the required number of logical operator nodes with
 // pre-computed operator IDs. Then it'll transform all condition items to alert conditions.
-func (model *alertResourceModel) toAlertDefinitionInput(ctx context.Context) (swoClient.AlertDefinitionInput, error) {
+func (model *alertResourceModel) toAlertDefinitionInput(ctx context.Context, diags *diag.Diagnostics) (swoClient.AlertDefinitionInput, error) {
 
 	var conditions []swoClient.AlertConditionNodeInput
 	var err error
 
 	var planConditions []alertConditionModel
-	model.Conditions.ElementsAs(ctx, &planConditions, false)
+	d := model.Conditions.ElementsAs(ctx, &planConditions, false)
+	diags.Append(d...)
+	if diags.HasError() {
+		return swoClient.AlertDefinitionInput{}, nil
+	}
 	if len(planConditions) == 1 {
-		conditions, err = planConditions[0].toAlertConditionInputs(ctx, 0)
-		if err != nil {
+		conditions, err = planConditions[0].toAlertConditionInputs(ctx, diags, 0)
+		if err != nil || diags.HasError() {
 			return swoClient.AlertDefinitionInput{}, err
 		}
 	} else {
@@ -298,8 +311,8 @@ func (model *alertResourceModel) toAlertDefinitionInput(ctx context.Context) (sw
 		// Create an alert condition for each
 		for i := 0; i < numConditions; i++ {
 			childRootNodeId := rootOperandIds[i]
-			childConditions, err := planConditions[i].toAlertConditionInputs(ctx, childRootNodeId)
-			if err != nil {
+			childConditions, err := planConditions[i].toAlertConditionInputs(ctx, diags, childRootNodeId)
+			if err != nil || diags.HasError() {
 				return swoClient.AlertDefinitionInput{}, err
 			}
 			conditions = append(conditions, childConditions...)
@@ -307,12 +320,16 @@ func (model *alertResourceModel) toAlertDefinitionInput(ctx context.Context) (sw
 	}
 
 	triggerDelay := int(model.TriggerDelaySeconds.ValueInt64())
+	actions := model.toAlertActionInput(ctx, diags)
+	if diags.HasError() {
+		return swoClient.AlertDefinitionInput{}, nil
+	}
 	return swoClient.AlertDefinitionInput{
 		Name:                model.Name.ValueString(),
 		Description:         model.Description.ValueStringPointer(),
 		Enabled:             model.Enabled.ValueBool(),
 		Severity:            swoClient.AlertSeverity(model.Severity.ValueString()),
-		Actions:             model.toAlertActionInput(ctx),
+		Actions:             actions,
 		TriggerResetActions: model.TriggerResetActions.ValueBoolPointer(),
 		Condition:           conditions,
 		RunbookLink:         model.RunbookLink.ValueStringPointer(),
@@ -320,11 +337,15 @@ func (model *alertResourceModel) toAlertDefinitionInput(ctx context.Context) (sw
 	}, nil
 }
 
-func (model *alertResourceModel) toAlertActionInput(ctx context.Context) []swoClient.AlertActionInput {
+func (model *alertResourceModel) toAlertActionInput(ctx context.Context, diags *diag.Diagnostics) []swoClient.AlertActionInput {
 	var inputs []swoClient.AlertActionInput
 
 	var notificationActions []alertActionInputModel
-	model.NotificationActions.ElementsAs(ctx, &notificationActions, false)
+	d := model.NotificationActions.ElementsAs(ctx, &notificationActions, false)
+	diags.Append(d...)
+	if diags.HasError() {
+		return inputs
+	}
 
 	//Notifications is deprecated. NotificationActions should be used instead.
 	// This if/else maintains backwards compatability.
@@ -336,7 +357,11 @@ func (model *alertResourceModel) toAlertActionInput(ctx context.Context) []swoCl
 			actionsList := make(map[string][]string)
 
 			var configurationIds []string
-			action.ConfigurationIds.ElementsAs(ctx, &configurationIds, false)
+			dIds := action.ConfigurationIds.ElementsAs(ctx, &configurationIds, false)
+			diags.Append(dIds...)
+			if diags.HasError() {
+				return inputs
+			}
 
 			for _, configId := range configurationIds {
 				// Notification Id's are formatted as id:type.

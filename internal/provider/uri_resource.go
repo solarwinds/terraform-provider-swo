@@ -51,15 +51,27 @@ func (r *uriResource) Create(ctx context.Context, req resource.CreateRequest, re
 	var planOptions uriResourceOptions
 	d := tfPlan.Options.As(ctx, &planOptions, basetypes.ObjectAsOptions{})
 	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	var tcpOptions uriResourceTcpOptions
 	d = tfPlan.TcpOptions.As(ctx, &tcpOptions, basetypes.ObjectAsOptions{})
 	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	var testDefinitions uriResourceTestDefinitions
 	d = tfPlan.TestDefinitions.As(ctx, &testDefinitions, basetypes.ObjectAsOptions{})
 	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	var planPlatformOptions uriResourcePlatformOptions
 	d = testDefinitions.PlatformOptions.As(ctx, &planPlatformOptions, basetypes.ObjectAsOptions{})
 	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	var locationOptions []uriResourceProbeLocation
 	d = testDefinitions.LocationOptions.ElementsAs(ctx, &locationOptions, false)
 	resp.Diagnostics.Append(d...)
@@ -244,15 +256,35 @@ func (r *uriResource) Update(ctx context.Context, req resource.UpdateRequest, re
 	}
 
 	var planOptions uriResourceOptions
-	tfPlan.Options.As(ctx, &planOptions, basetypes.ObjectAsOptions{})
+	d := tfPlan.Options.As(ctx, &planOptions, basetypes.ObjectAsOptions{})
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	var tcpOptions uriResourceTcpOptions
-	tfPlan.TcpOptions.As(ctx, &tcpOptions, basetypes.ObjectAsOptions{})
+	d = tfPlan.TcpOptions.As(ctx, &tcpOptions, basetypes.ObjectAsOptions{})
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	var testDefinitions uriResourceTestDefinitions
-	tfPlan.TestDefinitions.As(ctx, &testDefinitions, basetypes.ObjectAsOptions{})
+	d = tfPlan.TestDefinitions.As(ctx, &testDefinitions, basetypes.ObjectAsOptions{})
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	var planPlatformOptions uriResourcePlatformOptions
-	testDefinitions.PlatformOptions.As(ctx, &planPlatformOptions, basetypes.ObjectAsOptions{})
+	d = testDefinitions.PlatformOptions.As(ctx, &planPlatformOptions, basetypes.ObjectAsOptions{})
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	var locationOptions []uriResourceProbeLocation
-	testDefinitions.LocationOptions.ElementsAs(ctx, &locationOptions, false)
+	d = testDefinitions.LocationOptions.ElementsAs(ctx, &locationOptions, false)
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	// Create our input request.
 	updateInput := swoClient.UpdateUriInput{
@@ -285,7 +317,11 @@ func (r *uriResource) Update(ctx context.Context, req resource.UpdateRequest, re
 	}
 
 	var platforms []string
-	planPlatformOptions.Platforms.ElementsAs(ctx, &platforms, false)
+	d = planPlatformOptions.Platforms.ElementsAs(ctx, &platforms, false)
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	bUriToMatch, err := json.Marshal(map[string]interface{}{
 		"id":   updateInput.Id,
