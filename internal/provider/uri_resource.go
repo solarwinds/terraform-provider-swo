@@ -131,8 +131,8 @@ func (r *uriResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 		IsPingEnabled: types.BoolValue(uri.Options.IsPingEnabled),
 		IsTcpEnabled:  types.BoolValue(uri.Options.IsTcpEnabled),
 	}
-	tfOptions, od := types.ObjectValueFrom(ctx, UriResourceOptionsAttributeTypes(), optionsElement)
-	resp.Diagnostics.Append(od...)
+	tfOptions, diags := types.ObjectValueFrom(ctx, UriResourceOptionsAttributeTypes(), optionsElement)
+	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

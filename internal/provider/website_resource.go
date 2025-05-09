@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/cenkalti/backoff/v5"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -168,10 +167,18 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 
 		rum.Snippet = types.StringValue(*website.Monitoring.Rum.Snippet)
 
-		rumObject, _ := types.ObjectValueFrom(ctx, RumMonitoringAttributeTypes(), rum)
+		rumObject, dRum := types.ObjectValueFrom(ctx, RumMonitoringAttributeTypes(), rum)
+		resp.Diagnostics.Append(dRum...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 		tfMonitoring.Rum = rumObject
 
-		monitoringObject, _ := types.ObjectValueFrom(ctx, WebsiteMonitoringAttributeTypes(), tfMonitoring)
+		monitoringObject, dMonitor := types.ObjectValueFrom(ctx, WebsiteMonitoringAttributeTypes(), tfMonitoring)
+		resp.Diagnostics.Append(dMonitor...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 		tfPlan.Monitoring = monitoringObject
 	}
 
@@ -227,7 +234,11 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 					Operator: types.StringValue(string(availability.CheckForString.Operator)),
 					Value:    types.StringValue(availability.CheckForString.Value),
 				}
-				checkForString, _ := types.ObjectValueFrom(ctx, CheckForStringTypeAttributeTypes(), elements)
+				checkForString, d := types.ObjectValueFrom(ctx, CheckForStringTypeAttributeTypes(), elements)
+				resp.Diagnostics.Append(d...)
+				if resp.Diagnostics.HasError() {
+					return
+				}
 				tfStateAvailability.CheckForString = checkForString
 			}
 
@@ -255,7 +266,7 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 					TestFromAll: types.BoolValue(availability.PlatformOptions.TestFromAll),
 					Platforms:   platformValue,
 				}
-				tfPlatformOptions, _ := types.ObjectValueFrom(ctx, PlatformOptionsAttributeTypes(), platformOptionsValue)
+				tfPlatformOptions, d := types.ObjectValueFrom(ctx, PlatformOptionsAttributeTypes(), platformOptionsValue)
 				tfStateAvailability.PlatformOptions = tfPlatformOptions
 			}
 
@@ -266,7 +277,7 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 			var locOpts []attr.Value
 			if len(availability.LocationOptions) > 0 {
 				for _, p := range availability.LocationOptions {
-					objectValue, _ := types.ObjectValueFrom(
+					objectValue, d := types.ObjectValueFrom(
 						ctx,
 						ProbeLocationAttributeTypes(),
 						probeLocation{
@@ -274,6 +285,11 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 							Value: types.StringValue(p.Value),
 						},
 					)
+
+					resp.Diagnostics.Append(d...)
+					if resp.Diagnostics.HasError() {
+						return
+					}
 					locOpts = append(locOpts, objectValue)
 				}
 
@@ -295,24 +311,31 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 				if availability.Ssl.DaysPriorToExpiration != nil {
 					sslValues.DaysPriorToExpiration = types.Int64Value(int64(*availability.Ssl.DaysPriorToExpiration))
 				}
-				objectValue, _ := types.ObjectValueFrom(ctx, sslTypes, sslValues)
+				objectValue, d := types.ObjectValueFrom(ctx, sslTypes, sslValues)
+				resp.Diagnostics.Append(d...)
+				if resp.Diagnostics.HasError() {
+					return
+				}
 				tfStateAvailability.SSL = objectValue
 			} else {
 				nullValue := types.ObjectNull(sslTypes)
 				tfStateAvailability.SSL = nullValue
 			}
 
-			availabilityValue, _ := types.ObjectValueFrom(ctx, AvailabilityMonitoringAttributeTypes(), tfStateAvailability)
+			availabilityValue, d := types.ObjectValueFrom(ctx, AvailabilityMonitoringAttributeTypes(), tfStateAvailability)
+			resp.Diagnostics.Append(d...)
+			if resp.Diagnostics.HasError() {
+				return
+			}
 			tfStateMonitoring.Availability = availabilityValue
 		}
 
 		customHeaderElementTypes := CustomHeaderAttributeTypes()
 		nullCustomHeader := types.SetNull(types.ObjectType{AttrTypes: customHeaderElementTypes})
 		if len(monitoring.CustomHeaders) > 0 {
-			var diags diag.Diagnostics
 			var elements []attr.Value
 			for _, h := range monitoring.CustomHeaders {
-				objectValue, objectDiags := types.ObjectValueFrom(
+				objectValue, d := types.ObjectValueFrom(
 					ctx,
 					customHeaderElementTypes,
 					customHeader{
@@ -320,8 +343,12 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 						Value: types.StringValue(h.Value),
 					},
 				)
+
+				resp.Diagnostics.Append(d...)
+				if resp.Diagnostics.HasError() {
+					return
+				}
 				elements = append(elements, objectValue)
-				diags = append(diags, objectDiags...)
 			}
 			customHeaderValue, d := types.SetValueFrom(ctx, types.ObjectType{AttrTypes: customHeaderElementTypes}, elements)
 			resp.Diagnostics.Append(d...)
@@ -335,13 +362,21 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 				m.CustomHeaders = customHeaderValue
 				tfStateMonitoring.CustomHeaders = nullCustomHeader
 
-				availabilityValue, _ := types.ObjectValueFrom(ctx, AvailabilityMonitoringAttributeTypes(), m)
+				availabilityValue, dAvail := types.ObjectValueFrom(ctx, AvailabilityMonitoringAttributeTypes(), m)
+				resp.Diagnostics.Append(dAvail...)
+				if resp.Diagnostics.HasError() {
+					return
+				}
 				tfStateMonitoring.Availability = availabilityValue
 			} else {
 				m.CustomHeaders = nullCustomHeader
 				tfStateMonitoring.CustomHeaders = customHeaderValue
 
-				availabilityValue, _ := types.ObjectValueFrom(ctx, AvailabilityMonitoringAttributeTypes(), m)
+				availabilityValue, dAvail := types.ObjectValueFrom(ctx, AvailabilityMonitoringAttributeTypes(), m)
+				resp.Diagnostics.Append(dAvail...)
+				if resp.Diagnostics.HasError() {
+					return
+				}
 				tfStateMonitoring.Availability = availabilityValue
 			}
 		}
@@ -362,14 +397,22 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 				rumValue.Snippet = types.StringValue(*monitoring.Rum.Snippet)
 			}
 
-			rum, _ := types.ObjectValueFrom(ctx, rumAttributeTypes, rumValue)
+			rum, d := types.ObjectValueFrom(ctx, rumAttributeTypes, rumValue)
+			resp.Diagnostics.Append(d...)
+			if resp.Diagnostics.HasError() {
+				return
+			}
 			tfStateMonitoring.Rum = rum
 		} else {
 			nullValues := types.ObjectNull(RumMonitoringAttributeTypes())
 			tfStateMonitoring.Rum = nullValues
 		}
 
-		tfState2, _ := types.ObjectValueFrom(ctx, WebsiteMonitoringAttributeTypes(), tfStateMonitoring)
+		tfState2, d := types.ObjectValueFrom(ctx, WebsiteMonitoringAttributeTypes(), tfStateMonitoring)
+		resp.Diagnostics.Append(d...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 		tfState.Monitoring = tfState2
 	}
 
@@ -594,10 +637,10 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 
 		tfRum.Snippet = types.StringValue(*website.Monitoring.Rum.Snippet)
 
-		rumValue, _ := types.ObjectValueFrom(ctx, RumMonitoringAttributeTypes(), tfRum)
+		rumValue, d := types.ObjectValueFrom(ctx, RumMonitoringAttributeTypes(), tfRum)
 		tfMonitoring.Rum = rumValue
 
-		monitoringValue, _ := types.ObjectValueFrom(ctx, WebsiteMonitoringAttributeTypes(), tfMonitoring)
+		monitoringValue, d := types.ObjectValueFrom(ctx, WebsiteMonitoringAttributeTypes(), tfMonitoring)
 		tfPlan.Monitoring = monitoringValue
 	}
 
