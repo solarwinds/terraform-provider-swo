@@ -45,7 +45,11 @@ func (r *apiTokenResource) Create(ctx context.Context, req resource.CreateReques
 	}
 
 	var attributes []apiTokenAttribute
-	tfPlan.Attributes.ElementsAs(ctx, &attributes, false)
+	d := tfPlan.Attributes.ElementsAs(ctx, &attributes, false)
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	// Create our input request.
 	createInput := swoClient.CreateTokenInput{
@@ -90,7 +94,7 @@ func (r *apiTokenResource) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	r.updateState(ctx, &tfState, apiToken)
+	r.updateState(ctx, &tfState, apiToken, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, tfState)...)
 }
 
@@ -103,7 +107,11 @@ func (r *apiTokenResource) Update(ctx context.Context, req resource.UpdateReques
 	}
 
 	var attributes []apiTokenAttribute
-	tfPlan.Attributes.ElementsAs(ctx, &attributes, false)
+	d := tfPlan.Attributes.ElementsAs(ctx, &attributes, false)
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	// Create our input request.
 	updateInput := swoClient.UpdateTokenInput{
@@ -150,18 +158,17 @@ func (r *apiTokenResource) ImportState(ctx context.Context, req resource.ImportS
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-func (r *apiTokenResource) updateState(ctx context.Context, state *apiTokenResourceModel, result *swoClient.ReadApiTokenResult) {
+func (r *apiTokenResource) updateState(ctx context.Context, state *apiTokenResourceModel, result *swoClient.ReadApiTokenResult, diags *diag.Diagnostics) {
 	state.Id = types.StringValue(result.Id)
 	state.Name = types.StringPointerValue(result.Name)
 	state.Enabled = types.BoolPointerValue(result.Enabled)
 	state.Type = types.StringPointerValue(result.Type)
 	state.AccessLevel = types.StringValue(string(*result.AccessLevel))
 
-	var diags diag.Diagnostics
 	var elements []attr.Value
 	var attributeTypes = TokenAttributeTypes()
 	for _, attribute := range result.Attributes {
-		objectValue, objectDiags := types.ObjectValueFrom(
+		objectValue, d := types.ObjectValueFrom(
 			ctx,
 			attributeTypes,
 			apiTokenAttribute{
@@ -169,11 +176,19 @@ func (r *apiTokenResource) updateState(ctx context.Context, state *apiTokenResou
 				Value: types.StringValue(attribute.Value),
 			},
 		)
+
+		diags.Append(d...)
+		if diags.HasError() {
+			return
+		}
 		elements = append(elements, objectValue)
-		diags = append(diags, objectDiags...)
 	}
 
-	attributes, setDiags := types.SetValueFrom(ctx, types.ObjectType{AttrTypes: attributeTypes}, elements)
-	diags = append(diags, setDiags...)
+	attributes, d := types.SetValueFrom(ctx, types.ObjectType{AttrTypes: attributeTypes}, elements)
+	diags.Append(d...)
+	if diags.HasError() {
+		return
+	}
+
 	state.Attributes = attributes
 }

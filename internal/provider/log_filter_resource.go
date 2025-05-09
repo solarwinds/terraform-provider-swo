@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
-
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -45,7 +43,11 @@ func (r *logFilterResource) Create(ctx context.Context, req resource.CreateReque
 	}
 
 	var expressions []logFilterExpression
-	tfPlan.Expressions.ElementsAs(ctx, &expressions, false)
+	d := tfPlan.Expressions.ElementsAs(ctx, &expressions, false)
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	// Create our input request.
 	createInput := swoClient.CreateExclusionFilterInput{
@@ -97,11 +99,10 @@ func (r *logFilterResource) Read(ctx context.Context, req resource.ReadRequest, 
 	tfState.Description = types.StringValue(*logFilter.Description)
 	tfState.TokenSignature = types.StringValue(*logFilter.TokenSignature)
 
-	var diags diag.Diagnostics
 	var elements []attr.Value
 	var attributeTypes = ExpressionAttributeTypes()
 	for _, p := range logFilter.Expressions {
-		objectValue, objectDiags := types.ObjectValueFrom(
+		objectValue, d := types.ObjectValueFrom(
 			ctx,
 			attributeTypes,
 			logFilterExpression{
@@ -109,11 +110,18 @@ func (r *logFilterResource) Read(ctx context.Context, req resource.ReadRequest, 
 				Expression: types.StringValue(p.Expression),
 			},
 		)
+
+		resp.Diagnostics.Append(d...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 		elements = append(elements, objectValue)
-		diags = append(diags, objectDiags...)
 	}
-	expressions, setDiags := types.ListValueFrom(ctx, types.ObjectType{AttrTypes: attributeTypes}, elements)
-	diags = append(diags, setDiags...)
+	expressions, d := types.ListValueFrom(ctx, types.ObjectType{AttrTypes: attributeTypes}, elements)
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	tfState.Expressions = expressions
 
 	// Save to Terraform state.
@@ -129,7 +137,11 @@ func (r *logFilterResource) Update(ctx context.Context, req resource.UpdateReque
 	}
 
 	var expressions []logFilterExpression
-	tfPlan.Expressions.ElementsAs(ctx, &expressions, false)
+	d := tfPlan.Expressions.ElementsAs(ctx, &expressions, false)
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	err := r.client.LogFilterService().Update(ctx, swoClient.UpdateExclusionFilterInput{
 		Id:          tfState.Id.ValueString(),

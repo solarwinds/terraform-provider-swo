@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"reflect"
 
@@ -50,16 +49,23 @@ func (r *uriResource) Create(ctx context.Context, req resource.CreateRequest, re
 	}
 
 	var planOptions uriResourceOptions
-	tfPlan.Options.As(ctx, &planOptions, basetypes.ObjectAsOptions{})
+	d := tfPlan.Options.As(ctx, &planOptions, basetypes.ObjectAsOptions{})
+	resp.Diagnostics.Append(d...)
 	var tcpOptions uriResourceTcpOptions
-	tfPlan.TcpOptions.As(ctx, &tcpOptions, basetypes.ObjectAsOptions{})
+	d = tfPlan.TcpOptions.As(ctx, &tcpOptions, basetypes.ObjectAsOptions{})
+	resp.Diagnostics.Append(d...)
 	var testDefinitions uriResourceTestDefinitions
-	tfPlan.TestDefinitions.As(ctx, &testDefinitions, basetypes.ObjectAsOptions{})
+	d = tfPlan.TestDefinitions.As(ctx, &testDefinitions, basetypes.ObjectAsOptions{})
+	resp.Diagnostics.Append(d...)
 	var planPlatformOptions uriResourcePlatformOptions
-	testDefinitions.PlatformOptions.As(ctx, &planPlatformOptions, basetypes.ObjectAsOptions{})
+	d = testDefinitions.PlatformOptions.As(ctx, &planPlatformOptions, basetypes.ObjectAsOptions{})
+	resp.Diagnostics.Append(d...)
 	var locationOptions []uriResourceProbeLocation
-	testDefinitions.LocationOptions.ElementsAs(ctx, &locationOptions, false)
-
+	d = testDefinitions.LocationOptions.ElementsAs(ctx, &locationOptions, false)
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	// Create our input request.
 	createInput := swoClient.CreateUriInput{
 		Name:       tfPlan.Name.ValueString(),
@@ -125,7 +131,11 @@ func (r *uriResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 		IsPingEnabled: types.BoolValue(uri.Options.IsPingEnabled),
 		IsTcpEnabled:  types.BoolValue(uri.Options.IsTcpEnabled),
 	}
-	tfOptions, _ := types.ObjectValueFrom(ctx, UriResourceOptionsAttributeTypes(), optionsElement)
+	tfOptions, od := types.ObjectValueFrom(ctx, UriResourceOptionsAttributeTypes(), optionsElement)
+	resp.Diagnostics.Append(od...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	tfState.Options = tfOptions
 
 	// TcpOptions
@@ -143,7 +153,11 @@ func (r *uriResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 			tcpElement.StringToSend = types.StringValue(*tcpOptions.StringToSend)
 		}
 
-		tfTcpOptions, _ := types.ObjectValueFrom(ctx, UriTcpOptionsAttributeTypes(), tcpElement)
+		tfTcpOptions, d := types.ObjectValueFrom(ctx, UriTcpOptionsAttributeTypes(), tcpElement)
+		resp.Diagnostics.Append(d...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 		tfState.TcpOptions = tfTcpOptions
 	} else {
 		tfState.TcpOptions = types.ObjectNull(UriTcpOptionsAttributeTypes())
@@ -165,10 +179,9 @@ func (r *uriResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 		testDefsElements.TestFromLocation = types.StringValue(string(*testDefs.TestFromLocation))
 	}
 
-	var diags diag.Diagnostics
 	var locationOptsElements []attr.Value
 	for _, x := range testDefs.LocationOptions {
-		objectValue, objectDiags := types.ObjectValueFrom(
+		objectValue, d := types.ObjectValueFrom(
 			ctx,
 			locationOptsElementTypes,
 			uriResourceProbeLocation{
@@ -177,10 +190,17 @@ func (r *uriResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 			},
 		)
 
+		resp.Diagnostics.Append(d...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 		locationOptsElements = append(locationOptsElements, objectValue)
-		diags = append(diags, objectDiags...)
 	}
-	locationOpts, _ := types.SetValueFrom(ctx, types.ObjectType{AttrTypes: locationOptsElementTypes}, locationOptsElements)
+	locationOpts, d := types.SetValueFrom(ctx, types.ObjectType{AttrTypes: locationOptsElementTypes}, locationOptsElements)
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	testDefsElements.LocationOptions = locationOpts
 
 	if testDefs.TestIntervalInSeconds != nil {
@@ -188,17 +208,29 @@ func (r *uriResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 	}
 
 	if testDefs.PlatformOptions != nil {
-		listValue, _ := types.SetValueFrom(ctx, types.StringType, testDefs.PlatformOptions.Platforms)
+		listValue, d := types.SetValueFrom(ctx, types.StringType, testDefs.PlatformOptions.Platforms)
+		resp.Diagnostics.Append(d...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 		platformElements := uriResourcePlatformOptions{
 			TestFromAll: types.BoolValue(testDefs.PlatformOptions.TestFromAll),
 			Platforms:   listValue,
 		}
 
-		tfPlatformOptions, _ := types.ObjectValueFrom(ctx, platformElementTypes, platformElements)
+		tfPlatformOptions, d := types.ObjectValueFrom(ctx, platformElementTypes, platformElements)
+		resp.Diagnostics.Append(d...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 		testDefsElements.PlatformOptions = tfPlatformOptions
 	}
 
-	objectValue, _ := types.ObjectValueFrom(ctx, testDefsElementTypes, testDefsElements)
+	objectValue, d := types.ObjectValueFrom(ctx, testDefsElementTypes, testDefsElements)
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	tfState.TestDefinitions = objectValue
 	resp.Diagnostics.Append(resp.State.Set(ctx, tfState)...)
 }

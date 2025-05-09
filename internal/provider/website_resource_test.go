@@ -20,9 +20,32 @@ func TestAccWebsiteResource(t *testing.T) {
 				"https://example.com",
 				websiteMonitoringConfig,
 				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.check_for_string.operator", "CONTAINS"),
+				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.check_for_string.value", "example-string"),
+
 				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.ssl.enabled", "true"),
+				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.ssl.days_prior_to_expiration", "30"),
+				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.ssl.ignore_intermediate_certificates", "true"),
+
+				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.protocols.#", "2"),
 				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.protocols.0", "HTTP"),
 				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.protocols.1", "HTTPS"),
+
+				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.test_interval_in_seconds", "300"),
+				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.test_from_location", "REGION"),
+
+				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.location_options.#", "1"),
+				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.location_options.0.type", "REGION"),
+				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.location_options.0.value", "NA"),
+
+				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.platform_options.test_from_all", "false"),
+				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.platform_options.platforms.#", "1"),
+				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.platform_options.platforms.0", "AWS"),
+
+				resource.TestCheckResourceAttr("swo_website.test", "monitoring.custom_headers.#", "1"),
+				resource.TestCheckResourceAttr("swo_website.test", "monitoring.custom_headers.0.name", "Custom-Header-1-Deprecated"),
+				resource.TestCheckResourceAttr("swo_website.test", "monitoring.custom_headers.0.value", "Custom-Value-1-Deprecated"),
+
+				resource.TestCheckNoResourceAttr("swo_website.test", "monitoring.rum"),
 			),
 			createTestStep(
 				testAccWebsiteResourceConfig,
@@ -31,6 +54,9 @@ func TestAccWebsiteResource(t *testing.T) {
 				websiteMonitoringConfigWithoutAvailabilityOptions,
 				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.protocols.0", "HTTP"),
 				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.protocols.1", "HTTPS"),
+
+				resource.TestCheckNoResourceAttr("swo_website.test", "monitoring.availability.check_for_string"),
+				resource.TestCheckNoResourceAttr("swo_website.test", "monitoring.availability.ssl"),
 			),
 			createTestStep(
 				testAccWebsiteResourceConfig,
@@ -39,6 +65,8 @@ func TestAccWebsiteResource(t *testing.T) {
 				websiteMonitoringConfigWithoutAvailability,
 				resource.TestCheckResourceAttr("swo_website.test", "monitoring.rum.apdex_time_in_seconds", "4"),
 				resource.TestCheckResourceAttr("swo_website.test", "monitoring.rum.spa", "true"),
+
+				resource.TestCheckNoResourceAttr("swo_website.test", "monitoring.availability"),
 			),
 			// ImportState testing
 			{

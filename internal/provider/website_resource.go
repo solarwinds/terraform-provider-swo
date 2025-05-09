@@ -245,7 +245,11 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 				platforms := convertArray(availability.PlatformOptions.Platforms, func(p string) types.String {
 					return types.StringValue(p)
 				})
-				platformValue, _ := types.SetValueFrom(ctx, types.StringType, platforms)
+				platformValue, d := types.SetValueFrom(ctx, types.StringType, platforms)
+				resp.Diagnostics.Append(d...)
+				if resp.Diagnostics.HasError() {
+					return
+				}
 
 				platformOptionsValue := platformOptions{
 					TestFromAll: types.BoolValue(availability.PlatformOptions.TestFromAll),
@@ -273,7 +277,11 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 					locOpts = append(locOpts, objectValue)
 				}
 
-				tfLocationOptions, _ := types.SetValueFrom(ctx, types.ObjectType{AttrTypes: ProbeLocationAttributeTypes()}, locOpts)
+				tfLocationOptions, d := types.SetValueFrom(ctx, types.ObjectType{AttrTypes: ProbeLocationAttributeTypes()}, locOpts)
+				resp.Diagnostics.Append(d...)
+				if resp.Diagnostics.HasError() {
+					return
+				}
 				tfStateAvailability.LocationOptions = tfLocationOptions
 			}
 
@@ -315,8 +323,11 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 				elements = append(elements, objectValue)
 				diags = append(diags, objectDiags...)
 			}
-			customHeaderValue, setDiags := types.SetValueFrom(ctx, types.ObjectType{AttrTypes: customHeaderElementTypes}, elements)
-			diags = append(diags, setDiags...)
+			customHeaderValue, d := types.SetValueFrom(ctx, types.ObjectType{AttrTypes: customHeaderElementTypes}, elements)
+			resp.Diagnostics.Append(d...)
+			if resp.Diagnostics.HasError() {
+				return
+			}
 
 			var m availabilityMonitoring
 			tfStateMonitoring.Availability.As(ctx, &m, basetypes.ObjectAsOptions{})
