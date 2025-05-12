@@ -84,7 +84,7 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 		}
 
 		var ssl *swoClient.SslMonitoringInput
-		if !tfAvailability.SSL.IsUnknown() {
+		if !tfAvailability.SSL.IsNull() {
 			var tfSslMonitoring sslMonitoring
 			d = tfAvailability.SSL.As(ctx, &tfSslMonitoring, basetypes.ObjectAsOptions{})
 			resp.Diagnostics.Append(d...)
@@ -509,7 +509,7 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 			}
 		}
 		var ssl *swoClient.SslMonitoringInput
-		if !tfAvailability.SSL.IsUnknown() {
+		if !tfAvailability.SSL.IsNull() {
 			var tfSslMonitoring sslMonitoring
 			d = tfAvailability.SSL.As(ctx, &tfSslMonitoring, basetypes.ObjectAsOptions{})
 			resp.Diagnostics.Append(d...)

@@ -47,27 +47,6 @@ func TestAccWebsiteResource(t *testing.T) {
 
 				resource.TestCheckNoResourceAttr("swo_website.test", "monitoring.rum"),
 			),
-			createTestStep(
-				testAccWebsiteResourceConfig,
-				"test-acc create without options [CREATE_TEST]",
-				"https://solarwinds.com",
-				websiteMonitoringConfigWithoutAvailabilityOptions,
-				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.protocols.0", "HTTP"),
-				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.protocols.1", "HTTPS"),
-
-				resource.TestCheckNoResourceAttr("swo_website.test", "monitoring.availability.check_for_string"),
-				resource.TestCheckNoResourceAttr("swo_website.test", "monitoring.availability.ssl"),
-			),
-			createTestStep(
-				testAccWebsiteResourceConfig,
-				"test-acc create without availability [CREATE_TEST]",
-				"https://solarwinds.com",
-				websiteMonitoringConfigWithoutAvailability,
-				resource.TestCheckResourceAttr("swo_website.test", "monitoring.rum.apdex_time_in_seconds", "4"),
-				resource.TestCheckResourceAttr("swo_website.test", "monitoring.rum.spa", "true"),
-
-				resource.TestCheckNoResourceAttr("swo_website.test", "monitoring.availability"),
-			),
 			// ImportState testing
 			{
 				ResourceName:      "swo_website.test",
@@ -85,6 +64,36 @@ func TestAccWebsiteResource(t *testing.T) {
 				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.protocols.0", "HTTP"),
 				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.protocols.1", "HTTPS"),
 			),
+			// Delete testing automatically occurs in TestCase
+		},
+	})
+}
+
+func TestAccWebsiteResourceWithoutAvailabilityOptionResources(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		IsUnitTest:               true,
+		Steps: []resource.TestStep{
+			// Create and Read testing
+			createTestStep(
+				testAccWebsiteResourceConfig,
+				"test-acc create without options [CREATE_TEST]",
+				"https://solarwinds.com",
+				websiteMonitoringConfigWithoutAvailabilityOptions,
+				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.protocols.0", "HTTP"),
+				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.protocols.1", "HTTPS"),
+
+				resource.TestCheckNoResourceAttr("swo_website.test", "monitoring.availability.check_for_string"),
+				resource.TestCheckNoResourceAttr("swo_website.test", "monitoring.availability.ssl"),
+			),
+			// ImportState testing
+			{
+				ResourceName:      "swo_website.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			// Update and Read testing
 			createTestStep(
 				testAccWebsiteResourceConfig,
 				"test-acc test update without options [UPDATE_TEST]",
@@ -93,6 +102,35 @@ func TestAccWebsiteResource(t *testing.T) {
 				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.protocols.0", "HTTP"),
 				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.protocols.1", "HTTPS"),
 			),
+			// Delete testing automatically occurs in TestCase
+		},
+	})
+}
+
+func TestAccWebsiteResourceWithoutAvailabilityResource(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		IsUnitTest:               true,
+		Steps: []resource.TestStep{
+			// Create and Read testing
+			createTestStep(
+				testAccWebsiteResourceConfig,
+				"test-acc create without availability [CREATE_TEST]",
+				"https://solarwinds.com",
+				websiteMonitoringConfigWithoutAvailability,
+				resource.TestCheckResourceAttr("swo_website.test", "monitoring.rum.apdex_time_in_seconds", "4"),
+				resource.TestCheckResourceAttr("swo_website.test", "monitoring.rum.spa", "true"),
+
+				resource.TestCheckNoResourceAttr("swo_website.test", "monitoring.availability"),
+			),
+			// ImportState testing
+			{
+				ResourceName:      "swo_website.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			// Update and Read testing
 			createTestStep(
 				testAccWebsiteResourceConfig,
 				"test-acc test update without availability [UPDATE_TEST]",
