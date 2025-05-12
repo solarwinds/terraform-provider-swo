@@ -718,9 +718,6 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 			fmt.Sprintf("error updating website %s. err: %s", tfState.Id, err))
 		return
 	}
-	if resp.Diagnostics.HasError() {
-		return
-	}
 
 	if !tfMonitoring.Rum.IsNull() && website.Monitoring.Options.IsRumActive {
 		var tfRum rumMonitoring

@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"regexp"
 	"strconv"
@@ -26,25 +27,29 @@ var aggregationError = errors.New("aggregation operation not found")
 //	         /    \
 //	Metric Field   10m
 //	    (id=2)    (duration, id=3)
-func (model alertConditionModel) toAlertConditionInputs(ctx context.Context, diags *diag.Diagnostics, rootNodeId int) ([]swoClient.AlertConditionNodeInput, error) {
+func (model alertConditionModel) toAlertConditionInputs(ctx context.Context, diags *diag.Diagnostics, rootNodeId int) []swoClient.AlertConditionNodeInput {
 
 	thresholdOperatorCondition, thresholdDataCondition, err := model.toThresholdConditionInputs()
 	if err != nil {
-		return []swoClient.AlertConditionNodeInput{}, err
+		diags.AddError("Bad input in terraform resource",
+			fmt.Sprintf("error parsing terraform resource: %s", err))
+		return []swoClient.AlertConditionNodeInput{}
 	}
 	thresholdOperatorCondition.Id = rootNodeId
 	thresholdOperatorCondition.OperandIds = []int{rootNodeId + 1, rootNodeId + 4}
 
 	aggregationCondition, err := model.toAggregationConditionInput()
 	if err != nil {
-		return []swoClient.AlertConditionNodeInput{}, err
+		diags.AddError("Bad input in terraform resource",
+			fmt.Sprintf("error parsing terraform resource: %s", err))
+		return []swoClient.AlertConditionNodeInput{}
 	}
 	aggregationCondition.Id = rootNodeId + 1
 	aggregationCondition.OperandIds = []int{rootNodeId + 2, rootNodeId + 3}
 
 	metricFieldCondition := model.toMetricFieldConditionInput(ctx, diags)
 	if diags.HasError() {
-		return []swoClient.AlertConditionNodeInput{}, nil
+		return []swoClient.AlertConditionNodeInput{}
 	}
 	metricFieldCondition.Id = rootNodeId + 2
 
@@ -61,7 +66,7 @@ func (model alertConditionModel) toAlertConditionInputs(ctx context.Context, dia
 		thresholdDataCondition,
 	}
 
-	return conditions, nil
+	return conditions
 }
 
 // Creates the threshold operation and threshold data nodes by either:
@@ -94,7 +99,6 @@ func (model alertConditionModel) toThresholdConditionInputs() (swoClient.AlertCo
 
 		operatorType, err := swoClient.GetAlertConditionType(operator)
 		if err != nil {
-
 			return thresholdOperatorConditions, thresholdDataConditions, thresholdOperatorError
 		}
 		thresholdOperatorConditions.Type = operatorType

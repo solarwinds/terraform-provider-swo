@@ -65,7 +65,7 @@ func (model *alertResourceModel) validateConditions(ctx context.Context) diag.Di
 	// validate each alert condition
 	// do not need to validate required fields, those have been validated by schema validation at this point
 	var conditionErrors diag.Diagnostics
-	firstNode := planConditions[0] // get first node with which to compare each nodes' targetEntityTypes, entityIds, groupByMetricTag against
+	firstNode := planConditions[0] // get the first node with which to compare each node's targetEntityTypes, entityIds, groupByMetricTag against
 	for _, condition := range planConditions {
 		// Validation if not_reporting = true
 		notReporting := condition.NotReporting.ValueBool()
@@ -81,7 +81,7 @@ func (model *alertResourceModel) validateConditions(ctx context.Context) diag.Di
 
 			// Aggregation must be count
 			operator := condition.AggregationType.ValueString()
-			operatorType, _ := swoClient.GetAlertConditionType(operator) // ignore return err, aggregation_type will have been validated by schema by this point
+			operatorType, _ := swoClient.GetAlertConditionType(operator) // ignore return err, schema has validated aggregation_type by this point
 			if operatorType == string(swoClient.AlertAggregationOperatorType) && operator != string(swoClient.AlertOperatorCount) {
 				d := diag.NewAttributeErrorDiagnostic(
 					path.Root("aggregationType"),
@@ -148,18 +148,12 @@ func (r *alertResource) Create(ctx context.Context, req resource.CreateRequest, 
 	}
 
 	// Create the alert from the provided Terraform model...
-	input, defError := tfPlan.toAlertDefinitionInput(ctx, &resp.Diagnostics)
-	if defError != nil {
-		resp.Diagnostics.AddError("Bad input in terraform resource",
-			fmt.Sprintf("error parsing terraform resource: %s", defError))
-		return
-	}
+	input := tfPlan.toAlertDefinitionInput(ctx, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	newAlertDef, err := r.client.AlertsService().Create(ctx, input)
-
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error",
 			fmt.Sprintf("error creating alert definition '%s'. error: %s", input.Name, err))
@@ -201,12 +195,7 @@ func (r *alertResource) Update(ctx context.Context, req resource.UpdateRequest, 
 	}
 
 	alertId := tfState.Id.ValueString()
-	input, defError := tfPlan.toAlertDefinitionInput(ctx, &resp.Diagnostics)
-	if defError != nil {
-		resp.Diagnostics.AddError("Bad input in terraform resource",
-			fmt.Sprintf("error parsing terraform resource: %s", defError))
-		return
-	}
+	input := tfPlan.toAlertDefinitionInput(ctx, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -265,21 +254,20 @@ func (r *alertResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 //
 // The function will first create the required number of logical operator nodes with
 // pre-computed operator IDs. Then it'll transform all condition items to alert conditions.
-func (model *alertResourceModel) toAlertDefinitionInput(ctx context.Context, diags *diag.Diagnostics) (swoClient.AlertDefinitionInput, error) {
+func (model *alertResourceModel) toAlertDefinitionInput(ctx context.Context, diags *diag.Diagnostics) swoClient.AlertDefinitionInput {
 
 	var conditions []swoClient.AlertConditionNodeInput
-	var err error
 
 	var planConditions []alertConditionModel
 	d := model.Conditions.ElementsAs(ctx, &planConditions, false)
 	diags.Append(d...)
 	if diags.HasError() {
-		return swoClient.AlertDefinitionInput{}, nil
+		return swoClient.AlertDefinitionInput{}
 	}
 	if len(planConditions) == 1 {
-		conditions, err = planConditions[0].toAlertConditionInputs(ctx, diags, 0)
-		if err != nil || diags.HasError() {
-			return swoClient.AlertDefinitionInput{}, err
+		conditions = planConditions[0].toAlertConditionInputs(ctx, diags, 0)
+		if diags.HasError() {
+			return swoClient.AlertDefinitionInput{}
 		}
 	} else {
 
@@ -311,9 +299,9 @@ func (model *alertResourceModel) toAlertDefinitionInput(ctx context.Context, dia
 		// Create an alert condition for each
 		for i := 0; i < numConditions; i++ {
 			childRootNodeId := rootOperandIds[i]
-			childConditions, err := planConditions[i].toAlertConditionInputs(ctx, diags, childRootNodeId)
-			if err != nil || diags.HasError() {
-				return swoClient.AlertDefinitionInput{}, err
+			childConditions := planConditions[i].toAlertConditionInputs(ctx, diags, childRootNodeId)
+			if diags.HasError() {
+				return swoClient.AlertDefinitionInput{}
 			}
 			conditions = append(conditions, childConditions...)
 		}
@@ -322,7 +310,7 @@ func (model *alertResourceModel) toAlertDefinitionInput(ctx context.Context, dia
 	triggerDelay := int(model.TriggerDelaySeconds.ValueInt64())
 	actions := model.toAlertActionInput(ctx, diags)
 	if diags.HasError() {
-		return swoClient.AlertDefinitionInput{}, nil
+		return swoClient.AlertDefinitionInput{}
 	}
 	return swoClient.AlertDefinitionInput{
 		Name:                model.Name.ValueString(),
@@ -334,7 +322,7 @@ func (model *alertResourceModel) toAlertDefinitionInput(ctx context.Context, dia
 		Condition:           conditions,
 		RunbookLink:         model.RunbookLink.ValueStringPointer(),
 		TriggerDelaySeconds: &triggerDelay,
-	}, nil
+	}
 }
 
 func (model *alertResourceModel) toAlertActionInput(ctx context.Context, diags *diag.Diagnostics) []swoClient.AlertActionInput {
@@ -347,7 +335,7 @@ func (model *alertResourceModel) toAlertActionInput(ctx context.Context, diags *
 		return inputs
 	}
 
-	//Notifications is deprecated. NotificationActions should be used instead.
+	// Notifications is deprecated. NotificationActions should be used instead.
 	// This if/else maintains backwards compatability.
 	if len(notificationActions) > 0 {
 		receivingType := swoClient.NotificationReceivingTypeNotSpecified
@@ -364,7 +352,7 @@ func (model *alertResourceModel) toAlertActionInput(ctx context.Context, diags *
 			}
 
 			for _, configId := range configurationIds {
-				// Notification Id's are formatted as id:type.
+				// Notification Ids are formatted as id:type.
 				// This is to accommodate ImportState needing a single Id to import a resource.
 
 				actionId, notificationType, _ := ParseNotificationId(types.StringValue(configId))
