@@ -21,6 +21,8 @@ func TestAccLogFilterResource(t *testing.T) {
 					resource.TestCheckResourceAttr("swo_logfilter.test", "name", "test-acc test one"),
 					resource.TestCheckResourceAttr("swo_logfilter.test", "description", "test description"),
 					resource.TestCheckResourceAttr("swo_logfilter.test", "token_signature", "U2aWJEYwSj-pvYegZdH1ozoq3kwapdngO1qDU3a8WXY"),
+					resource.TestCheckResourceAttr("swo_logfilter.test", "expressions.0.kind", "STRING"),
+					resource.TestCheckResourceAttr("swo_logfilter.test", "expressions.0.expression", "test expression"),
 				),
 			},
 			// ImportState testing

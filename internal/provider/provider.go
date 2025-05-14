@@ -21,8 +21,9 @@ import (
 )
 
 var (
-	dataSources           []func() datasource.DataSource
-	ErrNonMatchingEntites = errors.New("updated entity properties don't match")
+	dataSources            []func() datasource.DataSource
+	ErrNonMatchingEntities = errors.New("updated entity properties don't match")
+	ErrMarshal             = errors.New("error during marshalling")
 )
 
 var resources = []func() resource.Resource{

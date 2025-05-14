@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -14,45 +15,78 @@ import (
 
 // uriResourceModel is the main resource structure
 type uriResourceModel struct {
-	Id              types.String                `tfsdk:"id"`
-	Name            types.String                `tfsdk:"name"`
-	Host            types.String                `tfsdk:"host"`
-	Options         *uriResourceOptions         `tfsdk:"options"`
-	TcpOptions      *uriResourceTcpOptions      `tfsdk:"tcp_options"`
-	TestDefinitions *uriResourceTestDefinitions `tfsdk:"test_definitions"`
+	Id              types.String `tfsdk:"id"`
+	Name            types.String `tfsdk:"name"`
+	Host            types.String `tfsdk:"host"`
+	Options         types.Object `tfsdk:"options"`          //uriResourceOptions
+	TcpOptions      types.Object `tfsdk:"tcp_options"`      //uriResourceTcpOptions
+	TestDefinitions types.Object `tfsdk:"test_definitions"` //uriResourceTestDefinitions
 }
 
-// uriResourceOptions represents the options field in the main resource
 type uriResourceOptions struct {
 	IsPingEnabled types.Bool `tfsdk:"is_ping_enabled"`
 	IsTcpEnabled  types.Bool `tfsdk:"is_tcp_enabled"`
 }
 
-// uriResourceTcpOptions represents the tcp_options field in the main resource
+func UriResourceOptionsAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"is_ping_enabled": types.BoolType,
+		"is_tcp_enabled":  types.BoolType,
+	}
+}
+
 type uriResourceTcpOptions struct {
 	Port           types.Int64  `tfsdk:"port"`
 	StringToExpect types.String `tfsdk:"string_to_expect"`
 	StringToSend   types.String `tfsdk:"string_to_send"`
 }
 
-// uriResourceTestDefinitions represents the test_definitions field in the main resource
-type uriResourceTestDefinitions struct {
-	TestFromLocation      types.String                `tfsdk:"test_from_location"`
-	LocationOptions       []uriResourceProbeLocation  `tfsdk:"location_options"`
-	TestIntervalInSeconds types.Int64                 `tfsdk:"test_interval_in_seconds"`
-	PlatformOptions       *uriResourcePlatformOptions `tfsdk:"platform_options"`
+func UriTcpOptionsAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"port":             types.Int64Type,
+		"string_to_expect": types.StringType,
+		"string_to_send":   types.StringType,
+	}
 }
 
-// uriResourceProbeLocation represents location_options field in test_definitions
+type uriResourceTestDefinitions struct {
+	TestFromLocation      types.String `tfsdk:"test_from_location"`
+	LocationOptions       types.Set    `tfsdk:"location_options"` // uriResourceProbeLocation
+	TestIntervalInSeconds types.Int64  `tfsdk:"test_interval_in_seconds"`
+	PlatformOptions       types.Object `tfsdk:"platform_options"` //uriResourcePlatformOptions
+}
+
+func UriTestDefAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"test_from_location":       types.StringType,
+		"location_options":         types.SetType{ElemType: types.ObjectType{AttrTypes: UriProbeLocationAttributeTypes()}},
+		"test_interval_in_seconds": types.Int64Type,
+		"platform_options":         types.ObjectType{AttrTypes: UriPlatformOptionsAttributeTypes()},
+	}
+}
+
 type uriResourceProbeLocation struct {
 	Type  types.String `tfsdk:"type"`
 	Value types.String `tfsdk:"value"`
 }
 
-// uriResourcePlatformOptions represents platform_options field in test_definitions
+func UriProbeLocationAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"type":  types.StringType,
+		"value": types.StringType,
+	}
+}
+
 type uriResourcePlatformOptions struct {
 	TestFromAll types.Bool `tfsdk:"test_from_all"`
-	Platforms   []string   `tfsdk:"platforms"`
+	Platforms   types.Set  `tfsdk:"platforms"`
+}
+
+func UriPlatformOptionsAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"test_from_all": types.BoolType,
+		"platforms":     types.SetType{ElemType: types.StringType},
+	}
 }
 
 func (r *uriResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {

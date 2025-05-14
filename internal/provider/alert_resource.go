@@ -44,11 +44,11 @@ func (r *alertResource) ValidateConfig(ctx context.Context, req resource.Validat
 		return
 	}
 
-	resp.Diagnostics.Append(data.validateConditions()...)
+	resp.Diagnostics.Append(data.validateConditions(ctx)...)
 }
 
-func (model *alertResourceModel) validateConditions() diag.Diagnostics {
-	if len(model.Conditions) > 5 || len(model.Conditions) < 1 {
+func (model *alertResourceModel) validateConditions(ctx context.Context) diag.Diagnostics {
+	if len(model.Conditions.Elements()) > 5 || len(model.Conditions.Elements()) < 1 {
 		return diag.Diagnostics{
 			diag.NewAttributeErrorDiagnostic(
 				path.Root("conditions"),
@@ -56,11 +56,17 @@ func (model *alertResourceModel) validateConditions() diag.Diagnostics {
 				"Number of alerting conditions must be between 1 and 5.")}
 	}
 
+	var planConditions []alertConditionModel
+	d := model.Conditions.ElementsAs(ctx, &planConditions, false)
+	if d.HasError() {
+		return d
+	}
+
 	// validate each alert condition
 	// do not need to validate required fields, those have been validated by schema validation at this point
 	var conditionErrors diag.Diagnostics
-	firstNode := model.Conditions[0] // get first node with which to compare each nodes' targetEntityTypes, entityIds, groupByMetricTag against
-	for _, condition := range model.Conditions {
+	firstNode := planConditions[0] // get the first node with which to compare each node's targetEntityTypes, entityIds, groupByMetricTag against
+	for _, condition := range planConditions {
 		// Validation if not_reporting = true
 		notReporting := condition.NotReporting.ValueBool()
 		if notReporting {
@@ -75,7 +81,7 @@ func (model *alertResourceModel) validateConditions() diag.Diagnostics {
 
 			// Aggregation must be count
 			operator := condition.AggregationType.ValueString()
-			operatorType, _ := swoClient.GetAlertConditionType(operator) // ignore return err, aggregation_type will have been validated by schema by this point
+			operatorType, _ := swoClient.GetAlertConditionType(operator) // ignore return err, schema has validated aggregation_type by this point
 			if operatorType == string(swoClient.AlertAggregationOperatorType) && operator != string(swoClient.AlertOperatorCount) {
 				d := diag.NewAttributeErrorDiagnostic(
 					path.Root("aggregationType"),
@@ -142,15 +148,12 @@ func (r *alertResource) Create(ctx context.Context, req resource.CreateRequest, 
 	}
 
 	// Create the alert from the provided Terraform model...
-	input, defError := tfPlan.toAlertDefinitionInput(ctx)
-	if defError != nil {
-		resp.Diagnostics.AddError("Bad input in terraform resource",
-			fmt.Sprintf("error parsing terraform resource: %s", defError))
+	input := tfPlan.toAlertDefinitionInput(ctx, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	newAlertDef, err := r.client.AlertsService().Create(ctx, input)
-
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error",
 			fmt.Sprintf("error creating alert definition '%s'. error: %s", input.Name, err))
@@ -192,10 +195,8 @@ func (r *alertResource) Update(ctx context.Context, req resource.UpdateRequest, 
 	}
 
 	alertId := tfState.Id.ValueString()
-	input, defError := tfPlan.toAlertDefinitionInput(ctx)
-	if defError != nil {
-		resp.Diagnostics.AddError("Bad input in terraform resource",
-			fmt.Sprintf("error parsing terraform resource: %s", defError))
+	input := tfPlan.toAlertDefinitionInput(ctx, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
@@ -253,15 +254,20 @@ func (r *alertResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 //
 // The function will first create the required number of logical operator nodes with
 // pre-computed operator IDs. Then it'll transform all condition items to alert conditions.
-func (model *alertResourceModel) toAlertDefinitionInput(ctx context.Context) (swoClient.AlertDefinitionInput, error) {
+func (model *alertResourceModel) toAlertDefinitionInput(ctx context.Context, diags *diag.Diagnostics) swoClient.AlertDefinitionInput {
 
 	var conditions []swoClient.AlertConditionNodeInput
-	var err error
 
-	if len(model.Conditions) == 1 {
-		conditions, err = model.Conditions[0].toAlertConditionInputs(ctx, 0)
-		if err != nil {
-			return swoClient.AlertDefinitionInput{}, err
+	var planConditions []alertConditionModel
+	d := model.Conditions.ElementsAs(ctx, &planConditions, false)
+	diags.Append(d...)
+	if diags.HasError() {
+		return swoClient.AlertDefinitionInput{}
+	}
+	if len(planConditions) == 1 {
+		conditions = planConditions[0].toAlertConditionInputs(ctx, diags, 0)
+		if diags.HasError() {
+			return swoClient.AlertDefinitionInput{}
 		}
 	} else {
 
@@ -274,7 +280,7 @@ func (model *alertResourceModel) toAlertDefinitionInput(ctx context.Context) (sw
 		rootLogicalOperator.Operator = &logicalOperator
 
 		// Pre-computed child operator IDs
-		numConditions := len(model.Conditions)
+		numConditions := len(planConditions)
 		rootOperandIds := make([]int, numConditions)
 		// We need to create 5 flat tree nodes to build an alert condition:
 		// - binaryOperator (comparisonOperator)
@@ -293,45 +299,60 @@ func (model *alertResourceModel) toAlertDefinitionInput(ctx context.Context) (sw
 		// Create an alert condition for each
 		for i := 0; i < numConditions; i++ {
 			childRootNodeId := rootOperandIds[i]
-			childConditions, err := model.Conditions[i].toAlertConditionInputs(ctx, childRootNodeId)
-			if err != nil {
-				return swoClient.AlertDefinitionInput{}, err
+			childConditions := planConditions[i].toAlertConditionInputs(ctx, diags, childRootNodeId)
+			if diags.HasError() {
+				return swoClient.AlertDefinitionInput{}
 			}
 			conditions = append(conditions, childConditions...)
 		}
 	}
 
 	triggerDelay := int(model.TriggerDelaySeconds.ValueInt64())
+	actions := model.toAlertActionInput(ctx, diags)
+	if diags.HasError() {
+		return swoClient.AlertDefinitionInput{}
+	}
 	return swoClient.AlertDefinitionInput{
 		Name:                model.Name.ValueString(),
 		Description:         model.Description.ValueStringPointer(),
 		Enabled:             model.Enabled.ValueBool(),
 		Severity:            swoClient.AlertSeverity(model.Severity.ValueString()),
-		Actions:             model.toAlertActionInput(ctx),
+		Actions:             actions,
 		TriggerResetActions: model.TriggerResetActions.ValueBoolPointer(),
 		Condition:           conditions,
 		RunbookLink:         model.RunbookLink.ValueStringPointer(),
 		TriggerDelaySeconds: &triggerDelay,
-	}, nil
+	}
 }
 
-func (model *alertResourceModel) toAlertActionInput(ctx context.Context) []swoClient.AlertActionInput {
+func (model *alertResourceModel) toAlertActionInput(ctx context.Context, diags *diag.Diagnostics) []swoClient.AlertActionInput {
 	var inputs []swoClient.AlertActionInput
 
-	//Notifications is deprecated. NotificationActions should be used instead.
+	var notificationActions []alertActionInputModel
+	d := model.NotificationActions.ElementsAs(ctx, &notificationActions, false)
+	diags.Append(d...)
+	if diags.HasError() {
+		return inputs
+	}
+
+	// Notifications is deprecated. NotificationActions should be used instead.
 	// This if/else maintains backwards compatability.
-	if len(model.NotificationActions) > 0 {
+	if len(notificationActions) > 0 {
 		receivingType := swoClient.NotificationReceivingTypeNotSpecified
 		includeDetails := true
 
-		for _, action := range model.NotificationActions {
+		for _, action := range notificationActions {
 			actionsList := make(map[string][]string)
 
 			var configurationIds []string
-			action.ConfigurationIds.ElementsAs(ctx, &configurationIds, false)
+			dIds := action.ConfigurationIds.ElementsAs(ctx, &configurationIds, false)
+			diags.Append(dIds...)
+			if diags.HasError() {
+				return inputs
+			}
 
 			for _, configId := range configurationIds {
-				// Notification Id's are formatted as id:type.
+				// Notification Ids are formatted as id:type.
 				// This is to accommodate ImportState needing a single Id to import a resource.
 
 				actionId, notificationType, _ := ParseNotificationId(types.StringValue(configId))

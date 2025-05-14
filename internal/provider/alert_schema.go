@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -16,36 +17,59 @@ import (
 
 // The main Alert Resource model that is derived from the schema.
 type alertResourceModel struct {
-	Id                  types.String            `tfsdk:"id"`
-	Name                types.String            `tfsdk:"name"`
-	NotificationActions []alertActionInputModel `tfsdk:"notification_actions"`
-	Description         types.String            `tfsdk:"description"`
-	Severity            types.String            `tfsdk:"severity"`
-	Enabled             types.Bool              `tfsdk:"enabled"`
-	Conditions          []alertConditionModel   `tfsdk:"conditions"`
-	Notifications       types.List              `tfsdk:"notifications"`
-	TriggerResetActions types.Bool              `tfsdk:"trigger_reset_actions"`
-	RunbookLink         types.String            `tfsdk:"runbook_link"`
-	TriggerDelaySeconds types.Int64             `tfsdk:"trigger_delay_seconds"`
+	Id                  types.String `tfsdk:"id"`
+	Name                types.String `tfsdk:"name"`
+	NotificationActions types.Set    `tfsdk:"notification_actions"` //alertActionInputModel
+	Description         types.String `tfsdk:"description"`
+	Severity            types.String `tfsdk:"severity"`
+	Enabled             types.Bool   `tfsdk:"enabled"`
+	Conditions          types.Set    `tfsdk:"conditions"` //alertConditionModel
+	Notifications       types.List   `tfsdk:"notifications"`
+	TriggerResetActions types.Bool   `tfsdk:"trigger_reset_actions"`
+	RunbookLink         types.String `tfsdk:"runbook_link"`
+	TriggerDelaySeconds types.Int64  `tfsdk:"trigger_delay_seconds"`
 }
 
 type alertConditionModel struct {
-	MetricName        types.String      `tfsdk:"metric_name"`
-	Threshold         types.String      `tfsdk:"threshold"`
-	Duration          types.String      `tfsdk:"duration"`
-	AggregationType   types.String      `tfsdk:"aggregation_type"`
-	EntityIds         types.List        `tfsdk:"entity_ids"`
-	QuerySearch       types.String      `tfsdk:"query_search"`
-	TargetEntityTypes types.List        `tfsdk:"target_entity_types"`
-	IncludeTags       *[]alertTagsModel `tfsdk:"include_tags"`
-	ExcludeTags       *[]alertTagsModel `tfsdk:"exclude_tags"`
-	GroupByMetricTag  types.List        `tfsdk:"group_by_metric_tag"`
-	NotReporting      types.Bool        `tfsdk:"not_reporting"`
+	MetricName        types.String `tfsdk:"metric_name"`
+	Threshold         types.String `tfsdk:"threshold"`
+	Duration          types.String `tfsdk:"duration"`
+	AggregationType   types.String `tfsdk:"aggregation_type"`
+	EntityIds         types.List   `tfsdk:"entity_ids"`
+	QuerySearch       types.String `tfsdk:"query_search"`
+	TargetEntityTypes types.List   `tfsdk:"target_entity_types"`
+	IncludeTags       types.Set    `tfsdk:"include_tags"`
+	ExcludeTags       types.Set    `tfsdk:"exclude_tags"`
+	GroupByMetricTag  types.List   `tfsdk:"group_by_metric_tag"`
+	NotReporting      types.Bool   `tfsdk:"not_reporting"`
+}
+
+func AlertConditionAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"metric_name":         types.StringType,
+		"threshold":           types.StringType,
+		"duration":            types.StringType,
+		"aggregation_type":    types.StringType,
+		"entity_ids":          types.ListType{ElemType: types.StringType},
+		"query_search":        types.StringType,
+		"target_entity_types": types.ListType{ElemType: types.StringType},
+		"include_tags":        types.SetType{ElemType: types.ObjectType{AttrTypes: AlertTagAttributeTypes()}},
+		"exclude_tags":        types.SetType{ElemType: types.ObjectType{AttrTypes: AlertTagAttributeTypes()}},
+		"group_by_metric_tag": types.ListType{ElemType: types.StringType},
+		"not_reporting":       types.BoolType,
+	}
 }
 
 type alertTagsModel struct {
 	Name   types.String `tfsdk:"name"`
 	Values types.List   `tfsdk:"values"`
+}
+
+func AlertTagAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"name":  types.StringType,
+		"value": types.ListType{ElemType: types.StringType},
+	}
 }
 
 type alertActionInputModel struct {

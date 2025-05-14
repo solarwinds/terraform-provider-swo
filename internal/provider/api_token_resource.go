@@ -3,6 +3,8 @@ package provider
 import (
 	"context"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -42,12 +44,19 @@ func (r *apiTokenResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
+	var attributes []apiTokenAttribute
+	d := tfPlan.Attributes.ElementsAs(ctx, &attributes, false)
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	// Create our input request.
 	createInput := swoClient.CreateTokenInput{
 		Name:        tfPlan.Name.ValueString(),
-		AccessLevel: *tfPlan.AccessLevel,
+		AccessLevel: swoClient.TokenAccessLevel(tfPlan.AccessLevel.ValueString()),
 		Type:        tfPlan.Type.ValueStringPointer(),
-		Attributes: convertArray(tfPlan.Attributes, func(v apiTokenAttribute) swoClient.TokenAttributeInput {
+		Attributes: convertArray(attributes, func(v apiTokenAttribute) swoClient.TokenAttributeInput {
 			return swoClient.TokenAttributeInput{
 				Key:   v.Key.ValueString(),
 				Value: v.Value.ValueString(),
@@ -85,7 +94,7 @@ func (r *apiTokenResource) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	r.updateState(&tfState, apiToken)
+	r.updateState(ctx, &tfState, apiToken, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, tfState)...)
 }
 
@@ -97,14 +106,21 @@ func (r *apiTokenResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
+	var attributes []apiTokenAttribute
+	d := tfPlan.Attributes.ElementsAs(ctx, &attributes, false)
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	// Create our input request.
 	updateInput := swoClient.UpdateTokenInput{
 		Id:          tfState.Id.ValueString(),
 		Name:        tfPlan.Name.ValueStringPointer(),
 		Enabled:     tfPlan.Enabled.ValueBoolPointer(),
 		Type:        tfPlan.Type.ValueStringPointer(),
-		AccessLevel: tfPlan.AccessLevel,
-		Attributes: convertArray(tfPlan.Attributes, func(v apiTokenAttribute) swoClient.TokenAttributeInput {
+		AccessLevel: (*swoClient.TokenAccessLevel)(tfPlan.AccessLevel.ValueStringPointer()),
+		Attributes: convertArray(attributes, func(v apiTokenAttribute) swoClient.TokenAttributeInput {
 			return swoClient.TokenAttributeInput{
 				Key:   v.Key.ValueString(),
 				Value: v.Value.ValueString(),
@@ -142,19 +158,37 @@ func (r *apiTokenResource) ImportState(ctx context.Context, req resource.ImportS
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-func (r *apiTokenResource) updateState(state *apiTokenResourceModel, result *swoClient.ReadApiTokenResult) {
+func (r *apiTokenResource) updateState(ctx context.Context, state *apiTokenResourceModel, result *swoClient.ReadApiTokenResult, diags *diag.Diagnostics) {
 	state.Id = types.StringValue(result.Id)
 	state.Name = types.StringPointerValue(result.Name)
 	state.Enabled = types.BoolPointerValue(result.Enabled)
 	state.Type = types.StringPointerValue(result.Type)
-	state.AccessLevel = result.AccessLevel
+	state.AccessLevel = types.StringValue(string(*result.AccessLevel))
 
-	var attrs = []apiTokenAttribute{}
-	for _, attr := range result.Attributes {
-		attrs = append(attrs, apiTokenAttribute{
-			Key:   types.StringValue(attr.Key),
-			Value: types.StringValue(attr.Value),
-		})
+	var elements []attr.Value
+	var attributeTypes = TokenAttributeTypes()
+	for _, attribute := range result.Attributes {
+		objectValue, d := types.ObjectValueFrom(
+			ctx,
+			attributeTypes,
+			apiTokenAttribute{
+				Key:   types.StringValue(attribute.Key),
+				Value: types.StringValue(attribute.Value),
+			},
+		)
+
+		diags.Append(d...)
+		if diags.HasError() {
+			return
+		}
+		elements = append(elements, objectValue)
 	}
-	state.Attributes = attrs
+
+	attributes, d := types.SetValueFrom(ctx, types.ObjectType{AttrTypes: attributeTypes}, elements)
+	diags.Append(d...)
+	if diags.HasError() {
+		return
+	}
+
+	state.Attributes = attributes
 }

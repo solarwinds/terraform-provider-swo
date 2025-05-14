@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
@@ -52,19 +53,29 @@ func (r *dashboardResource) Configure(ctx context.Context, req resource.Configur
 }
 
 // Creates new WidgetInputs and LayoutInputs from plan widget data.
-func widgetsFromPlan(plan dashboardResourceModel) ([]swoClient.WidgetInput, []swoClient.LayoutInput, error) {
-	widgets := make([]swoClient.WidgetInput, len(plan.Widgets))
-	layouts := make([]swoClient.LayoutInput, len(plan.Widgets))
+func widgetsFromPlan(ctx context.Context, plan dashboardResourceModel, diags *diag.Diagnostics) ([]swoClient.WidgetInput, []swoClient.LayoutInput) {
 
-	for wIdx := range plan.Widgets {
-		planW := &plan.Widgets[wIdx]
+	var planWidgets []dashboardWidgetModel
+	d := plan.Widgets.ElementsAs(ctx, &planWidgets, false)
+	diags.Append(d...)
+	if diags.HasError() {
+		return nil, nil
+	}
+
+	widgets := make([]swoClient.WidgetInput, len(planWidgets))
+	layouts := make([]swoClient.LayoutInput, len(planWidgets))
+
+	for wIdx := range planWidgets {
+		planW := &planWidgets[wIdx]
 		id := uuid.NewString()
 
 		// Marshal the json encoded properties string to an object.
 		var props any
 		err := json.Unmarshal([]byte(planW.Properties.ValueString()), &props)
 		if err != nil {
-			return nil, nil, err
+			diags.AddError("swo provider error",
+				fmt.Sprintf("convert plan to API error: %s", err))
+			return nil, nil
 		}
 
 		widgets[wIdx] = swoClient.WidgetInput{
@@ -82,44 +93,58 @@ func widgetsFromPlan(plan dashboardResourceModel) ([]swoClient.WidgetInput, []sw
 		}
 	}
 
-	return widgets, layouts, nil
+	return widgets, layouts
 }
 
 // Sets the computed values of the dashboard models with the values returned from the Create request.
-func setDashboardValuesFromCreate(dashboard *swoClient.CreateDashboardResult, plan *dashboardResourceModel) error {
+func setDashboardValuesFromCreate(ctx context.Context, dashboard *swoClient.CreateDashboardResult, plan *dashboardResourceModel, diags *diag.Diagnostics) {
 	plan.Id = types.StringValue(dashboard.Id)
+
+	var planWidgets []dashboardWidgetModel
+	d := plan.Widgets.ElementsAs(ctx, &planWidgets, false)
+	diags.Append(d...)
+	if diags.HasError() {
+		return
+	}
 
 	for _, w := range dashboard.Widgets {
 		lIdx := slices.IndexFunc(dashboard.Layout, func(l swoClient.CreateDashboardLayout) bool { return l.Id == w.Id })
 		if lIdx <= -1 {
-			return newLayoutError(w.Id)
+			diags.AddError("swo provider error",
+				fmt.Sprintf("error setting computed values for dashboard: %s, id: %s", newLayoutError(w.Id), plan.Id))
+			return
 		}
 
 		// The layout that will give us the widget coordinates for comparison to the plan.
 		layout := &dashboard.Layout[lIdx]
 
 		// We need to compare the properties of the plan widget with what is returned from the server
-		// to reconcile the server data with the plan data. Widgets ids in the plan are temporary and
+		// to reconcile the server data with the plan data. A widget's id in the plan is temporary, and
 		// there isn't any single value we can use to make a match.
-		for wIdx := range plan.Widgets {
-			planW := &plan.Widgets[wIdx]
+		for wIdx := range planWidgets {
+			planW := &planWidgets[wIdx]
 			if planW.Type.Equal(types.StringValue(w.Type)) &&
 				planW.X.Equal(types.Int64Value(int64(layout.X))) &&
 				planW.Y.Equal(types.Int64Value(int64(layout.Y))) &&
 				planW.Width.Equal(types.Int64Value(int64(layout.Width))) &&
 				planW.Height.Equal(types.Int64Value(int64(layout.Height))) {
-				// Widget properties are equal so we assume it must be the one we're looking for.
+				// Widget properties are equal, so we assume it must be the one we're looking for.
 				planW.Id = types.StringValue(w.Id)
 				break
 			}
 		}
 	}
 
-	return nil
+	updatedWidgets, d := types.SetValueFrom(ctx, types.ObjectType{AttrTypes: WidgetAttributeTypes()}, planWidgets)
+	diags.Append(d...)
+	if diags.HasError() {
+		return
+	}
+	plan.Widgets = updatedWidgets
 }
 
 // Sets the values of the terraform state with the values returned from the Read request.
-func setDashboardValuesFromRead(dashboard *swoClient.ReadDashboardResult, state *dashboardResourceModel) error {
+func setDashboardValuesFromRead(ctx context.Context, dashboard *swoClient.ReadDashboardResult, state *dashboardResourceModel, diags *diag.Diagnostics) {
 	state.Id = types.StringValue(dashboard.Id)
 	state.Name = types.StringValue(dashboard.Name)
 	if dashboard.Category != nil {
@@ -129,10 +154,19 @@ func setDashboardValuesFromRead(dashboard *swoClient.ReadDashboardResult, state 
 		state.IsPrivate = types.BoolValue(*dashboard.IsPrivate)
 	}
 
+	var stateWidgets []dashboardWidgetModel
+	d := state.Widgets.ElementsAs(ctx, &stateWidgets, false)
+	diags.Append(d...)
+	if diags.HasError() {
+		return
+	}
+
 	for _, w := range dashboard.Widgets {
 		lIdx := slices.IndexFunc(dashboard.Layout, func(l swoClient.ReadDashboardLayout) bool { return l.Id == w.Id })
 		if lIdx <= -1 {
-			return newLayoutError(w.Id)
+			diags.AddError("swo provider error",
+				fmt.Sprintf("error updating local state for dashboard: %s, id: %s", newLayoutError(w.Id), state.Id))
+			return
 		}
 
 		// We found the layout that will give us the widget coordinates for comparison to the plan.
@@ -140,11 +174,13 @@ func setDashboardValuesFromRead(dashboard *swoClient.ReadDashboardResult, state 
 		isInState := false
 		props, err := json.Marshal(w.Properties)
 		if err != nil {
-			return newWidgetPropertiesError(err.Error(), w.Id)
+			diags.AddError("swo provider error",
+				fmt.Sprintf("error updating local state for dashboard: %s, id: %s", newWidgetPropertiesError(err.Error(), w.Id), state.Id))
+			return
 		}
 
-		for wIdx := range state.Widgets {
-			stateW := &state.Widgets[wIdx]
+		for wIdx := range stateWidgets {
+			stateW := &stateWidgets[wIdx]
 			if stateW.Id.Equal(types.StringValue(w.Id)) {
 				// Ensure the local widget state is aligned with what was returned by the server.
 				isInState = true
@@ -157,7 +193,9 @@ func setDashboardValuesFromRead(dashboard *swoClient.ReadDashboardResult, state 
 				var stateProps any
 				err = json.Unmarshal([]byte(stateW.Properties.ValueString()), &stateProps)
 				if err != nil {
-					return newWidgetPropertiesError(err.Error(), w.Id)
+					diags.AddError("swo provider error",
+						fmt.Sprintf("error updating local state for dashboard: %s, id: %s", newWidgetPropertiesError(err.Error(), w.Id), state.Id))
+					return
 				}
 
 				// The json string can be marshalled differently than what is specified in the terraform
@@ -172,9 +210,9 @@ func setDashboardValuesFromRead(dashboard *swoClient.ReadDashboardResult, state 
 		}
 
 		// If the terraform state doesn't have a widget returned from a Read we need to add it to align the
-		// state with the server. This can happen if a dashboard is modified outside of terraform (e.g. in the UI).
+		// state with the server. This can happen if a dashboard is modified outside terraform (e.g., in the UI).
 		if !isInState {
-			state.Widgets = append(state.Widgets, dashboardWidgetModel{
+			stateWidgets = append(stateWidgets, dashboardWidgetModel{
 				Id:         types.StringValue(w.Id),
 				Type:       types.StringValue(w.Type),
 				X:          types.Int64Value(int64(layout.X)),
@@ -186,7 +224,12 @@ func setDashboardValuesFromRead(dashboard *swoClient.ReadDashboardResult, state 
 		}
 	}
 
-	return nil
+	updatedWidgets, d := types.SetValueFrom(ctx, types.ObjectType{AttrTypes: WidgetAttributeTypes()}, stateWidgets)
+	diags.Append(d...)
+	if diags.HasError() {
+		return
+	}
+	state.Widgets = updatedWidgets
 }
 
 func (r *dashboardResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -196,10 +239,8 @@ func (r *dashboardResource) Create(ctx context.Context, req resource.CreateReque
 		return
 	}
 
-	widgets, layouts, err := widgetsFromPlan(tfPlan)
-	if err != nil {
-		resp.Diagnostics.AddError("swo provider error",
-			fmt.Sprintf("convert plan to API error: %s, name: %s", err, tfPlan.Name))
+	widgets, layouts := widgetsFromPlan(ctx, tfPlan, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
@@ -221,10 +262,8 @@ func (r *dashboardResource) Create(ctx context.Context, req resource.CreateReque
 		return
 	}
 
-	err = setDashboardValuesFromCreate(dashboard, &tfPlan)
-	if err != nil {
-		resp.Diagnostics.AddError("swo provider error",
-			fmt.Sprintf("set dashboard computed values error: %s, id: %s", err, dashboard.Id))
+	setDashboardValuesFromCreate(ctx, dashboard, &tfPlan, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
@@ -250,10 +289,8 @@ func (r *dashboardResource) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 
-	err = setDashboardValuesFromRead(dashboard, &tfState)
-	if err != nil {
-		resp.Diagnostics.AddError("swo provider error",
-			fmt.Sprintf("error updating local state for dashboard: %s, id: %s", err, tfState.Id))
+	setDashboardValuesFromRead(ctx, dashboard, &tfState, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
@@ -268,13 +305,11 @@ func (r *dashboardResource) Update(ctx context.Context, req resource.UpdateReque
 		return
 	}
 
-	// Computed values like Id need to be read from terraform state.
+	// Computed value Id needs to be read from terraform state.
 	id := state.Id.ValueString()
 
-	widgets, layouts, err := widgetsFromPlan(plan)
-	if err != nil {
-		resp.Diagnostics.AddError("swo provider error",
-			fmt.Sprintf("error converting plan to api: %s, name: %s", err, plan.Name))
+	widgets, layouts := widgetsFromPlan(ctx, plan, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
@@ -296,7 +331,7 @@ func (r *dashboardResource) Update(ctx context.Context, req resource.UpdateReque
 		return
 	}
 
-	// The create and update response objects are identical so we convert so we don't have to have 2 separate
+	// The create and update response objects are identical so we convert, so we don't have to have 2 separate
 	// methods for 'setDashboardValuesFromCreate()'.
 	d, err := convertObject[swoClient.CreateDashboardResult](dashboard)
 	if err != nil {
@@ -305,10 +340,8 @@ func (r *dashboardResource) Update(ctx context.Context, req resource.UpdateReque
 		return
 	}
 
-	err = setDashboardValuesFromCreate(d, &plan)
-	if err != nil {
-		resp.Diagnostics.AddError("swo provider error",
-			fmt.Sprintf("error setting computed values for dashboard: %s, id: %s", err, state.Id))
+	setDashboardValuesFromCreate(ctx, d, &plan, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 

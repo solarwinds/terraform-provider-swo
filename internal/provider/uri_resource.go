@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"reflect"
 
 	"github.com/cenkalti/backoff/v5"
@@ -46,31 +48,61 @@ func (r *uriResource) Create(ctx context.Context, req resource.CreateRequest, re
 		return
 	}
 
+	var planOptions uriResourceOptions
+	d := tfPlan.Options.As(ctx, &planOptions, basetypes.ObjectAsOptions{})
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	var tcpOptions uriResourceTcpOptions
+	d = tfPlan.TcpOptions.As(ctx, &tcpOptions, basetypes.ObjectAsOptions{})
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	var testDefinitions uriResourceTestDefinitions
+	d = tfPlan.TestDefinitions.As(ctx, &testDefinitions, basetypes.ObjectAsOptions{})
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	var planPlatformOptions uriResourcePlatformOptions
+	d = testDefinitions.PlatformOptions.As(ctx, &planPlatformOptions, basetypes.ObjectAsOptions{})
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	var locationOptions []uriResourceProbeLocation
+	d = testDefinitions.LocationOptions.ElementsAs(ctx, &locationOptions, false)
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	// Create our input request.
 	createInput := swoClient.CreateUriInput{
 		Name:       tfPlan.Name.ValueString(),
 		IpOrDomain: tfPlan.Host.ValueString(),
 		PingOptions: &swoClient.UriPingOptionsInput{
-			Enabled: tfPlan.Options.IsPingEnabled.ValueBool(),
+			Enabled: planOptions.IsPingEnabled.ValueBool(),
 		},
 		TcpOptions: &swoClient.UriTcpOptionsInput{
-			Enabled:        tfPlan.Options.IsTcpEnabled.ValueBool(),
-			Port:           int(tfPlan.TcpOptions.Port.ValueInt64()),
-			StringToExpect: tfPlan.TcpOptions.StringToExpect.ValueStringPointer(),
-			StringToSend:   tfPlan.TcpOptions.StringToSend.ValueStringPointer(),
+			Enabled:        planOptions.IsTcpEnabled.ValueBool(),
+			Port:           int(tcpOptions.Port.ValueInt64()),
+			StringToExpect: tcpOptions.StringToExpect.ValueStringPointer(),
+			StringToSend:   tcpOptions.StringToSend.ValueStringPointer(),
 		},
 		TestDefinitions: swoClient.UriTestDefinitionsInput{
 			PlatformOptions: &swoClient.ProbePlatformOptionsInput{
-				TestFromAll: tfPlan.TestDefinitions.PlatformOptions.TestFromAll.ValueBoolPointer(),
-				ProbePlatforms: convertArray(tfPlan.TestDefinitions.PlatformOptions.Platforms,
-					func(v string) swoClient.ProbePlatform { return swoClient.ProbePlatform(v) }),
+				TestFromAll: planPlatformOptions.TestFromAll.ValueBoolPointer(),
+				ProbePlatforms: convertArray(planPlatformOptions.Platforms.Elements(),
+					func(s attr.Value) swoClient.ProbePlatform { return swoClient.ProbePlatform(attrValueToString(s)) }),
 			},
 			TestFrom: swoClient.ProbeLocationInput{
-				Type: swoClient.ProbeLocationType(tfPlan.TestDefinitions.TestFromLocation.ValueString()),
-				Values: convertArray(tfPlan.TestDefinitions.LocationOptions,
+				Type: swoClient.ProbeLocationType(testDefinitions.TestFromLocation.ValueString()),
+				Values: convertArray(locationOptions,
 					func(v uriResourceProbeLocation) string { return v.Value.ValueString() }),
 			},
-			TestIntervalInSeconds: swoClientTypes.TestIntervalInSeconds(int(tfPlan.TestDefinitions.TestIntervalInSeconds.ValueInt64())),
+			TestIntervalInSeconds: swoClientTypes.TestIntervalInSeconds(int(testDefinitions.TestIntervalInSeconds.ValueInt64())),
 		},
 	}
 
@@ -107,62 +139,111 @@ func (r *uriResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 	tfState.Name = types.StringPointerValue(uri.Name)
 
 	// Options
-	options := uri.Options
-	tfState.Options = &uriResourceOptions{
-		IsPingEnabled: types.BoolValue(options.IsPingEnabled),
-		IsTcpEnabled:  types.BoolValue(options.IsTcpEnabled),
+	optionsElement := uriResourceOptions{
+		IsPingEnabled: types.BoolValue(uri.Options.IsPingEnabled),
+		IsTcpEnabled:  types.BoolValue(uri.Options.IsTcpEnabled),
 	}
+	tfOptions, diags := types.ObjectValueFrom(ctx, UriResourceOptionsAttributeTypes(), optionsElement)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	tfState.Options = tfOptions
 
 	// TcpOptions
 	if uri.TcpOptions != nil {
 		tcpOptions := uri.TcpOptions
-		tfState.TcpOptions = &uriResourceTcpOptions{
-			Port: types.Int64Value(int64(tcpOptions.Port)),
-		}
-		if tcpOptions.StringToSend != nil {
-			tfState.TcpOptions.StringToSend = types.StringValue(*tcpOptions.StringToSend)
+		tcpElement := uriResourceTcpOptions{
+			Port:           types.Int64Value(int64(tcpOptions.Port)),
+			StringToExpect: types.StringNull(),
+			StringToSend:   types.StringNull(),
 		}
 		if tcpOptions.StringToExpect != nil {
-			tfState.TcpOptions.StringToExpect = types.StringValue(*tcpOptions.StringToExpect)
+			tcpElement.StringToExpect = types.StringValue(*tcpOptions.StringToExpect)
 		}
+		if tcpOptions.StringToSend != nil {
+			tcpElement.StringToSend = types.StringValue(*tcpOptions.StringToSend)
+		}
+
+		tfTcpOptions, d := types.ObjectValueFrom(ctx, UriTcpOptionsAttributeTypes(), tcpElement)
+		resp.Diagnostics.Append(d...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		tfState.TcpOptions = tfTcpOptions
 	} else {
-		tfState.TcpOptions = nil
+		tfState.TcpOptions = types.ObjectNull(UriTcpOptionsAttributeTypes())
 	}
 
 	// TestDefinitions
 	testDefs := uri.TestDefinitions
-	tfState.TestDefinitions = &uriResourceTestDefinitions{}
+	platformElementTypes := UriPlatformOptionsAttributeTypes()
+	locationOptsElementTypes := UriProbeLocationAttributeTypes()
+	testDefsElementTypes := UriTestDefAttributeTypes()
 
-	if testDefs.PlatformOptions != nil {
-		tfState.TestDefinitions.PlatformOptions = &uriResourcePlatformOptions{
-			TestFromAll: types.BoolValue(testDefs.PlatformOptions.TestFromAll),
-			Platforms:   testDefs.PlatformOptions.Platforms,
-		}
-	} else {
-		tfState.TestDefinitions.PlatformOptions = nil
+	testDefsElements := uriResourceTestDefinitions{
+		TestFromLocation:      types.StringNull(),
+		LocationOptions:       types.SetUnknown(types.ObjectType{AttrTypes: locationOptsElementTypes}),
+		TestIntervalInSeconds: types.Int64Null(),
+		PlatformOptions:       types.ObjectNull(UriPlatformOptionsAttributeTypes()),
 	}
-
 	if testDefs.TestFromLocation != nil {
-		tfState.TestDefinitions.TestFromLocation = types.StringValue(string(*testDefs.TestFromLocation))
-	} else {
-		tfState.TestDefinitions.TestFromLocation = types.StringNull()
+		testDefsElements.TestFromLocation = types.StringValue(string(*testDefs.TestFromLocation))
 	}
+
+	var locationOptsElements []attr.Value
+	for _, x := range testDefs.LocationOptions {
+		objectValue, d := types.ObjectValueFrom(
+			ctx,
+			locationOptsElementTypes,
+			uriResourceProbeLocation{
+				Type:  types.StringValue(string(x.Type)),
+				Value: types.StringValue(x.Value),
+			},
+		)
+
+		resp.Diagnostics.Append(d...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		locationOptsElements = append(locationOptsElements, objectValue)
+	}
+	locationOpts, d := types.SetValueFrom(ctx, types.ObjectType{AttrTypes: locationOptsElementTypes}, locationOptsElements)
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	testDefsElements.LocationOptions = locationOpts
 
 	if testDefs.TestIntervalInSeconds != nil {
-		tfState.TestDefinitions.TestIntervalInSeconds = types.Int64Value(int64(*testDefs.TestIntervalInSeconds))
-	} else {
-		tfState.TestDefinitions.TestIntervalInSeconds = types.Int64Null()
+		testDefsElements.TestIntervalInSeconds = types.Int64Value(int64(*testDefs.TestIntervalInSeconds))
 	}
 
-	var locOpts []uriResourceProbeLocation
-	for _, x := range testDefs.LocationOptions {
-		locOpts = append(locOpts, uriResourceProbeLocation{
-			Type:  types.StringValue(string(x.Type)),
-			Value: types.StringValue(x.Value),
-		})
-	}
-	tfState.TestDefinitions.LocationOptions = locOpts
+	if testDefs.PlatformOptions != nil {
+		listValue, d := types.SetValueFrom(ctx, types.StringType, testDefs.PlatformOptions.Platforms)
+		resp.Diagnostics.Append(d...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		platformElements := uriResourcePlatformOptions{
+			TestFromAll: types.BoolValue(testDefs.PlatformOptions.TestFromAll),
+			Platforms:   listValue,
+		}
 
+		tfPlatformOptions, d := types.ObjectValueFrom(ctx, platformElementTypes, platformElements)
+		resp.Diagnostics.Append(d...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		testDefsElements.PlatformOptions = tfPlatformOptions
+	}
+
+	objectValue, d := types.ObjectValueFrom(ctx, testDefsElementTypes, testDefsElements)
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	tfState.TestDefinitions = objectValue
 	resp.Diagnostics.Append(resp.State.Set(ctx, tfState)...)
 }
 
@@ -174,34 +255,72 @@ func (r *uriResource) Update(ctx context.Context, req resource.UpdateRequest, re
 		return
 	}
 
+	var planOptions uriResourceOptions
+	d := tfPlan.Options.As(ctx, &planOptions, basetypes.ObjectAsOptions{})
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	var tcpOptions uriResourceTcpOptions
+	d = tfPlan.TcpOptions.As(ctx, &tcpOptions, basetypes.ObjectAsOptions{})
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	var testDefinitions uriResourceTestDefinitions
+	d = tfPlan.TestDefinitions.As(ctx, &testDefinitions, basetypes.ObjectAsOptions{})
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	var planPlatformOptions uriResourcePlatformOptions
+	d = testDefinitions.PlatformOptions.As(ctx, &planPlatformOptions, basetypes.ObjectAsOptions{})
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	var locationOptions []uriResourceProbeLocation
+	d = testDefinitions.LocationOptions.ElementsAs(ctx, &locationOptions, false)
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	// Create our input request.
 	updateInput := swoClient.UpdateUriInput{
 		Id:         tfState.Id.ValueString(),
 		Name:       tfPlan.Name.ValueString(),
 		IpOrDomain: tfPlan.Host.ValueString(),
 		PingOptions: &swoClient.UriPingOptionsInput{
-			Enabled: tfPlan.Options.IsPingEnabled.ValueBool(),
+			Enabled: planOptions.IsPingEnabled.ValueBool(),
 		},
 		TcpOptions: &swoClient.UriTcpOptionsInput{
-			Enabled:        tfPlan.Options.IsTcpEnabled.ValueBool(),
-			Port:           int(tfPlan.TcpOptions.Port.ValueInt64()),
-			StringToExpect: tfPlan.TcpOptions.StringToExpect.ValueStringPointer(),
-			StringToSend:   tfPlan.TcpOptions.StringToSend.ValueStringPointer(),
+			Enabled:        planOptions.IsTcpEnabled.ValueBool(),
+			Port:           int(tcpOptions.Port.ValueInt64()),
+			StringToExpect: tcpOptions.StringToExpect.ValueStringPointer(),
+			StringToSend:   tcpOptions.StringToSend.ValueStringPointer(),
 		},
 		TestDefinitions: swoClient.UriTestDefinitionsInput{
 			PlatformOptions: &swoClient.ProbePlatformOptionsInput{
-				TestFromAll: tfPlan.TestDefinitions.PlatformOptions.TestFromAll.ValueBoolPointer(),
-				ProbePlatforms: convertArray(tfPlan.TestDefinitions.PlatformOptions.Platforms,
-					func(v string) swoClient.ProbePlatform { return swoClient.ProbePlatform(v) }),
+				TestFromAll: planPlatformOptions.TestFromAll.ValueBoolPointer(),
+				ProbePlatforms: convertArray(planPlatformOptions.Platforms.Elements(),
+					func(s attr.Value) swoClient.ProbePlatform { return swoClient.ProbePlatform(attrValueToString(s)) }),
 			},
 			TestFrom: swoClient.ProbeLocationInput{
-				Type: swoClient.ProbeLocationType(tfPlan.TestDefinitions.TestFromLocation.ValueString()),
-				Values: convertArray(tfPlan.TestDefinitions.LocationOptions,
+				Type: swoClient.ProbeLocationType(testDefinitions.TestFromLocation.ValueString()),
+				Values: convertArray(locationOptions,
 					func(v uriResourceProbeLocation) string { return v.Value.ValueString() }),
 			},
 
-			TestIntervalInSeconds: swoClientTypes.TestIntervalInSeconds(int(tfPlan.TestDefinitions.TestIntervalInSeconds.ValueInt64())),
+			TestIntervalInSeconds: swoClientTypes.TestIntervalInSeconds(int(testDefinitions.TestIntervalInSeconds.ValueInt64())),
 		},
+	}
+
+	var platforms []string
+	d = planPlatformOptions.Platforms.ElementsAs(ctx, &platforms, false)
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
 	bUriToMatch, err := json.Marshal(map[string]interface{}{
@@ -221,8 +340,8 @@ func (r *uriResource) Update(ctx context.Context, req resource.UpdateRequest, re
 			"testFromLocation":      updateInput.TestDefinitions.TestFrom.Type,
 			"testIntervalInSeconds": updateInput.TestDefinitions.TestIntervalInSeconds,
 			"platformOptions": map[string]interface{}{
-				"testFromAll": tfPlan.TestDefinitions.PlatformOptions.TestFromAll.ValueBoolPointer(),
-				"platforms":   tfPlan.TestDefinitions.PlatformOptions.Platforms,
+				"testFromAll": planPlatformOptions.TestFromAll.ValueBoolPointer(),
+				"platforms":   platforms,
 			},
 		},
 	})
@@ -271,7 +390,7 @@ func (r *uriResource) Update(ctx context.Context, req resource.UpdateRequest, re
 
 		// Updated entity properties don't match, retry
 		if !match {
-			return nil, ErrNonMatchingEntites
+			return nil, ErrNonMatchingEntities
 		}
 
 		return uri, nil

@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	swoClient "github.com/solarwinds/swo-client-go/pkg/client"
 	"github.com/solarwinds/terraform-provider-swo/internal/validators"
@@ -19,33 +20,26 @@ import (
 
 // The main Website Resource model that is derived from the schema.
 type websiteResourceModel struct {
-	Id         types.String       `tfsdk:"id"`
-	Name       types.String       `tfsdk:"name"`
-	Url        types.String       `tfsdk:"url"`
-	Monitoring *websiteMonitoring `tfsdk:"monitoring"`
-}
-
-type probeLocation struct {
-	Type  types.String `tfsdk:"type"`
-	Value types.String `tfsdk:"value"`
-}
-
-type platformOptions struct {
-	TestFromAll types.Bool     `tfsdk:"test_from_all"`
-	Platforms   []types.String `tfsdk:"platforms"`
-}
-
-type sslMonitoring struct {
-	DaysPriorToExpiration          types.Int64 `tfsdk:"days_prior_to_expiration"`
-	Enabled                        types.Bool  `tfsdk:"enabled"`
-	IgnoreIntermediateCertificates types.Bool  `tfsdk:"ignore_intermediate_certificates"`
+	Id         types.String `tfsdk:"id"`
+	Name       types.String `tfsdk:"name"`
+	Url        types.String `tfsdk:"url"`
+	Monitoring types.Object `tfsdk:"monitoring"` //websiteMonitoring
 }
 
 type websiteMonitoring struct {
-	Options       *monitoringOptions      `tfsdk:"options"`
-	Availability  *availabilityMonitoring `tfsdk:"availability"`
-	Rum           *rumMonitoring          `tfsdk:"rum"`
-	CustomHeaders *[]customHeader         `tfsdk:"custom_headers"` //deprecated
+	Options       types.Object `tfsdk:"options"`        //monitoringOptions deprecated
+	Availability  types.Object `tfsdk:"availability"`   //availabilityMonitoring
+	Rum           types.Object `tfsdk:"rum"`            //rumMonitoring
+	CustomHeaders types.Set    `tfsdk:"custom_headers"` //deprecated
+}
+
+func WebsiteMonitoringAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"options":        types.ObjectType{AttrTypes: MonitoringOptionsAttributeTypes()},
+		"availability":   types.ObjectType{AttrTypes: AvailabilityMonitoringAttributeTypes()},
+		"rum":            types.ObjectType{AttrTypes: RumMonitoringAttributeTypes()},
+		"custom_headers": types.SetType{ElemType: types.ObjectType{AttrTypes: CustomHeaderAttributeTypes()}},
+	}
 }
 
 // Deprecated: Options are not used anymore
@@ -54,15 +48,35 @@ type monitoringOptions struct {
 	IsRumActive          types.Bool `tfsdk:"is_rum_active"`
 }
 
+func MonitoringOptionsAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"is_availability_active": types.BoolType,
+		"is_rum_active":          types.BoolType,
+	}
+}
+
 type availabilityMonitoring struct {
-	CheckForString        *checkForStringType `tfsdk:"check_for_string"`
-	SSL                   *sslMonitoring      `tfsdk:"ssl"`
-	Protocols             types.List          `tfsdk:"protocols"`
-	TestFromLocation      types.String        `tfsdk:"test_from_location"`
-	TestIntervalInSeconds types.Int64         `tfsdk:"test_interval_in_seconds"`
-	LocationOptions       []probeLocation     `tfsdk:"location_options"`
-	PlatformOptions       platformOptions     `tfsdk:"platform_options"`
-	CustomHeaders         *[]customHeader     `tfsdk:"custom_headers"`
+	CheckForString        types.Object `tfsdk:"check_for_string"`
+	SSL                   types.Object `tfsdk:"ssl"`
+	Protocols             types.List   `tfsdk:"protocols"`
+	TestFromLocation      types.String `tfsdk:"test_from_location"`
+	TestIntervalInSeconds types.Int64  `tfsdk:"test_interval_in_seconds"`
+	LocationOptions       types.Set    `tfsdk:"location_options"`
+	PlatformOptions       types.Object `tfsdk:"platform_options"`
+	CustomHeaders         types.Set    `tfsdk:"custom_headers"`
+}
+
+func AvailabilityMonitoringAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"check_for_string":         types.ObjectType{AttrTypes: CheckForStringTypeAttributeTypes()},
+		"ssl":                      types.ObjectType{AttrTypes: SslMonitoringAttributeTypes()},
+		"protocols":                types.ListType{ElemType: types.StringType},
+		"test_from_location":       types.StringType,
+		"test_interval_in_seconds": types.Int64Type,
+		"location_options":         types.SetType{ElemType: types.ObjectType{AttrTypes: ProbeLocationAttributeTypes()}},
+		"platform_options":         types.ObjectType{AttrTypes: PlatformOptionsAttributeTypes()},
+		"custom_headers":           types.SetType{ElemType: types.ObjectType{AttrTypes: CustomHeaderAttributeTypes()}},
+	}
 }
 
 type rumMonitoring struct {
@@ -71,14 +85,74 @@ type rumMonitoring struct {
 	Spa                types.Bool   `tfsdk:"spa"`
 }
 
+func RumMonitoringAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"apdex_time_in_seconds": types.Int64Type,
+		"snippet":               types.StringType,
+		"spa":                   types.BoolType,
+	}
+}
+
+type probeLocation struct {
+	Type  types.String `tfsdk:"type"`
+	Value types.String `tfsdk:"value"`
+}
+
+func ProbeLocationAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"type":  types.StringType,
+		"value": types.StringType,
+	}
+}
+
+type platformOptions struct {
+	TestFromAll types.Bool `tfsdk:"test_from_all"`
+	Platforms   types.Set  `tfsdk:"platforms"`
+}
+
+func PlatformOptionsAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"test_from_all": types.BoolType,
+		"platforms":     types.SetType{ElemType: types.StringType},
+	}
+}
+
+type sslMonitoring struct {
+	DaysPriorToExpiration          types.Int64 `tfsdk:"days_prior_to_expiration"`
+	Enabled                        types.Bool  `tfsdk:"enabled"`
+	IgnoreIntermediateCertificates types.Bool  `tfsdk:"ignore_intermediate_certificates"`
+}
+
+func SslMonitoringAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"days_prior_to_expiration":         types.Int64Type,
+		"enabled":                          types.BoolType,
+		"ignore_intermediate_certificates": types.BoolType,
+	}
+}
+
 type customHeader struct {
 	Name  types.String `tfsdk:"name"`
 	Value types.String `tfsdk:"value"`
 }
 
+func CustomHeaderAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"name":  types.StringType,
+		"value": types.StringType,
+	}
+}
+
 type checkForStringType struct {
 	Operator types.String `tfsdk:"operator"`
 	Value    types.String `tfsdk:"value"`
+}
+
+func CheckForStringTypeAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"operator": types.StringType,
+		"value":    types.StringType,
+	}
 }
 
 func (r *websiteResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
@@ -105,9 +179,10 @@ func (r *websiteResource) Schema(ctx context.Context, req resource.SchemaRequest
 				},
 				Attributes: map[string]schema.Attribute{
 					"options": schema.SingleNestedAttribute{
-						Description:        "The Website monitoring options.",
-						Optional:           true,
-						DeprecationMessage: "Remove this attribute's configuration as it's no longer in use and the attribute will be removed in the next major version of the provider.",
+						Description: "The Website monitoring options.",
+						Optional:    true,
+						DeprecationMessage: "Remove this attribute's configuration as it's no longer in use and the attribute " +
+							"will be removed in the next major version of the provider.",
 						Attributes: map[string]schema.Attribute{
 							"is_availability_active": schema.BoolAttribute{
 								Description:        "Is availability monitoring active?",
@@ -209,7 +284,7 @@ func (r *websiteResource) Schema(ctx context.Context, req resource.SchemaRequest
 										Description: "Test from all platforms?",
 										Required:    true,
 									},
-									"platforms": schema.ListAttribute{
+									"platforms": schema.SetAttribute{
 										Description: "The Website availability monitoring platform options. Valid values are [AWS, AZURE, GOOGLE_CLOUD].",
 										Required:    true,
 										ElementType: types.StringType,

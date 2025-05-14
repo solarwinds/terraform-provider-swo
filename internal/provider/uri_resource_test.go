@@ -20,8 +20,22 @@ func TestAccUriResource(t *testing.T) {
 					resource.TestCheckResourceAttrSet("swo_uri.test", "id"),
 					resource.TestCheckResourceAttr("swo_uri.test", "name", "test-acc test one [CREATE_TEST]"),
 					resource.TestCheckResourceAttr("swo_uri.test", "host", "example.com"),
+
 					resource.TestCheckResourceAttr("swo_uri.test", "options.is_ping_enabled", "false"),
 					resource.TestCheckResourceAttr("swo_uri.test", "options.is_tcp_enabled", "true"),
+
+					resource.TestCheckResourceAttr("swo_uri.test", "tcp_options.port", "80"),
+					resource.TestCheckResourceAttr("swo_uri.test", "tcp_options.string_to_expect", "string to expect"),
+					resource.TestCheckResourceAttr("swo_uri.test", "tcp_options.string_to_send", "string to send"),
+
+					resource.TestCheckResourceAttr("swo_uri.test", "test_definitions.test_from_location", "REGION"),
+					resource.TestCheckResourceAttr("swo_uri.test", "test_definitions.test_interval_in_seconds", "300"),
+					resource.TestCheckResourceAttr("swo_uri.test", "test_definitions.platform_options.test_from_all", "false"),
+					resource.TestCheckResourceAttr("swo_uri.test", "test_definitions.platform_options.platforms.#", "1"),
+					resource.TestCheckResourceAttr("swo_uri.test", "test_definitions.platform_options.platforms.0", "AWS"),
+					resource.TestCheckResourceAttr("swo_uri.test", "test_definitions.location_options.#", "1"),
+					resource.TestCheckResourceAttr("swo_uri.test", "test_definitions.location_options.0.type", "REGION"),
+					resource.TestCheckResourceAttr("swo_uri.test", "test_definitions.location_options.0.value", "NA"),
 				),
 			},
 			// ImportState testing
@@ -42,6 +56,8 @@ func TestAccUriResource(t *testing.T) {
 	})
 }
 
+// Only supported regions (location_options.value) in Dev and Stage are NA
+// Production supports the following: NA, AS, SA, OC
 func testAccUriResourceConfig(name string) string {
 	return providerConfig() + fmt.Sprintf(`
 	resource "swo_uri" "test" {
@@ -66,18 +82,6 @@ func testAccUriResourceConfig(name string) string {
 				{
 					type  = "REGION"
 					value = "NA"
-				},
-				{
-					type  = "REGION"
-					value = "AS"
-				},
-				{
-					type  = "REGION"
-					value = "SA"
-				},
-				{
-					type  = "REGION"
-					value = "OC"
 				}
 			]
 	

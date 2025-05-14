@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -13,11 +14,11 @@ import (
 
 // The main Dashboard Resource model that is derived from the schema.
 type dashboardResourceModel struct {
-	Id         types.String           `tfsdk:"id"`
-	Name       types.String           `tfsdk:"name"`
-	IsPrivate  types.Bool             `tfsdk:"is_private"`
-	CategoryId types.String           `tfsdk:"category_id"`
-	Widgets    []dashboardWidgetModel `tfsdk:"widgets"`
+	Id         types.String `tfsdk:"id"`
+	Name       types.String `tfsdk:"name"`
+	IsPrivate  types.Bool   `tfsdk:"is_private"`
+	CategoryId types.String `tfsdk:"category_id"`
+	Widgets    types.Set    `tfsdk:"widgets"`
 }
 
 type dashboardWidgetModel struct {
@@ -28,6 +29,18 @@ type dashboardWidgetModel struct {
 	Width      types.Int64  `tfsdk:"width"`
 	Height     types.Int64  `tfsdk:"height"`
 	Properties types.String `tfsdk:"properties"`
+}
+
+func WidgetAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"id":         types.StringType,
+		"type":       types.StringType,
+		"x":          types.Int64Type,
+		"y":          types.Int64Type,
+		"width":      types.Int64Type,
+		"height":     types.Int64Type,
+		"properties": types.StringType,
+	}
 }
 
 func (r *dashboardResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {

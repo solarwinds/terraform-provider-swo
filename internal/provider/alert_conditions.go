@@ -3,6 +3,8 @@ package provider
 import (
 	"context"
 	"errors"
+	"fmt"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"regexp"
 	"strconv"
 
@@ -25,23 +27,30 @@ var aggregationError = errors.New("aggregation operation not found")
 //	         /    \
 //	Metric Field   10m
 //	    (id=2)    (duration, id=3)
-func (model alertConditionModel) toAlertConditionInputs(ctx context.Context, rootNodeId int) ([]swoClient.AlertConditionNodeInput, error) {
+func (model alertConditionModel) toAlertConditionInputs(ctx context.Context, diags *diag.Diagnostics, rootNodeId int) []swoClient.AlertConditionNodeInput {
 
 	thresholdOperatorCondition, thresholdDataCondition, err := model.toThresholdConditionInputs()
 	if err != nil {
-		return []swoClient.AlertConditionNodeInput{}, err
+		diags.AddError("Bad input in terraform resource",
+			fmt.Sprintf("error parsing terraform resource: %s", err))
+		return []swoClient.AlertConditionNodeInput{}
 	}
 	thresholdOperatorCondition.Id = rootNodeId
 	thresholdOperatorCondition.OperandIds = []int{rootNodeId + 1, rootNodeId + 4}
 
 	aggregationCondition, err := model.toAggregationConditionInput()
 	if err != nil {
-		return []swoClient.AlertConditionNodeInput{}, err
+		diags.AddError("Bad input in terraform resource",
+			fmt.Sprintf("error parsing terraform resource: %s", err))
+		return []swoClient.AlertConditionNodeInput{}
 	}
 	aggregationCondition.Id = rootNodeId + 1
 	aggregationCondition.OperandIds = []int{rootNodeId + 2, rootNodeId + 3}
 
-	metricFieldCondition := model.toMetricFieldConditionInput(ctx)
+	metricFieldCondition := model.toMetricFieldConditionInput(ctx, diags)
+	if diags.HasError() {
+		return []swoClient.AlertConditionNodeInput{}
+	}
 	metricFieldCondition.Id = rootNodeId + 2
 
 	durationCondition := model.toDurationConditionInput()
@@ -57,7 +66,7 @@ func (model alertConditionModel) toAlertConditionInputs(ctx context.Context, roo
 		thresholdDataCondition,
 	}
 
-	return conditions, nil
+	return conditions
 }
 
 // Creates the threshold operation and threshold data nodes by either:
@@ -90,7 +99,6 @@ func (model alertConditionModel) toThresholdConditionInputs() (swoClient.AlertCo
 
 		operatorType, err := swoClient.GetAlertConditionType(operator)
 		if err != nil {
-
 			return thresholdOperatorConditions, thresholdDataConditions, thresholdOperatorError
 		}
 		thresholdOperatorConditions.Type = operatorType
@@ -143,10 +151,14 @@ func (model alertConditionModel) toAggregationConditionInput() (swoClient.AlertC
 	return aggregationCondition, nil
 }
 
-func (model alertConditionModel) toMetricFieldConditionInput(ctx context.Context) swoClient.AlertConditionNodeInput {
+func (model alertConditionModel) toMetricFieldConditionInput(ctx context.Context, diags *diag.Diagnostics) swoClient.AlertConditionNodeInput {
 
 	var groupByMetricTag []string
-	model.GroupByMetricTag.ElementsAs(ctx, &groupByMetricTag, false)
+	d := model.GroupByMetricTag.ElementsAs(ctx, &groupByMetricTag, false)
+	diags.Append(d...)
+	if diags.HasError() {
+		return swoClient.AlertConditionNodeInput{}
+	}
 	metricName := model.MetricName.ValueString()
 
 	metricFieldCondition := swoClient.AlertConditionNodeInput{
@@ -156,8 +168,16 @@ func (model alertConditionModel) toMetricFieldConditionInput(ctx context.Context
 	}
 
 	var entityFilterTypes, entityFilterIds []string
-	model.TargetEntityTypes.ElementsAs(ctx, &entityFilterTypes, false)
-	model.EntityIds.ElementsAs(ctx, &entityFilterIds, false)
+	d = model.TargetEntityTypes.ElementsAs(ctx, &entityFilterTypes, false)
+	diags.Append(d...)
+	if diags.HasError() {
+		return swoClient.AlertConditionNodeInput{}
+	}
+	d = model.EntityIds.ElementsAs(ctx, &entityFilterIds, false)
+	diags.Append(d...)
+	if diags.HasError() {
+		return swoClient.AlertConditionNodeInput{}
+	}
 	querySearch := model.QuerySearch.ValueString()
 	entityFilter := &swoClient.AlertConditionNodeEntityFilterInput{
 		Types: entityFilterTypes,
@@ -168,13 +188,15 @@ func (model alertConditionModel) toMetricFieldConditionInput(ctx context.Context
 
 	var includeTags []alertTagsModel
 	var excludeTags []alertTagsModel
-
-	if model.IncludeTags != nil {
-		includeTags = *model.IncludeTags
+	d = model.IncludeTags.ElementsAs(ctx, &includeTags, false)
+	diags.Append(d...)
+	if diags.HasError() {
+		return swoClient.AlertConditionNodeInput{}
 	}
-
-	if model.ExcludeTags != nil {
-		excludeTags = *model.ExcludeTags
+	d = model.ExcludeTags.ElementsAs(ctx, &excludeTags, false)
+	diags.Append(d...)
+	if diags.HasError() {
+		return swoClient.AlertConditionNodeInput{}
 	}
 
 	if len(includeTags) > 0 || len(excludeTags) > 0 {
@@ -185,7 +207,11 @@ func (model alertConditionModel) toMetricFieldConditionInput(ctx context.Context
 
 	for _, tag := range includeTags {
 		var metricFilterPropertyValues []*string
-		tag.Values.ElementsAs(ctx, &metricFilterPropertyValues, false)
+		dFilter := tag.Values.ElementsAs(ctx, &metricFilterPropertyValues, false)
+		diags.Append(dFilter...)
+		if diags.HasError() {
+			return swoClient.AlertConditionNodeInput{}
+		}
 		propertyName := tag.Name.ValueString()
 		metricFilter := swoClient.AlertFilterExpressionInput{
 			PropertyName:   &propertyName,
@@ -201,7 +227,11 @@ func (model alertConditionModel) toMetricFieldConditionInput(ctx context.Context
 
 	for _, tag := range excludeTags {
 		var propertyValues []*string
-		tag.Values.ElementsAs(ctx, &propertyValues, false)
+		dValues := tag.Values.ElementsAs(ctx, &propertyValues, false)
+		diags.Append(dValues...)
+		if diags.HasError() {
+			return swoClient.AlertConditionNodeInput{}
+		}
 		propertyName := tag.Name.ValueString()
 
 		metricFilter := swoClient.AlertFilterExpressionInput{
