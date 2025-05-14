@@ -693,9 +693,8 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 		if !tfMonitoring.Availability.IsNull() {
 			var tfAvailability availabilityMonitoring
 			d = tfMonitoring.Availability.As(ctx, &tfAvailability, basetypes.ObjectAsOptions{})
-			resp.Diagnostics.Append(d...)
-			if resp.Diagnostics.HasError() {
-				return nil, nil
+			if d.HasError() {
+				return nil, ErrMarshal
 			}
 
 			if tfAvailability.SSL.IsNull() {
