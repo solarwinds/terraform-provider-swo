@@ -390,7 +390,7 @@ func (r *uriResource) Update(ctx context.Context, req resource.UpdateRequest, re
 
 		// Updated entity properties don't match, retry
 		if !match {
-			return nil, ErrNonMatchingEntites
+			return nil, ErrNonMatchingEntities
 		}
 
 		return uri, nil

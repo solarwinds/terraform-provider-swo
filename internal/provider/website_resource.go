@@ -308,6 +308,10 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 					Platforms:   platformValue,
 				}
 				tfPlatformOptions, d := types.ObjectValueFrom(ctx, PlatformOptionsAttributeTypes(), platformOptionsValue)
+				resp.Diagnostics.Append(d...)
+				if resp.Diagnostics.HasError() {
+					return
+				}
 				tfStateAvailability.PlatformOptions = tfPlatformOptions
 			}
 
@@ -707,7 +711,7 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 
 		// Updated entity properties don't match, retry
 		if !match {
-			return nil, ErrNonMatchingEntites
+			return nil, ErrNonMatchingEntities
 		}
 
 		return website, nil
