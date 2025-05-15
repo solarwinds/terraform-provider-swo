@@ -43,13 +43,13 @@ func (r *notificationResource) Create(ctx context.Context, req resource.CreateRe
 	}
 
 	// Create the notification...
-	newNotification, err := r.client.NotificationsService().Create(ctx,
-		swoClient.CreateNotificationInput{
-			Title:       tfPlan.Title.ValueString(),
-			Description: tfPlan.Description.ValueStringPointer(),
-			Type:        tfPlan.Type.ValueString(),
-			Settings:    tfPlan.GetSettings(),
-		})
+	input := swoClient.CreateNotificationInput{
+		Title:       tfPlan.Title.ValueString(),
+		Description: tfPlan.Description.ValueStringPointer(),
+		Type:        tfPlan.Type.ValueString(),
+		Settings:    tfPlan.GetSettings(ctx),
+	}
+	newNotification, err := r.client.NotificationsService().Create(ctx, input)
 
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error",
@@ -117,7 +117,7 @@ func (r *notificationResource) Update(ctx context.Context, req resource.UpdateRe
 		return
 	}
 
-	settings := tfPlan.GetSettings()
+	settings := tfPlan.GetSettings(ctx)
 
 	// Update the notification...
 	_, err = r.client.NotificationsService().Update(ctx,

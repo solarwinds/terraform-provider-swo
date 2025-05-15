@@ -39,11 +39,12 @@ func newParseError(msg string) error {
 
 // The main Notification Resource model that is derived from the schema.
 type notificationResourceModel struct {
-	Id          types.String          `tfsdk:"id"`
-	Title       types.String          `tfsdk:"title"`
-	Description types.String          `tfsdk:"description"`
-	Type        types.String          `tfsdk:"type"`
-	Settings    *notificationSettings `tfsdk:"settings"`
+	Id          types.String `tfsdk:"id"`
+	Title       types.String `tfsdk:"title"`
+	Description types.String `tfsdk:"description"`
+	Type        types.String `tfsdk:"type"`
+	//Settings    *notificationSettings `tfsdk:"settings"`
+	Settings types.Object `tfsdk:"settings"`
 }
 
 func ParseNotificationId(id types.String) (idValue string, notificationType string, err error) {
