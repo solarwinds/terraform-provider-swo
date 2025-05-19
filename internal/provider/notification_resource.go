@@ -3,7 +3,6 @@ package provider
 import (
 	"context"
 	"fmt"
-
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -92,13 +91,11 @@ func (r *notificationResource) Read(ctx context.Context, req resource.ReadReques
 	tfState.Title = types.StringValue(notification.Title)
 	tfState.Type = types.StringValue(notification.Type)
 	tfState.Description = types.StringPointerValue(notification.Description)
-
-	err = tfState.SetSettings(notification.Settings)
+	err = tfState.SetSettings(notification.Settings, ctx)
 	if err != nil {
 		resp.Diagnostics.AddError("Settings Error", err.Error())
 		return
 	}
-
 	resp.Diagnostics.Append(resp.State.Set(ctx, tfState)...)
 }
 

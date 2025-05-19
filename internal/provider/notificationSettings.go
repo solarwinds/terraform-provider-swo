@@ -37,9 +37,19 @@ type notificationSettings struct {
 
 func NotificationSettingsAttributeTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"port":             types.Int64Type,
-		"string_to_expect": types.StringType,
-		"string_to_send":   types.StringType,
+		"email":      types.ObjectType{AttrTypes: EmailAttributeTypes()},
+		"slack":      types.ObjectType{AttrTypes: SlackAttributeTypes()},
+		"pagerduty":  types.ObjectType{AttrTypes: PagerDutyAttributeTypes()},
+		"msteams":    types.ObjectType{AttrTypes: MsTeamsAttributeTypes()},
+		"webhook":    types.ObjectType{AttrTypes: WebhookAttributeTypes()},
+		"victorops":  types.ObjectType{AttrTypes: VictorOpsAttributeTypes()},
+		"opsgenie":   types.ObjectType{AttrTypes: OpsGenieAttributeTypes()},
+		"amazonsns":  types.ObjectType{AttrTypes: AmazonSNSAttributeTypes()},
+		"zapier":     types.ObjectType{AttrTypes: ZapierAttributeTypes()},
+		"pushover":   types.ObjectType{AttrTypes: PushoverAttributeTypes()},
+		"sms":        types.ObjectType{AttrTypes: SmsAttributeTypes()},
+		"swsd":       types.ObjectType{AttrTypes: SolarWindsServiceDeskAttributeTypes()},
+		"servicenow": types.ObjectType{AttrTypes: ServiceNowAttributeTypes()},
 	}
 }
 
@@ -51,6 +61,12 @@ type clientEmail struct {
 	Addresses []clientEmailAddress `tfsdk:"addresses" json:"addresses"`
 }
 
+func EmailAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"addresses": types.SetType{ElemType: types.ObjectType{AttrTypes: EmailAddressAttributeTypes()}},
+	}
+}
+
 type notificationSettingsEmailAddress struct {
 	Id    types.String `tfsdk:"id" json:"id"`
 	Email types.String `tfsdk:"email" json:"email"`
@@ -59,6 +75,13 @@ type notificationSettingsEmailAddress struct {
 type clientEmailAddress struct {
 	Id    *string `tfsdk:"id" json:"id"`
 	Email string  `tfsdk:"email" json:"email"`
+}
+
+func EmailAddressAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"id":    types.StringType,
+		"email": types.StringType,
+	}
 }
 
 type notificationSettingsOpsGenie struct {
@@ -77,12 +100,28 @@ type clientOpsGenie struct {
 	Tags       string `tfsdk:"tags" json:"tags"`
 }
 
+func OpsGenieAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"hostname":   types.StringType,
+		"api_key":    types.StringType,
+		"recipients": types.StringType,
+		"teams":      types.StringType,
+		"tags":       types.StringType,
+	}
+}
+
 type notificationSettingsSms struct {
 	PhoneNumbers types.String `tfsdk:"phone_numbers" json:"phoneNumbers"`
 }
 
 type clientSms struct {
 	PhoneNumbers string `tfsdk:"phone_numbers" json:"phoneNumbers"`
+}
+
+func SmsAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"phone_numbers": types.StringType,
+	}
 }
 
 type notificationSettingsSlack struct {
@@ -93,12 +132,24 @@ type clientSlack struct {
 	Url string `tfsdk:"url" json:"url"`
 }
 
+func SlackAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"url": types.StringType,
+	}
+}
+
 type notificationSettingsMsTeams struct {
 	Url types.String `tfsdk:"url" json:"url"`
 }
 
 type clientMsTeams struct {
 	Url string `tfsdk:"url" json:"url"`
+}
+
+func MsTeamsAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"url": types.StringType,
+	}
 }
 
 type notificationSettingsPagerDuty struct {
@@ -111,6 +162,14 @@ type clientPagerDuty struct {
 	RoutingKey string `tfsdk:"routing_key" json:"routingKey"`
 	Summary    string `tfsdk:"summary" json:"summary"`
 	DedupKey   string `tfsdk:"dedup_key" json:"dedupKey"`
+}
+
+func PagerDutyAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"routing_key": types.StringType,
+		"summary":     types.StringType,
+		"dedup_key":   types.StringType,
+	}
 }
 
 type notificationSettingsWebhook struct {
@@ -133,6 +192,18 @@ type clientWebhook struct {
 	AuthHeaderValue string `tfsdk:"auth_header_value" json:"authHeaderValue"`
 }
 
+func WebhookAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"url":               types.StringType,
+		"method":            types.StringType,
+		"auth_type":         types.StringType,
+		"auth_username":     types.StringType,
+		"auth_password":     types.StringType,
+		"auth_header_name":  types.StringType,
+		"auth_header_value": types.StringType,
+	}
+}
+
 type notificationSettingsVictorOps struct {
 	ApiKey     types.String `tfsdk:"api_key" json:"apiKey"`
 	RoutingKey types.String `tfsdk:"routing_key" json:"routingKey"`
@@ -141,6 +212,13 @@ type notificationSettingsVictorOps struct {
 type clientVictorOps struct {
 	ApiKey     string `tfsdk:"api_key" json:"apiKey"`
 	RoutingKey string `tfsdk:"routing_key" json:"routingKey"`
+}
+
+func VictorOpsAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"api_key":     types.StringType,
+		"routing_key": types.StringType,
+	}
 }
 
 type notificationSettingsAmazonSNS struct {
@@ -155,12 +233,26 @@ type clientAmazonSNS struct {
 	SecretAccessKey string `tfsdk:"secret_access_key" json:"secretAccessKey"`
 }
 
+func AmazonSNSAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"topic_arn":         types.StringType,
+		"access_key_id":     types.StringType,
+		"secret_access_key": types.StringType,
+	}
+}
+
 type notificationSettingsZapier struct {
 	Url types.String `tfsdk:"url" json:"url"`
 }
 
 type clientZapier struct {
 	Url string `tfsdk:"url" json:"url"`
+}
+
+func ZapierAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"url": types.StringType,
+	}
 }
 
 type notificationSettingsPushover struct {
@@ -173,6 +265,13 @@ type clientPushover struct {
 	AppToken string `tfsdk:"app_token" json:"appToken"`
 }
 
+func PushoverAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"user_key":  types.StringType,
+		"app_token": types.StringType,
+	}
+}
+
 type notificationSettingsSolarWindsServiceDesk struct {
 	AppToken types.String `tfsdk:"app_token" json:"appToken"`
 	IsEU     types.Bool   `tfsdk:"is_eu" json:"isEu"`
@@ -181,6 +280,13 @@ type notificationSettingsSolarWindsServiceDesk struct {
 type clientSolarWindsServiceDesk struct {
 	AppToken string `tfsdk:"app_token" json:"appToken"`
 	IsEU     bool   `tfsdk:"is_eu" json:"isEu"`
+}
+
+func SolarWindsServiceDeskAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"app_token": types.StringType,
+		"is_eu":     types.BoolType,
+	}
 }
 
 type notificationSettingsServiceNow struct {
@@ -193,9 +299,16 @@ type clientServiceNow struct {
 	Instance string `tfsdk:"instance" json:"instance"`
 }
 
+func ServiceNowAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"app_token": types.StringType,
+		"instance":  types.StringType,
+	}
+}
+
 type notificationSettingsAccessor struct {
 	Get func(m *notificationSettings, ctx context.Context) any
-	Set func(m *notificationResourceModel, settings any) error
+	Set func(m *notificationSettings, settings any, ctx context.Context) error
 }
 
 var settingsAccessors = map[string]notificationSettingsAccessor{
@@ -213,17 +326,37 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 					Email: h.Email.ValueString(),
 				}
 			})
-			var e = clientEmail{
-				Addresses: c,
+			o := clientEmail{Addresses: c}
+			return o
+		},
+		Set: func(m *notificationSettings, settings any, ctx context.Context) error {
+			d, err := toSettingsStruct[clientEmail](settings)
+
+			var elements []attr.Value
+			for _, a := range d.Addresses {
+				objectValue, _ := types.ObjectValueFrom(
+					ctx,
+					EmailAddressAttributeTypes(),
+					notificationSettingsEmailAddress{
+						Id:    types.StringPointerValue(a.Id),
+						Email: types.StringValue(a.Email),
+					},
+				)
+				elements = append(elements, objectValue)
 			}
 
-			return e
-		},
-		Set: func(m *notificationResourceModel, settings any) error {
-			_, err := toSettingsStruct[notificationSettingsEmail](settings)
-
-			//tfTcpOptions, d := types.ObjectValueFrom(ctx, UriTcpOptionsAttributeTypes(), tcpElement)
-			//m.Settings.Email = s
+			setValue, d2 := types.SetValueFrom(ctx, types.ObjectType{AttrTypes: EmailAddressAttributeTypes()}, elements)
+			if d2.HasError() {
+				return nil
+			}
+			var email notificationSettingsEmail
+			m.Email.As(ctx, &email, basetypes.ObjectAsOptions{})
+			email.Addresses = setValue
+			o, d3 := types.ObjectValueFrom(ctx, EmailAttributeTypes(), email)
+			if d3.HasError() {
+				return nil
+			}
+			m.Email = o
 			return err
 		},
 	},
@@ -236,9 +369,10 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 			}
 			return c
 		},
-		Set: func(m *notificationResourceModel, settings any) error {
-			_, err := toSettingsStruct[notificationSettingsSlack](settings)
-			//m.Settings.Slack = s
+		Set: func(m *notificationSettings, settings any, ctx context.Context) error {
+			s, err := toSettingsStruct[clientSlack](settings)
+			o, _ := types.ObjectValueFrom(ctx, SlackAttributeTypes(), s)
+			m.Slack = o
 			return err
 		},
 	},
@@ -253,9 +387,10 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 			}
 			return c
 		},
-		Set: func(m *notificationResourceModel, settings any) error {
-			_, err := toSettingsStruct[notificationSettingsPagerDuty](settings)
-			//m.Settings.PagerDuty = s
+		Set: func(m *notificationSettings, settings any, ctx context.Context) error {
+			s, err := toSettingsStruct[clientPagerDuty](settings)
+			o, _ := types.ObjectValueFrom(ctx, PagerDutyAttributeTypes(), s)
+			m.PagerDuty = o
 			return err
 		},
 	},
@@ -274,9 +409,10 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 			}
 			return c
 		},
-		Set: func(m *notificationResourceModel, settings any) error {
-			_, err := toSettingsStruct[notificationSettingsWebhook](settings)
-			//m.Settings.Webhook = s
+		Set: func(m *notificationSettings, settings any, ctx context.Context) error {
+			s, err := toSettingsStruct[clientWebhook](settings)
+			o, _ := types.ObjectValueFrom(ctx, WebhookAttributeTypes(), s)
+			m.Webhook = o
 			return err
 		},
 	},
@@ -290,9 +426,10 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 			}
 			return c
 		},
-		Set: func(m *notificationResourceModel, settings any) error {
-			_, err := toSettingsStruct[notificationSettingsVictorOps](settings)
-			//m.Settings.VictorOps = s
+		Set: func(m *notificationSettings, settings any, ctx context.Context) error {
+			s, err := toSettingsStruct[clientVictorOps](settings)
+			o, _ := types.ObjectValueFrom(ctx, VictorOpsAttributeTypes(), s)
+			m.VictorOps = o
 			return err
 		},
 	},
@@ -309,10 +446,10 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 			}
 			return c
 		},
-		Set: func(m *notificationResourceModel, settings any) error {
-			_, err := toSettingsStruct[notificationSettingsOpsGenie](settings)
-
-			//m.Settings.OpsGenie = s
+		Set: func(m *notificationSettings, settings any, ctx context.Context) error {
+			s, err := toSettingsStruct[clientOpsGenie](settings)
+			o, _ := types.ObjectValueFrom(ctx, OpsGenieAttributeTypes(), s)
+			m.OpsGenie = o
 			return err
 		},
 	},
@@ -327,9 +464,10 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 			}
 			return c
 		},
-		Set: func(m *notificationResourceModel, settings any) error {
-			_, err := toSettingsStruct[notificationSettingsAmazonSNS](settings)
-			//m.Settings.AmazonSNS = s
+		Set: func(m *notificationSettings, settings any, ctx context.Context) error {
+			s, err := toSettingsStruct[clientAmazonSNS](settings)
+			o, _ := types.ObjectValueFrom(ctx, AmazonSNSAttributeTypes(), s)
+			m.AmazonSNS = o
 			return err
 		},
 	},
@@ -342,9 +480,10 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 			}
 			return c
 		},
-		Set: func(m *notificationResourceModel, settings any) error {
-			_, err := toSettingsStruct[notificationSettingsZapier](settings)
-			//m.Settings.Zapier = s
+		Set: func(m *notificationSettings, settings any, ctx context.Context) error {
+			s, err := toSettingsStruct[clientZapier](settings)
+			o, _ := types.ObjectValueFrom(ctx, ZapierAttributeTypes(), s)
+			m.Zapier = o
 			return err
 		},
 	},
@@ -357,9 +496,10 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 			}
 			return c
 		},
-		Set: func(m *notificationResourceModel, settings any) error {
-			_, err := toSettingsStruct[notificationSettingsMsTeams](settings)
-			//m.Settings.MsTeams = s
+		Set: func(m *notificationSettings, settings any, ctx context.Context) error {
+			s, err := toSettingsStruct[clientMsTeams](settings)
+			o, _ := types.ObjectValueFrom(ctx, MsTeamsAttributeTypes(), s)
+			m.MsTeams = o
 			return err
 		},
 	},
@@ -373,9 +513,10 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 			}
 			return c
 		},
-		Set: func(m *notificationResourceModel, settings any) error {
-			_, err := toSettingsStruct[notificationSettingsPushover](settings)
-			//m.Settings.Pushover = s
+		Set: func(m *notificationSettings, settings any, ctx context.Context) error {
+			s, err := toSettingsStruct[clientPushover](settings)
+			o, _ := types.ObjectValueFrom(ctx, PushoverAttributeTypes(), s)
+			m.Pushover = o
 			return err
 		},
 	},
@@ -388,9 +529,10 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 			}
 			return c
 		},
-		Set: func(m *notificationResourceModel, settings any) error {
-			_, err := toSettingsStruct[notificationSettingsSms](settings)
-			//m.Settings.Sms = s
+		Set: func(m *notificationSettings, settings any, ctx context.Context) error {
+			s, err := toSettingsStruct[clientSms](settings)
+			o, _ := types.ObjectValueFrom(ctx, SmsAttributeTypes(), s)
+			m.Sms = o
 			return err
 		},
 	},
@@ -404,9 +546,10 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 			}
 			return c
 		},
-		Set: func(m *notificationResourceModel, settings any) error {
-			_, err := toSettingsStruct[notificationSettingsSolarWindsServiceDesk](settings)
-			//m.Settings.SolarWindsServiceDesk = s
+		Set: func(m *notificationSettings, settings any, ctx context.Context) error {
+			s, err := toSettingsStruct[clientSolarWindsServiceDesk](settings)
+			o, _ := types.ObjectValueFrom(ctx, SolarWindsServiceDeskAttributeTypes(), s)
+			m.SolarWindsServiceDesk = o
 			return err
 		},
 	},
@@ -420,9 +563,10 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 			}
 			return c
 		},
-		Set: func(m *notificationResourceModel, settings any) error {
-			_, err := toSettingsStruct[notificationSettingsServiceNow](settings)
-			//m.Settings.ServiceNow = s
+		Set: func(m *notificationSettings, settings any, ctx context.Context) error {
+			s, err := toSettingsStruct[clientServiceNow](settings)
+			o, _ := types.ObjectValueFrom(ctx, ServiceNowAttributeTypes(), s)
+			m.ServiceNow = o
 			return err
 		},
 	},
@@ -444,16 +588,37 @@ func toSettingsStruct[T any](settings any) (*T, error) {
 	return &concreteSettings, nil
 }
 
-func (m *notificationResourceModel) SetSettings(settings any) error {
+func (m *notificationResourceModel) SetSettings(settings *any, ctx context.Context) error {
 
 	if accessor, found := settingsAccessors[m.Type.ValueString()]; found {
 		if m.Settings.IsNull() {
 			m.Settings = types.ObjectNull(NotificationSettingsAttributeTypes())
 		}
-		err := accessor.Set(m, settings)
+
+		var model = notificationSettings{
+			Email:                 types.ObjectNull(EmailAttributeTypes()),
+			Slack:                 types.ObjectNull(SlackAttributeTypes()),
+			PagerDuty:             types.ObjectNull(PagerDutyAttributeTypes()),
+			MsTeams:               types.ObjectNull(MsTeamsAttributeTypes()),
+			Webhook:               types.ObjectNull(WebhookAttributeTypes()),
+			VictorOps:             types.ObjectNull(VictorOpsAttributeTypes()),
+			OpsGenie:              types.ObjectNull(OpsGenieAttributeTypes()),
+			AmazonSNS:             types.ObjectNull(AmazonSNSAttributeTypes()),
+			Zapier:                types.ObjectNull(ZapierAttributeTypes()),
+			Pushover:              types.ObjectNull(PushoverAttributeTypes()),
+			Sms:                   types.ObjectNull(SmsAttributeTypes()),
+			SolarWindsServiceDesk: types.ObjectNull(SolarWindsServiceDeskAttributeTypes()),
+			ServiceNow:            types.ObjectNull(ServiceNowAttributeTypes()),
+		}
+
+		err := accessor.Set(&model, settings, ctx)
 		if err != nil {
 			return err
 		}
+
+		o, _ := types.ObjectValueFrom(ctx, NotificationSettingsAttributeTypes(), model)
+		m.Settings = o
+
 	} else {
 		return newUnsupportedNotificationTypeError(m.Type.ValueString())
 	}
