@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-func TestAccNotificationResource(t *testing.T) {
+func TestAccEmailResource(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -15,7 +15,7 @@ func TestAccNotificationResource(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: testAccNotificationResourceConfig("test-acc test one"),
+				Config: testAccEmailConfig("test-acc test one"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet("swo_notification.test", "id"),
 					resource.TestCheckResourceAttr("swo_notification.test", "title", "test-acc test one"),
@@ -33,7 +33,7 @@ func TestAccNotificationResource(t *testing.T) {
 			},
 			// Update and Read testing
 			{
-				Config: testAccNotificationResourceConfig("test-acc test two"),
+				Config: testAccEmailConfig("test-acc test two"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("swo_notification.test", "title", "test-acc test two"),
 				),
@@ -43,7 +43,7 @@ func TestAccNotificationResource(t *testing.T) {
 	})
 }
 
-func testAccNotificationResourceConfig(title string) string {
+func testAccEmailConfig(title string) string {
 	return providerConfig() + fmt.Sprintf(`
 	resource "swo_notification" "test" {
 		title        = %[1]q
@@ -75,9 +75,9 @@ func TestAccAmazonSnsNotificationResource(t *testing.T) {
 				Config: testAccAmazonSnsConfig("test-acc test one"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("swo_notification.test", "type", "amazonsns"),
-					resource.TestCheckResourceAttr("swo_notification.test", "settings.amazonsn.access_key_id", "KEY_ID"),
-					resource.TestCheckResourceAttr("swo_notification.test", "settings.amazonsn.secret_access_key", "SECRET_KEY"),
-					resource.TestCheckResourceAttr("swo_notification.test", "settings.amazonsn.topic_arn", "arn:aws:sns:us-east-1:123456789012:topic"),
+					resource.TestCheckResourceAttr("swo_notification.test", "settings.amazonsns.access_key_id", "KEY_ID"),
+					resource.TestCheckResourceAttr("swo_notification.test", "settings.amazonsns.secret_access_key", "SECRET_KEY"),
+					resource.TestCheckResourceAttr("swo_notification.test", "settings.amazonsns.topic_arn", "arn:aws:sns:us-east-1:123456789012:topic"),
 				),
 			},
 			// ImportState testing
@@ -105,9 +105,9 @@ func testAccAmazonSnsConfig(title string) string {
   		type        = "amazonsns"
   		settings = {
     		amazonsns = {
+				topic_arn = "arn:aws:sns:us-east-1:123456789012:topic"
 				access_key_id = "KEY_ID"
 				secret_access_key = "SECRET_KEY"
-				topic_arn = "arn:aws:sns:us-east-1:123456789012:topic"
 			}
 		}
 	}`, title)
@@ -152,7 +152,7 @@ func testAccMsTeamsConfig(title string) string {
   		type        = "msTeams"
   		settings = {
     		msteams = {
-      			url = "https://www.office.com/webhook"
+      			url = "https://solarwinds.webhook.office.com/webhookb2/d31597c"
 			}
 		}
 	}`, title)
@@ -540,7 +540,7 @@ func testAccZapierConfig(title string) string {
   		type        = "zapier"
   		settings = {
     		zapier = {
-      			url = "https://www.office.com/webhook"
+      			url = "https://hooks.zapier.com/hooks/catch/123567/abcdef/"
 			}
 		}
 	}`, title)

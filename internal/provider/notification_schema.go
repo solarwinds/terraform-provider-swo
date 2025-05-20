@@ -24,7 +24,7 @@ const (
 	zapierHooksRegex         = `^https:\/\/hooks\.zapier\.com\/hooks\/catch.*`
 	slackHooksRegex          = `^https:\/\/hooks\.slack\.com.*`
 	pagerDutyRoutingKeyRegex = `^[a-zA-Z0-9]{32}$`
-	msTeamsRegex             = `^https:\/\/.*\.office\.com\/webhook.*`
+	msTeamsRegex             = `^https://[a-zA-Z0-9.-]+.webhook.office.com/webhookb2/[a-zA-Z0-9@-]+`
 	httpSchemeRegex          = `^(http|https)`
 )
 

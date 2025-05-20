@@ -188,13 +188,13 @@ func WebhookAttributeTypes() map[string]attr.Type {
 
 type notificationSettingsAmazonSNS struct {
 	TopicARN        types.String `tfsdk:"topic_arn" json:"topicARN"`
-	AccessKeyID     types.String `tfsdk:"access_key_id" json:"accessKeyID"`
+	AccessKeyID     types.String `tfsdk:"access_key_id" json:"accessKeyId"`
 	SecretAccessKey types.String `tfsdk:"secret_access_key" json:"secretAccessKey"`
 }
 
 type clientAmazonSNS struct {
 	TopicARN        string `tfsdk:"topic_arn" json:"topicARN"`
-	AccessKeyID     string `tfsdk:"access_key_id" json:"accessKeyID"`
+	AccessKeyID     string `tfsdk:"access_key_id" json:"accessKeyId"`
 	SecretAccessKey string `tfsdk:"secret_access_key" json:"secretAccessKey"`
 }
 
@@ -382,14 +382,18 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 	"opsgenie": {
 		Get: func(m *notificationSettings, ctx context.Context) any {
 			var opsGenie notificationSettingsOpsGenie
-			m.OpsGenie.As(ctx, &opsGenie, basetypes.ObjectAsOptions{})
-			return clientOpsGenie{
+			d := m.OpsGenie.As(ctx, &opsGenie, basetypes.ObjectAsOptions{})
+			if d.HasError() {
+				return nil
+			}
+			c := clientOpsGenie{
 				HostName:   opsGenie.HostName.ValueString(),
 				ApiKey:     opsGenie.ApiKey.ValueString(),
 				Recipients: opsGenie.Recipients.ValueString(),
 				Teams:      opsGenie.Teams.ValueString(),
 				Tags:       opsGenie.Tags.ValueString(),
 			}
+			return c
 		},
 		Set: func(m *notificationSettings, settings any, ctx context.Context) error {
 			s, err := toSettingsStruct[clientOpsGenie](settings)
@@ -401,7 +405,10 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 	"amazonsns": {
 		Get: func(m *notificationSettings, ctx context.Context) any {
 			var amazonSns notificationSettingsAmazonSNS
-			m.AmazonSNS.As(ctx, &amazonSns, basetypes.ObjectAsOptions{})
+			d := m.AmazonSNS.As(ctx, &amazonSns, basetypes.ObjectAsOptions{})
+			if d.HasError() {
+				return newParseError("unable to parse")
+			}
 			return clientAmazonSNS{
 				TopicARN:        amazonSns.TopicARN.ValueString(),
 				AccessKeyID:     amazonSns.AccessKeyID.ValueString(),
@@ -410,7 +417,10 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 		},
 		Set: func(m *notificationSettings, settings any, ctx context.Context) error {
 			s, err := toSettingsStruct[clientAmazonSNS](settings)
-			o, _ := types.ObjectValueFrom(ctx, AmazonSNSAttributeTypes(), s)
+			o, d := types.ObjectValueFrom(ctx, AmazonSNSAttributeTypes(), s)
+			if d.HasError() {
+				return newParseError("unable to parse")
+			}
 			m.AmazonSNS = o
 			return err
 		},
@@ -557,7 +567,8 @@ func (m *notificationResourceModel) GetSettings(ctx context.Context) any {
 
 		var settings notificationSettings
 		m.Settings.As(ctx, &settings, basetypes.ObjectAsOptions{})
-		return accessor.Get(&settings, ctx)
+		a := accessor.Get(&settings, ctx)
+		return a
 	}
 
 	log.Printf("unsupported notification type. got %s", m.Type.ValueString())
