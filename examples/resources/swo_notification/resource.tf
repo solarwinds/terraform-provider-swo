@@ -44,27 +44,6 @@ resource "swo_notification" "pagerduty" {
     }
   }
 }
-resource "swo_notification" "victorops" {
-  title       = "VictorOps notification"
-  description = "testing..."
-  type        = "victorops"
-  settings = {
-    victorops = {
-      api_key     = "xyz"
-      routing_key = "123"
-    }
-  }
-}
-resource "swo_notification" "sms" {
-  title       = "SMS notification"
-  description = "testing..."
-  type        = "sms"
-  settings = {
-    sms = {
-      phone_numbers = "+1 999 999 9999"
-    }
-  }
-}
 resource "swo_notification" "servicenow" {
   title       = "ServiceNow notification"
   description = "testing..."

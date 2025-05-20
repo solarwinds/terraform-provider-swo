@@ -76,6 +76,8 @@ func TestAccAmazonSnsNotificationResource(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("swo_notification.test", "type", "amazonsns"),
 					resource.TestCheckResourceAttr("swo_notification.test", "settings.amazonsn.access_key_id", "KEY_ID"),
+					resource.TestCheckResourceAttr("swo_notification.test", "settings.amazonsn.secret_access_key", "SECRET_KEY"),
+					resource.TestCheckResourceAttr("swo_notification.test", "settings.amazonsn.topic_arn", "arn:aws:sns:us-east-1:123456789012:topic"),
 				),
 			},
 			// ImportState testing
@@ -200,7 +202,7 @@ func testAccOpsGenieConfig(title string) string {
   		settings = {
     		opsgenie = {
       			hostname   = "hostname"
-      			apikey     = "API_KEY"
+      			api_key     = "API_KEY"
       			recipients = "alice"
       			teams      = "team1, team2"
       			tags       = "tag1, tag2"
@@ -297,98 +299,6 @@ func testAccPagerdutyConfig(title string) string {
     		routing_key = "99999999999999999999999999999999"
       		summary     = "some-summary"
       		dedup_key   = "DEDUP"
-		}
-	}`, title)
-}
-
-func TestAccVictorOpsNotificationResource(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
-		IsUnitTest:               true,
-		Steps: []resource.TestStep{
-			// Create and Read testing
-			{
-				Config: testAccVictorOpsConfig("test-acc test one"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_notification.test", "type", "victorops"),
-					resource.TestCheckResourceAttr("swo_notification.test", "settings.victorops.api_key", "API_KEY"),
-					resource.TestCheckResourceAttr("swo_notification.test", "settings.victorops.routing_key", "ROUTING_KEY"),
-				),
-			},
-			// ImportState testing
-			{
-				ResourceName:      "swo_notification.test",
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			// Update and Read testing
-			{
-				Config: testAccVictorOpsConfig("test-acc test two"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_notification.test", "title", "test-acc test two"),
-				),
-			},
-			// Delete testing automatically occurs in TestCase
-		},
-	})
-}
-func testAccVictorOpsConfig(title string) string {
-	return providerConfig() + fmt.Sprintf(`
-	resource "swo_notification" "test_victorops" {
-  		title       = %[1]q
-  		description = "testing..."
-  		type        = "victorops"
-  		settings = {
-    		victorops = {
-      			api_key     = "API_KEY"
-      			routing_key = "ROUTING_KEY"
-    		}
-		}
-	}`, title)
-}
-
-func TestAccSmsNotificationResource(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
-		IsUnitTest:               true,
-		Steps: []resource.TestStep{
-			// Create and Read testing
-			{
-				Config: testAccSmsConfig("test-acc test one"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_notification.test", "type", "sms"),
-					resource.TestCheckResourceAttr("swo_notification.test", "settings.sms.phone_numbers", "+1 999 999 9999"),
-				),
-			},
-			// ImportState testing
-			{
-				ResourceName:      "swo_notification.test",
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			// Update and Read testing
-			{
-				Config: testAccSmsConfig("test-acc test two"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_notification.test", "title", "test-acc test two"),
-				),
-			},
-			// Delete testing automatically occurs in TestCase
-		},
-	})
-}
-func testAccSmsConfig(title string) string {
-	return providerConfig() + fmt.Sprintf(`
-	resource "swo_notification" "test_sms" {
-  		title       = %[1]q
-  		description = "testing..."
-  		type        = "sms"
-  		settings = {
-    		sms = {
-      			phone_numbers = "+1 999 999 9999"
-    		}
 		}
 	}`, title)
 }

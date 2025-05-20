@@ -20,7 +20,6 @@ import (
 
 const (
 	emailRegex               = `^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$`
-	phoneNumberRegex         = `^\+(?:[0-9] ?){6,14}[0-9]$`
 	snsTopicArnRegex         = `^arn:aws:sns:[^:]+:[0-9]+:[a-zA-Z0-9\-_]+$`
 	zapierHooksRegex         = `^https:\/\/hooks\.zapier\.com\/hooks\/catch.*`
 	slackHooksRegex          = `^https:\/\/hooks\.slack\.com.*`
@@ -204,22 +203,6 @@ func (r *notificationResource) Schema(ctx context.Context, req resource.SchemaRe
 							},
 						},
 					},
-					"victorops": schema.SingleNestedAttribute{
-						Description: "Integration for sending events to VictorOps.",
-						Optional:    true,
-						Attributes: map[string]schema.Attribute{
-							"api_key": schema.StringAttribute{
-								Description: "API Key for a VictorOps integration. (https://help.victorops.com/knowledge-base/api/)",
-								Required:    true,
-								Sensitive:   true,
-							},
-							"routing_key": schema.StringAttribute{
-								Description: "Key for live call routing. (https://help.victorops.com/knowledge-base/routing-keys/)",
-								Optional:    true,
-								Sensitive:   true,
-							},
-						},
-					},
 					"opsgenie": schema.SingleNestedAttribute{
 						Description: "Integration for sending alerts via email or using a Webhook to OpsGenie.",
 						Optional:    true,
@@ -316,22 +299,6 @@ func (r *notificationResource) Schema(ctx context.Context, req resource.SchemaRe
 								Description: "API token/APP token from registered Pushover application. (https://pushover.net/api)",
 								Required:    true,
 								Sensitive:   true,
-							},
-						},
-					},
-					"sms": schema.SingleNestedAttribute{
-						Description: "For sending alerts Through SMS/Text.",
-						Optional:    true,
-						Attributes: map[string]schema.Attribute{
-							"phone_numbers": schema.StringAttribute{
-								Description: "Phone number alerts will be texted to.",
-								Required:    true,
-								Validators: []validator.String{
-									stringvalidator.RegexMatches(
-										regexp.MustCompile(phoneNumberRegex),
-										"Requirement: "+phoneNumberRegex,
-									),
-								},
 							},
 						},
 					},

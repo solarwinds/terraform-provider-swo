@@ -25,12 +25,10 @@ type notificationSettings struct {
 	PagerDuty             types.Object `tfsdk:"pagerduty"`
 	MsTeams               types.Object `tfsdk:"msteams"`
 	Webhook               types.Object `tfsdk:"webhook"`
-	VictorOps             types.Object `tfsdk:"victorops"`
 	OpsGenie              types.Object `tfsdk:"opsgenie"`
 	AmazonSNS             types.Object `tfsdk:"amazonsns"`
 	Zapier                types.Object `tfsdk:"zapier"`
 	Pushover              types.Object `tfsdk:"pushover"`
-	Sms                   types.Object `tfsdk:"sms"`
 	SolarWindsServiceDesk types.Object `tfsdk:"swsd"`
 	ServiceNow            types.Object `tfsdk:"servicenow"`
 }
@@ -42,12 +40,10 @@ func NotificationSettingsAttributeTypes() map[string]attr.Type {
 		"pagerduty":  types.ObjectType{AttrTypes: PagerDutyAttributeTypes()},
 		"msteams":    types.ObjectType{AttrTypes: MsTeamsAttributeTypes()},
 		"webhook":    types.ObjectType{AttrTypes: WebhookAttributeTypes()},
-		"victorops":  types.ObjectType{AttrTypes: VictorOpsAttributeTypes()},
 		"opsgenie":   types.ObjectType{AttrTypes: OpsGenieAttributeTypes()},
 		"amazonsns":  types.ObjectType{AttrTypes: AmazonSNSAttributeTypes()},
 		"zapier":     types.ObjectType{AttrTypes: ZapierAttributeTypes()},
 		"pushover":   types.ObjectType{AttrTypes: PushoverAttributeTypes()},
-		"sms":        types.ObjectType{AttrTypes: SmsAttributeTypes()},
 		"swsd":       types.ObjectType{AttrTypes: SolarWindsServiceDeskAttributeTypes()},
 		"servicenow": types.ObjectType{AttrTypes: ServiceNowAttributeTypes()},
 	}
@@ -107,20 +103,6 @@ func OpsGenieAttributeTypes() map[string]attr.Type {
 		"recipients": types.StringType,
 		"teams":      types.StringType,
 		"tags":       types.StringType,
-	}
-}
-
-type notificationSettingsSms struct {
-	PhoneNumbers types.String `tfsdk:"phone_numbers" json:"phoneNumbers"`
-}
-
-type clientSms struct {
-	PhoneNumbers string `tfsdk:"phone_numbers" json:"phoneNumbers"`
-}
-
-func SmsAttributeTypes() map[string]attr.Type {
-	return map[string]attr.Type{
-		"phone_numbers": types.StringType,
 	}
 }
 
@@ -201,23 +183,6 @@ func WebhookAttributeTypes() map[string]attr.Type {
 		"auth_password":     types.StringType,
 		"auth_header_name":  types.StringType,
 		"auth_header_value": types.StringType,
-	}
-}
-
-type notificationSettingsVictorOps struct {
-	ApiKey     types.String `tfsdk:"api_key" json:"apiKey"`
-	RoutingKey types.String `tfsdk:"routing_key" json:"routingKey"`
-}
-
-type clientVictorOps struct {
-	ApiKey     string `tfsdk:"api_key" json:"apiKey"`
-	RoutingKey string `tfsdk:"routing_key" json:"routingKey"`
-}
-
-func VictorOpsAttributeTypes() map[string]attr.Type {
-	return map[string]attr.Type{
-		"api_key":     types.StringType,
-		"routing_key": types.StringType,
 	}
 }
 
@@ -414,22 +379,6 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 			return err
 		},
 	},
-	"victorops": {
-		Get: func(m *notificationSettings, ctx context.Context) any {
-			var victorOps notificationSettingsVictorOps
-			m.VictorOps.As(ctx, &victorOps, basetypes.ObjectAsOptions{})
-			return clientVictorOps{
-				ApiKey:     victorOps.ApiKey.ValueString(),
-				RoutingKey: victorOps.RoutingKey.ValueString(),
-			}
-		},
-		Set: func(m *notificationSettings, settings any, ctx context.Context) error {
-			s, err := toSettingsStruct[clientVictorOps](settings)
-			o, _ := types.ObjectValueFrom(ctx, VictorOpsAttributeTypes(), s)
-			m.VictorOps = o
-			return err
-		},
-	},
 	"opsgenie": {
 		Get: func(m *notificationSettings, ctx context.Context) any {
 			var opsGenie notificationSettingsOpsGenie
@@ -512,21 +461,6 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 			return err
 		},
 	},
-	"sms": {
-		Get: func(m *notificationSettings, ctx context.Context) any {
-			var sms notificationSettingsSms
-			m.Sms.As(ctx, &sms, basetypes.ObjectAsOptions{})
-			return clientSms{
-				PhoneNumbers: sms.PhoneNumbers.ValueString(),
-			}
-		},
-		Set: func(m *notificationSettings, settings any, ctx context.Context) error {
-			s, err := toSettingsStruct[clientSms](settings)
-			o, _ := types.ObjectValueFrom(ctx, SmsAttributeTypes(), s)
-			m.Sms = o
-			return err
-		},
-	},
 	"swsd": {
 		Get: func(m *notificationSettings, ctx context.Context) any {
 			var swoServiceDesk notificationSettingsSolarWindsServiceDesk
@@ -590,12 +524,10 @@ func (m *notificationResourceModel) SetSettings(settings *any, ctx context.Conte
 			PagerDuty:             types.ObjectNull(PagerDutyAttributeTypes()),
 			MsTeams:               types.ObjectNull(MsTeamsAttributeTypes()),
 			Webhook:               types.ObjectNull(WebhookAttributeTypes()),
-			VictorOps:             types.ObjectNull(VictorOpsAttributeTypes()),
 			OpsGenie:              types.ObjectNull(OpsGenieAttributeTypes()),
 			AmazonSNS:             types.ObjectNull(AmazonSNSAttributeTypes()),
 			Zapier:                types.ObjectNull(ZapierAttributeTypes()),
 			Pushover:              types.ObjectNull(PushoverAttributeTypes()),
-			Sms:                   types.ObjectNull(SmsAttributeTypes()),
 			SolarWindsServiceDesk: types.ObjectNull(SolarWindsServiceDeskAttributeTypes()),
 			ServiceNow:            types.ObjectNull(ServiceNowAttributeTypes()),
 		}
