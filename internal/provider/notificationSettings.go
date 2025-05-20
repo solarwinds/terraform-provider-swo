@@ -326,8 +326,9 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 					Email: h.Email.ValueString(),
 				}
 			})
-			o := clientEmail{Addresses: c}
-			return o
+			return clientEmail{
+				Addresses: c,
+			}
 		},
 		Set: func(m *notificationSettings, settings any, ctx context.Context) error {
 			d, err := toSettingsStruct[clientEmail](settings)
@@ -364,10 +365,9 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 		Get: func(m *notificationSettings, ctx context.Context) any {
 			var slack notificationSettingsSlack
 			m.Slack.As(ctx, &slack, basetypes.ObjectAsOptions{})
-			c := clientSlack{
+			return clientSlack{
 				Url: slack.Url.ValueString(),
 			}
-			return c
 		},
 		Set: func(m *notificationSettings, settings any, ctx context.Context) error {
 			s, err := toSettingsStruct[clientSlack](settings)
@@ -380,12 +380,11 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 		Get: func(m *notificationSettings, ctx context.Context) any {
 			var pagerDuty notificationSettingsPagerDuty
 			m.PagerDuty.As(ctx, &pagerDuty, basetypes.ObjectAsOptions{})
-			c := clientPagerDuty{
+			return clientPagerDuty{
 				RoutingKey: pagerDuty.RoutingKey.ValueString(),
 				Summary:    pagerDuty.Summary.ValueString(),
 				DedupKey:   pagerDuty.DedupKey.ValueString(),
 			}
-			return c
 		},
 		Set: func(m *notificationSettings, settings any, ctx context.Context) error {
 			s, err := toSettingsStruct[clientPagerDuty](settings)
@@ -398,7 +397,7 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 		Get: func(m *notificationSettings, ctx context.Context) any {
 			var webhook notificationSettingsWebhook
 			m.Webhook.As(ctx, &webhook, basetypes.ObjectAsOptions{})
-			c := clientWebhook{
+			return clientWebhook{
 				Url:             webhook.Url.ValueString(),
 				Method:          webhook.Method.ValueString(),
 				AuthType:        webhook.AuthType.ValueString(),
@@ -407,7 +406,6 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 				AuthHeaderName:  webhook.AuthHeaderName.ValueString(),
 				AuthHeaderValue: webhook.AuthHeaderValue.ValueString(),
 			}
-			return c
 		},
 		Set: func(m *notificationSettings, settings any, ctx context.Context) error {
 			s, err := toSettingsStruct[clientWebhook](settings)
@@ -420,11 +418,10 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 		Get: func(m *notificationSettings, ctx context.Context) any {
 			var victorOps notificationSettingsVictorOps
 			m.VictorOps.As(ctx, &victorOps, basetypes.ObjectAsOptions{})
-			c := clientVictorOps{
+			return clientVictorOps{
 				ApiKey:     victorOps.ApiKey.ValueString(),
 				RoutingKey: victorOps.RoutingKey.ValueString(),
 			}
-			return c
 		},
 		Set: func(m *notificationSettings, settings any, ctx context.Context) error {
 			s, err := toSettingsStruct[clientVictorOps](settings)
@@ -437,14 +434,13 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 		Get: func(m *notificationSettings, ctx context.Context) any {
 			var opsGenie notificationSettingsOpsGenie
 			m.OpsGenie.As(ctx, &opsGenie, basetypes.ObjectAsOptions{})
-			c := clientOpsGenie{
+			return clientOpsGenie{
 				HostName:   opsGenie.HostName.ValueString(),
 				ApiKey:     opsGenie.ApiKey.ValueString(),
 				Recipients: opsGenie.Recipients.ValueString(),
 				Teams:      opsGenie.Teams.ValueString(),
 				Tags:       opsGenie.Tags.ValueString(),
 			}
-			return c
 		},
 		Set: func(m *notificationSettings, settings any, ctx context.Context) error {
 			s, err := toSettingsStruct[clientOpsGenie](settings)
@@ -457,12 +453,11 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 		Get: func(m *notificationSettings, ctx context.Context) any {
 			var amazonSns notificationSettingsAmazonSNS
 			m.AmazonSNS.As(ctx, &amazonSns, basetypes.ObjectAsOptions{})
-			c := clientAmazonSNS{
+			return clientAmazonSNS{
 				TopicARN:        amazonSns.TopicARN.ValueString(),
 				AccessKeyID:     amazonSns.AccessKeyID.ValueString(),
 				SecretAccessKey: amazonSns.SecretAccessKey.ValueString(),
 			}
-			return c
 		},
 		Set: func(m *notificationSettings, settings any, ctx context.Context) error {
 			s, err := toSettingsStruct[clientAmazonSNS](settings)
@@ -475,10 +470,9 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 		Get: func(m *notificationSettings, ctx context.Context) any {
 			var zapier notificationSettingsZapier
 			m.Zapier.As(ctx, &zapier, basetypes.ObjectAsOptions{})
-			c := clientZapier{
+			return clientZapier{
 				Url: zapier.Url.ValueString(),
 			}
-			return c
 		},
 		Set: func(m *notificationSettings, settings any, ctx context.Context) error {
 			s, err := toSettingsStruct[clientZapier](settings)
@@ -491,10 +485,9 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 		Get: func(m *notificationSettings, ctx context.Context) any {
 			var msTeams notificationSettingsMsTeams
 			m.MsTeams.As(ctx, &msTeams, basetypes.ObjectAsOptions{})
-			c := clientMsTeams{
+			return clientMsTeams{
 				Url: msTeams.Url.ValueString(),
 			}
-			return c
 		},
 		Set: func(m *notificationSettings, settings any, ctx context.Context) error {
 			s, err := toSettingsStruct[clientMsTeams](settings)
@@ -507,11 +500,10 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 		Get: func(m *notificationSettings, ctx context.Context) any {
 			var pushover notificationSettingsPushover
 			m.Pushover.As(ctx, &pushover, basetypes.ObjectAsOptions{})
-			c := clientPushover{
+			return clientPushover{
 				UserKey:  pushover.UserKey.ValueString(),
 				AppToken: pushover.AppToken.ValueString(),
 			}
-			return c
 		},
 		Set: func(m *notificationSettings, settings any, ctx context.Context) error {
 			s, err := toSettingsStruct[clientPushover](settings)
@@ -524,10 +516,9 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 		Get: func(m *notificationSettings, ctx context.Context) any {
 			var sms notificationSettingsSms
 			m.Sms.As(ctx, &sms, basetypes.ObjectAsOptions{})
-			c := clientSms{
+			return clientSms{
 				PhoneNumbers: sms.PhoneNumbers.ValueString(),
 			}
-			return c
 		},
 		Set: func(m *notificationSettings, settings any, ctx context.Context) error {
 			s, err := toSettingsStruct[clientSms](settings)
@@ -540,11 +531,10 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 		Get: func(m *notificationSettings, ctx context.Context) any {
 			var swoServiceDesk notificationSettingsSolarWindsServiceDesk
 			m.SolarWindsServiceDesk.As(ctx, &swoServiceDesk, basetypes.ObjectAsOptions{})
-			c := clientSolarWindsServiceDesk{
+			return clientSolarWindsServiceDesk{
 				AppToken: swoServiceDesk.AppToken.ValueString(),
 				IsEU:     swoServiceDesk.IsEU.ValueBool(),
 			}
-			return c
 		},
 		Set: func(m *notificationSettings, settings any, ctx context.Context) error {
 			s, err := toSettingsStruct[clientSolarWindsServiceDesk](settings)
@@ -557,11 +547,10 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 		Get: func(m *notificationSettings, ctx context.Context) any {
 			var serviceNow notificationSettingsServiceNow
 			m.ServiceNow.As(ctx, &serviceNow, basetypes.ObjectAsOptions{})
-			c := clientServiceNow{
+			return clientServiceNow{
 				AppToken: serviceNow.AppToken.ValueString(),
 				Instance: serviceNow.Instance.ValueString(),
 			}
-			return c
 		},
 		Set: func(m *notificationSettings, settings any, ctx context.Context) error {
 			s, err := toSettingsStruct[clientServiceNow](settings)
