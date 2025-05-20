@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-func TestAccEmailNotificationResource(t *testing.T) {
+func TestAccNotificationResource(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -15,7 +15,7 @@ func TestAccEmailNotificationResource(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: testAccEmailConfig("test-acc test one"),
+				Config: testAccNotificationResourceConfig("test-acc test one"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet("swo_notification.test", "id"),
 					resource.TestCheckResourceAttr("swo_notification.test", "title", "test-acc test one"),
@@ -33,7 +33,7 @@ func TestAccEmailNotificationResource(t *testing.T) {
 			},
 			// Update and Read testing
 			{
-				Config: testAccEmailConfig("test-acc test two"),
+				Config: testAccNotificationResourceConfig("test-acc test two"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("swo_notification.test", "title", "test-acc test two"),
 				),
@@ -42,9 +42,10 @@ func TestAccEmailNotificationResource(t *testing.T) {
 		},
 	})
 }
-func testAccEmailConfig(title string) string {
+
+func testAccNotificationResourceConfig(title string) string {
 	return providerConfig() + fmt.Sprintf(`
-	resource "swo_notification" "test_email" {
+	resource "swo_notification" "test" {
 		title        = %[1]q
 		description = "testing..."
 		type = "email"
@@ -101,10 +102,11 @@ func testAccAmazonSnsConfig(title string) string {
   		description = "testing..."
   		type        = "amazonsns"
   		settings = {
-    		amazonsn = {
+    		amazonsns = {
 				access_key_id = "KEY_ID"
 				secret_access_key = "SECRET_KEY"
 				topic_arn = "arn:aws:sns:us-east-1:123456789012:topic"
+			}
 		}
 	}`, title)
 }
