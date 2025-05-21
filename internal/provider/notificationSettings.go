@@ -344,7 +344,10 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 	"pagerduty": {
 		Get: func(m *notificationSettings, ctx context.Context) any {
 			var pagerDuty notificationSettingsPagerDuty
-			m.PagerDuty.As(ctx, &pagerDuty, basetypes.ObjectAsOptions{})
+			d := m.PagerDuty.As(ctx, &pagerDuty, basetypes.ObjectAsOptions{})
+			if d.HasError() {
+				return nil
+			}
 			return clientPagerDuty{
 				RoutingKey: pagerDuty.RoutingKey.ValueString(),
 				Summary:    pagerDuty.Summary.ValueString(),

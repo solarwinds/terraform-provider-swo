@@ -17,17 +17,17 @@ func TestAccEmailResource(t *testing.T) {
 			{
 				Config: testAccEmailConfig("test-acc test one"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet("swo_notification.test", "id"),
-					resource.TestCheckResourceAttr("swo_notification.test", "title", "test-acc test one"),
-					resource.TestCheckResourceAttr("swo_notification.test", "description", "testing..."),
-					resource.TestCheckResourceAttr("swo_notification.test", "type", "email"),
-					resource.TestCheckResourceAttr("swo_notification.test", "settings.email.addresses.0.email", "test1@host.com"),
-					resource.TestCheckResourceAttr("swo_notification.test", "settings.email.addresses.1.email", "test2@host.com"),
+					resource.TestCheckResourceAttrSet("swo_notification.test_email", "id"),
+					resource.TestCheckResourceAttr("swo_notification.test_email", "title", "test-acc test one"),
+					resource.TestCheckResourceAttr("swo_notification.test_email", "description", "testing..."),
+					resource.TestCheckResourceAttr("swo_notification.test_email", "type", "email"),
+					resource.TestCheckResourceAttr("swo_notification.test_email", "settings.email.addresses.0.email", "test1@host.com"),
+					resource.TestCheckResourceAttr("swo_notification.test_email", "settings.email.addresses.1.email", "test2@host.com"),
 				),
 			},
 			// ImportState testing
 			{
-				ResourceName:      "swo_notification.test",
+				ResourceName:      "swo_notification.test_email",
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
@@ -35,17 +35,16 @@ func TestAccEmailResource(t *testing.T) {
 			{
 				Config: testAccEmailConfig("test-acc test two"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_notification.test", "title", "test-acc test two"),
+					resource.TestCheckResourceAttr("swo_notification.test_email", "title", "test-acc test two"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
 		},
 	})
 }
-
 func testAccEmailConfig(title string) string {
 	return providerConfig() + fmt.Sprintf(`
-	resource "swo_notification" "test" {
+	resource "swo_notification" "test_email" {
 		title        = %[1]q
 		description = "testing..."
 		type = "email"
@@ -74,23 +73,24 @@ func TestAccAmazonSnsNotificationResource(t *testing.T) {
 			{
 				Config: testAccAmazonSnsConfig("test-acc test one"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_notification.test", "type", "amazonsns"),
-					resource.TestCheckResourceAttr("swo_notification.test", "settings.amazonsns.access_key_id", "KEY_ID"),
-					resource.TestCheckResourceAttr("swo_notification.test", "settings.amazonsns.secret_access_key", "SECRET_KEY"),
-					resource.TestCheckResourceAttr("swo_notification.test", "settings.amazonsns.topic_arn", "arn:aws:sns:us-east-1:123456789012:topic"),
+					resource.TestCheckResourceAttr("swo_notification.test_amazonsns", "type", "amazonsns"),
+					resource.TestCheckResourceAttr("swo_notification.test_amazonsns", "settings.amazonsns.access_key_id", "KEY_ID"),
+					resource.TestCheckResourceAttr("swo_notification.test_amazonsns", "settings.amazonsns.secret_access_key", "SECRET_KEY"),
+					resource.TestCheckResourceAttr("swo_notification.test_amazonsns", "settings.amazonsns.topic_arn", "arn:aws:sns:us-east-1:123456789012:topic"),
 				),
 			},
 			// ImportState testing
 			{
-				ResourceName:      "swo_notification.test",
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            "swo_notification.test_amazonsns",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"access_key_id", "secret_access_key"},
 			},
 			// Update and Read testing
 			{
 				Config: testAccAmazonSnsConfig("test-acc test two"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_notification.test", "title", "test-acc test two"),
+					resource.TestCheckResourceAttr("swo_notification.test_amazonsns", "title", "test-acc test two"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
@@ -99,7 +99,7 @@ func TestAccAmazonSnsNotificationResource(t *testing.T) {
 }
 func testAccAmazonSnsConfig(title string) string {
 	return providerConfig() + fmt.Sprintf(`
-	resource "swo_notification" "test_amazon_sns" {
+	resource "swo_notification" "test_amazonsns" {
   		title       = %[1]q
   		description = "testing..."
   		type        = "amazonsns"
@@ -123,13 +123,13 @@ func TestAccMsTeamsNotificationResource(t *testing.T) {
 			{
 				Config: testAccMsTeamsConfig("test-acc test one"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_notification.test", "type", "msTeams"),
-					resource.TestCheckResourceAttr("swo_notification.test", "settings.msteams.url", "https://www.office.com/webhook"),
+					resource.TestCheckResourceAttr("swo_notification.test_msteams", "type", "msTeams"),
+					resource.TestCheckResourceAttr("swo_notification.test_msteams", "settings.msteams.url", "https://solarwinds.webhook.office.com/webhookb2/d31597c"),
 				),
 			},
 			// ImportState testing
 			{
-				ResourceName:      "swo_notification.test",
+				ResourceName:      "swo_notification.test_msteams",
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
@@ -137,7 +137,7 @@ func TestAccMsTeamsNotificationResource(t *testing.T) {
 			{
 				Config: testAccMsTeamsConfig("test-acc test two"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_notification.test", "title", "test-acc test two"),
+					resource.TestCheckResourceAttr("swo_notification.test_msteams", "title", "test-acc test two"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
@@ -168,17 +168,17 @@ func TestAccOpsGenieNotificationResource(t *testing.T) {
 			{
 				Config: testAccOpsGenieConfig("test-acc test one"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_notification.test", "type", "opsgenie"),
-					resource.TestCheckResourceAttr("swo_notification.test", "settings.opsgenie.hostname", "hostname"),
-					resource.TestCheckResourceAttr("swo_notification.test", "settings.opsgenie.apikey", "API_KEY"),
-					resource.TestCheckResourceAttr("swo_notification.test", "settings.opsgenie.recipients", "alice"),
-					resource.TestCheckResourceAttr("swo_notification.test", "settings.opsgenie.teams", "team1, team2"),
-					resource.TestCheckResourceAttr("swo_notification.test", "settings.opsgenie.tags", "tag1, tag2"),
+					resource.TestCheckResourceAttr("swo_notification.test_opsgenie", "type", "opsgenie"),
+					resource.TestCheckResourceAttr("swo_notification.test_opsgenie", "settings.opsgenie.hostname", "hostname"),
+					resource.TestCheckResourceAttr("swo_notification.test_opsgenie", "settings.opsgenie.api_key", "API_KEY"),
+					resource.TestCheckResourceAttr("swo_notification.test_opsgenie", "settings.opsgenie.recipients", "alice"),
+					resource.TestCheckResourceAttr("swo_notification.test_opsgenie", "settings.opsgenie.teams", "team1, team2"),
+					resource.TestCheckResourceAttr("swo_notification.test_opsgenie", "settings.opsgenie.tags", "tag1, tag2"),
 				),
 			},
 			// ImportState testing
 			{
-				ResourceName:      "swo_notification.test",
+				ResourceName:      "swo_notification.test_opsgenie",
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
@@ -186,7 +186,7 @@ func TestAccOpsGenieNotificationResource(t *testing.T) {
 			{
 				Config: testAccOpsGenieConfig("test-acc test two"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_notification.test", "title", "test-acc test two"),
+					resource.TestCheckResourceAttr("swo_notification.test_opsgenie", "title", "test-acc test two"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
@@ -221,13 +221,13 @@ func TestAccSlackNotificationResource(t *testing.T) {
 			{
 				Config: testAccSlackConfig("test-acc test one"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_notification.test", "type", "slack"),
-					resource.TestCheckResourceAttr("swo_notification.test", "settings.slack.url", "https://hooks.slack.com/services/XXX/XXX/XXX"),
+					resource.TestCheckResourceAttr("swo_notification.test_slack", "type", "slack"),
+					resource.TestCheckResourceAttr("swo_notification.test_slack", "settings.slack.url", "https://hooks.slack.com/services/XXX/XXX/XXX"),
 				),
 			},
 			// ImportState testing
 			{
-				ResourceName:      "swo_notification.test",
+				ResourceName:      "swo_notification.test_slack",
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
@@ -235,7 +235,7 @@ func TestAccSlackNotificationResource(t *testing.T) {
 			{
 				Config: testAccSlackConfig("test-acc test two"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_notification.test", "title", "test-acc test two"),
+					resource.TestCheckResourceAttr("swo_notification.test_slack", "title", "test-acc test two"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
@@ -266,15 +266,15 @@ func TestAccPagerDutyNotificationResource(t *testing.T) {
 			{
 				Config: testAccPagerdutyConfig("test-acc test one"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_notification.test", "type", "pagerduty"),
-					resource.TestCheckResourceAttr("swo_notification.test", "settings.pagerduty.routing_key", "99999999999999999999999999999999"),
-					resource.TestCheckResourceAttr("swo_notification.test", "settings.pagerduty.summary", "some-summary"),
-					resource.TestCheckResourceAttr("swo_notification.test", "settings.pagerduty.dedup_key", "DEDUP"),
+					resource.TestCheckResourceAttr("swo_notification.test_pagerduty", "type", "pagerduty"),
+					resource.TestCheckResourceAttr("swo_notification.test_pagerduty", "settings.pagerduty.routing_key", "99999999999999999999999999999999"),
+					resource.TestCheckResourceAttr("swo_notification.test_pagerduty", "settings.pagerduty.summary", "some-summary"),
+					resource.TestCheckResourceAttr("swo_notification.test_pagerduty", "settings.pagerduty.dedup_key", "DEDUP"),
 				),
 			},
 			// ImportState testing
 			{
-				ResourceName:      "swo_notification.test",
+				ResourceName:      "swo_notification.test_pagerduty",
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
@@ -282,7 +282,7 @@ func TestAccPagerDutyNotificationResource(t *testing.T) {
 			{
 				Config: testAccPagerdutyConfig("test-acc test two"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_notification.test", "title", "test-acc test two"),
+					resource.TestCheckResourceAttr("swo_notification.test_pagerduty", "title", "test-acc test two"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
@@ -296,9 +296,11 @@ func testAccPagerdutyConfig(title string) string {
   		description = "testing..."
   		type        = "pagerduty"
   		settings = {
-    		routing_key = "99999999999999999999999999999999"
-      		summary     = "some-summary"
-      		dedup_key   = "DEDUP"
+			pagerduty = {
+				routing_key = "99999999999999999999999999999999"
+      			summary     = "some-summary"
+      			dedup_key   = "DEDUP"
+			}
 		}
 	}`, title)
 }
@@ -313,14 +315,14 @@ func TestAccServiceNowNotificationResource(t *testing.T) {
 			{
 				Config: testAccServicenowConfig("test-acc test one"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_notification.test", "type", "servicenow"),
-					resource.TestCheckResourceAttr("swo_notification.test", "settings.servicenow.app_token", "API_TOKEN"),
-					resource.TestCheckResourceAttr("swo_notification.test", "settings.servicenow.instance", "US"),
+					resource.TestCheckResourceAttr("swo_notification.test_servicenow", "type", "servicenow"),
+					resource.TestCheckResourceAttr("swo_notification.test_servicenow", "settings.servicenow.app_token", "API_TOKEN"),
+					resource.TestCheckResourceAttr("swo_notification.test_servicenow", "settings.servicenow.instance", "US"),
 				),
 			},
 			// ImportState testing
 			{
-				ResourceName:      "swo_notification.test",
+				ResourceName:      "swo_notification.test_servicenow",
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
@@ -328,7 +330,7 @@ func TestAccServiceNowNotificationResource(t *testing.T) {
 			{
 				Config: testAccServicenowConfig("test-acc test two"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_notification.test", "title", "test-acc test two"),
+					resource.TestCheckResourceAttr("swo_notification.test_servicenow", "title", "test-acc test two"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
@@ -360,14 +362,14 @@ func TestAccSwsdNotificationResource(t *testing.T) {
 			{
 				Config: testAccSwsdConfig("test-acc test one"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_notification.test", "type", "swsd"),
-					resource.TestCheckResourceAttr("swo_notification.test", "settings.swsd.app_token", "APP_TOKEN"),
-					resource.TestCheckResourceAttr("swo_notification.test", "settings.swsd.is_eu", "false"),
+					resource.TestCheckResourceAttr("swo_notification.test_swsd", "type", "swsd"),
+					resource.TestCheckResourceAttr("swo_notification.test_swsd", "settings.swsd.app_token", "APP_TOKEN"),
+					resource.TestCheckResourceAttr("swo_notification.test_swsd", "settings.swsd.is_eu", "false"),
 				),
 			},
 			// ImportState testing
 			{
-				ResourceName:      "swo_notification.test",
+				ResourceName:      "swo_notification.test_swsd",
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
@@ -375,7 +377,7 @@ func TestAccSwsdNotificationResource(t *testing.T) {
 			{
 				Config: testAccSwsdConfig("test-acc test two"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_notification.test", "title", "test-acc test two"),
+					resource.TestCheckResourceAttr("swo_notification.test_swsd", "title", "test-acc test two"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
@@ -407,14 +409,14 @@ func TestAccPushoverNotificationResource(t *testing.T) {
 			{
 				Config: testAccPushoverConfig("test-acc test one"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_notification.test", "type", "pushover"),
-					resource.TestCheckResourceAttr("swo_notification.test", "settings.pushover.app_token", "APP_TOKEN"),
-					resource.TestCheckResourceAttr("swo_notification.test", "settings.pushover.user_key", "123xyz"),
+					resource.TestCheckResourceAttr("swo_notification.test_pushover", "type", "pushover"),
+					resource.TestCheckResourceAttr("swo_notification.test_pushover", "settings.pushover.app_token", "APP_TOKEN"),
+					resource.TestCheckResourceAttr("swo_notification.test_pushover", "settings.pushover.user_key", "123xyz"),
 				),
 			},
 			// ImportState testing
 			{
-				ResourceName:      "swo_notification.test",
+				ResourceName:      "swo_notification.test_pushover",
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
@@ -422,7 +424,7 @@ func TestAccPushoverNotificationResource(t *testing.T) {
 			{
 				Config: testAccPushoverConfig("test-acc test two"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_notification.test", "title", "test-acc test two"),
+					resource.TestCheckResourceAttr("swo_notification.test_pushover", "title", "test-acc test two"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
@@ -454,19 +456,19 @@ func TestAccWebhookNotificationResource(t *testing.T) {
 			{
 				Config: testAccWebhookConfig("test-acc test one"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_notification.test", "type", "webhook"),
-					resource.TestCheckResourceAttr("swo_notification.test", "settings.webhook.method", "GET"),
-					resource.TestCheckResourceAttr("swo_notification.test", "settings.webhook.url", "https://webhook.example.com/"),
-					resource.TestCheckResourceAttr("swo_notification.test", "settings.webhook.auth_header_name", "X-Slack-Request-Id"),
-					resource.TestCheckResourceAttr("swo_notification.test", "settings.webhook.auth_header_value", "VALUE"),
-					resource.TestCheckResourceAttr("swo_notification.test", "settings.webhook.auth_password", "PASSWORD"),
-					resource.TestCheckResourceAttr("swo_notification.test", "settings.webhook.auth_type", "basic"),
-					resource.TestCheckResourceAttr("swo_notification.test", "settings.webhook.auth_username", "USERNAME"),
+					resource.TestCheckResourceAttr("swo_notification.test_webhook", "type", "webhook"),
+					resource.TestCheckResourceAttr("swo_notification.test_webhook", "settings.webhook.method", "GET"),
+					resource.TestCheckResourceAttr("swo_notification.test_webhook", "settings.webhook.url", "https://webhook.example.com/"),
+					resource.TestCheckResourceAttr("swo_notification.test_webhook", "settings.webhook.auth_header_name", "X-Slack-Request-Id"),
+					resource.TestCheckResourceAttr("swo_notification.test_webhook", "settings.webhook.auth_header_value", "VALUE"),
+					resource.TestCheckResourceAttr("swo_notification.test_webhook", "settings.webhook.auth_password", "PASSWORD"),
+					resource.TestCheckResourceAttr("swo_notification.test_webhook", "settings.webhook.auth_type", "basic"),
+					resource.TestCheckResourceAttr("swo_notification.test_webhook", "settings.webhook.auth_username", "USERNAME"),
 				),
 			},
 			// ImportState testing
 			{
-				ResourceName:      "swo_notification.test",
+				ResourceName:      "swo_notification.test_webhook",
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
@@ -474,7 +476,7 @@ func TestAccWebhookNotificationResource(t *testing.T) {
 			{
 				Config: testAccWebhookConfig("test-acc test two"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_notification.test", "title", "test-acc test two"),
+					resource.TestCheckResourceAttr("swo_notification.test_webhook", "title", "test-acc test two"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
@@ -511,13 +513,13 @@ func TestAccZapierNotificationResource(t *testing.T) {
 			{
 				Config: testAccZapierConfig("test-acc test one"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_notification.test", "type", "zapier"),
-					resource.TestCheckResourceAttr("swo_notification.test", "settings.zapier.url", "https://www.office.com/webhook"),
+					resource.TestCheckResourceAttr("swo_notification.test_zapier", "type", "zapier"),
+					resource.TestCheckResourceAttr("swo_notification.test_zapier", "settings.zapier.url", "https://hooks.zapier.com/hooks/catch/123567/abcdef/"),
 				),
 			},
 			// ImportState testing
 			{
-				ResourceName:      "swo_notification.test",
+				ResourceName:      "swo_notification.test_zapier",
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
@@ -525,7 +527,7 @@ func TestAccZapierNotificationResource(t *testing.T) {
 			{
 				Config: testAccZapierConfig("test-acc test two"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_notification.test", "title", "test-acc test two"),
+					resource.TestCheckResourceAttr("swo_notification.test_zapier", "title", "test-acc test two"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
