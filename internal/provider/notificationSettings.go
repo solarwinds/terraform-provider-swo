@@ -289,19 +289,19 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 				return nil
 			}
 
-			var c []clientEmailAddress
-			c = convertArray(addresses, func(h notificationSettingsEmailAddress) clientEmailAddress {
+			var clientAddresses []clientEmailAddress
+			clientAddresses = convertArray(addresses, func(h notificationSettingsEmailAddress) clientEmailAddress {
 				return clientEmailAddress{
 					Id:    h.Id.ValueStringPointer(),
 					Email: h.Email.ValueString(),
 				}
 			})
 			return clientEmail{
-				Addresses: c,
+				Addresses: clientAddresses,
 			}
 		},
 		Set: func(m *notificationSettings, settings any, ctx context.Context, diags *diag.Diagnostics) {
-			s, err := toSettingsStruct[clientEmail](settings)
+			settingsStruct, err := toSettingsStruct[clientEmail](settings)
 			if err != nil {
 				diags.AddError("Marshal Error",
 					fmt.Sprintf("Error marshalling 'email' settings: %s", err))
@@ -309,13 +309,13 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 			}
 
 			var elements []attr.Value
-			for _, a := range s.Addresses {
+			for _, ss := range settingsStruct.Addresses {
 				objectValue, d := types.ObjectValueFrom(
 					ctx,
 					EmailAddressAttributeTypes(),
 					notificationSettingsEmailAddress{
-						Id:    types.StringPointerValue(a.Id),
-						Email: types.StringValue(a.Email),
+						Id:    types.StringPointerValue(ss.Id),
+						Email: types.StringValue(ss.Email),
 					},
 				)
 				if d.HasError() {
@@ -325,20 +325,20 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 				elements = append(elements, objectValue)
 			}
 
-			setValue, d2 := types.SetValueFrom(ctx, types.ObjectType{AttrTypes: EmailAddressAttributeTypes()}, elements)
-			if d2.HasError() {
-				diags.Append(d2...)
+			setValue, d := types.SetValueFrom(ctx, types.ObjectType{AttrTypes: EmailAddressAttributeTypes()}, elements)
+			if d.HasError() {
+				diags.Append(d...)
 				return
 			}
 			var email notificationSettingsEmail
 			m.Email.As(ctx, &email, basetypes.ObjectAsOptions{})
 			email.Addresses = setValue
-			o, d3 := types.ObjectValueFrom(ctx, EmailAttributeTypes(), email)
-			if d3.HasError() {
-				diags.Append(d3...)
+			tfObject, d := types.ObjectValueFrom(ctx, EmailAttributeTypes(), email)
+			if d.HasError() {
+				diags.Append(d...)
 				return
 			}
-			m.Email = o
+			m.Email = tfObject
 		},
 	},
 	"slack": {
@@ -354,18 +354,18 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 			}
 		},
 		Set: func(m *notificationSettings, settings any, ctx context.Context, diags *diag.Diagnostics) {
-			s, err := toSettingsStruct[clientSlack](settings)
+			settingsStruct, err := toSettingsStruct[clientSlack](settings)
 			if err != nil {
 				diags.AddError("Marshal Error",
 					fmt.Sprintf("Error marshalling 'slack' settings: %s", err))
 				return
 			}
-			o, d := types.ObjectValueFrom(ctx, SlackAttributeTypes(), s)
+			tfObject, d := types.ObjectValueFrom(ctx, SlackAttributeTypes(), settingsStruct)
 			if d.HasError() {
 				diags.Append(d...)
 				return
 			}
-			m.Slack = o
+			m.Slack = tfObject
 		},
 	},
 	"pagerduty": {
@@ -382,18 +382,18 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 			}
 		},
 		Set: func(m *notificationSettings, settings any, ctx context.Context, diags *diag.Diagnostics) {
-			s, err := toSettingsStruct[clientPagerDuty](settings)
+			settingsStruct, err := toSettingsStruct[clientPagerDuty](settings)
 			if err != nil {
 				diags.AddError("Marshal Error",
 					fmt.Sprintf("Error marshalling 'pagerduty' settings: %s", err))
 				return
 			}
-			o, d := types.ObjectValueFrom(ctx, PagerDutyAttributeTypes(), s)
+			tfObject, d := types.ObjectValueFrom(ctx, PagerDutyAttributeTypes(), settingsStruct)
 			if d.HasError() {
 				diags.Append(d...)
 				return
 			}
-			m.PagerDuty = o
+			m.PagerDuty = tfObject
 		},
 	},
 	"webhook": {
@@ -415,18 +415,18 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 			}
 		},
 		Set: func(m *notificationSettings, settings any, ctx context.Context, diags *diag.Diagnostics) {
-			s, err := toSettingsStruct[clientWebhook](settings)
+			settingsStruct, err := toSettingsStruct[clientWebhook](settings)
 			if err != nil {
 				diags.AddError("Marshal Error",
 					fmt.Sprintf("Error marshalling 'webhook' settings: %s", err))
 				return
 			}
-			o, d := types.ObjectValueFrom(ctx, WebhookAttributeTypes(), s)
+			tfObject, d := types.ObjectValueFrom(ctx, WebhookAttributeTypes(), settingsStruct)
 			if d.HasError() {
 				diags.Append(d...)
 				return
 			}
-			m.Webhook = o
+			m.Webhook = tfObject
 		},
 	},
 	"opsgenie": {
@@ -446,18 +446,18 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 			return c
 		},
 		Set: func(m *notificationSettings, settings any, ctx context.Context, diags *diag.Diagnostics) {
-			s, err := toSettingsStruct[clientOpsGenie](settings)
+			settingsStruct, err := toSettingsStruct[clientOpsGenie](settings)
 			if err != nil {
 				diags.AddError("Marshal Error",
 					fmt.Sprintf("Error marshalling 'opsgenie' settings: %s", err))
 				return
 			}
-			o, d := types.ObjectValueFrom(ctx, OpsGenieAttributeTypes(), s)
+			tfObject, d := types.ObjectValueFrom(ctx, OpsGenieAttributeTypes(), settingsStruct)
 			if d.HasError() {
 				diags.Append(d...)
 				return
 			}
-			m.OpsGenie = o
+			m.OpsGenie = tfObject
 		},
 	},
 	"amazonsns": {
@@ -475,18 +475,18 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 			}
 		},
 		Set: func(m *notificationSettings, settings any, ctx context.Context, diags *diag.Diagnostics) {
-			s, err := toSettingsStruct[clientAmazonSNS](settings)
+			settingsStruct, err := toSettingsStruct[clientAmazonSNS](settings)
 			if err != nil {
 				diags.AddError("Marshal Error",
 					fmt.Sprintf("Error marshalling 'amazonsns' settings: %s", err))
 				return
 			}
-			o, d := types.ObjectValueFrom(ctx, AmazonSNSAttributeTypes(), s)
+			tfObject, d := types.ObjectValueFrom(ctx, AmazonSNSAttributeTypes(), settingsStruct)
 			if d.HasError() {
 				diags.Append(d...)
 				return
 			}
-			m.AmazonSNS = o
+			m.AmazonSNS = tfObject
 		},
 	},
 	"zapier": {
@@ -502,17 +502,17 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 			}
 		},
 		Set: func(m *notificationSettings, settings any, ctx context.Context, diags *diag.Diagnostics) {
-			s, err := toSettingsStruct[clientZapier](settings)
+			settingsStruct, err := toSettingsStruct[clientZapier](settings)
 			if err != nil {
 				diags.AddError("Marshal Error",
 					fmt.Sprintf("Error marshalling 'zapier' settings: %s", err))
 				return
 			}
-			o, d := types.ObjectValueFrom(ctx, ZapierAttributeTypes(), s)
+			tfObject, d := types.ObjectValueFrom(ctx, ZapierAttributeTypes(), settingsStruct)
 			if d.HasError() {
 				diags.Append(d...)
 			}
-			m.Zapier = o
+			m.Zapier = tfObject
 		},
 	},
 	"msTeams": {
@@ -528,18 +528,18 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 			}
 		},
 		Set: func(m *notificationSettings, settings any, ctx context.Context, diags *diag.Diagnostics) {
-			s, err := toSettingsStruct[clientMsTeams](settings)
+			settingsStruct, err := toSettingsStruct[clientMsTeams](settings)
 			if err != nil {
 				diags.AddError("Marshal Error",
 					fmt.Sprintf("Error marshalling 'msTeams' settings: %s", err))
 				return
 			}
-			o, d := types.ObjectValueFrom(ctx, MsTeamsAttributeTypes(), s)
+			tfObject, d := types.ObjectValueFrom(ctx, MsTeamsAttributeTypes(), settingsStruct)
 			if d.HasError() {
 				diags.Append(d...)
 				return
 			}
-			m.MsTeams = o
+			m.MsTeams = tfObject
 		},
 	},
 	"pushover": {
@@ -556,18 +556,18 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 			}
 		},
 		Set: func(m *notificationSettings, settings any, ctx context.Context, diags *diag.Diagnostics) {
-			s, err := toSettingsStruct[clientPushover](settings)
+			settingsStruct, err := toSettingsStruct[clientPushover](settings)
 			if err != nil {
 				diags.AddError("Marshal Error",
 					fmt.Sprintf("Error marshalling 'pushover' settings: %s", err))
 				return
 			}
-			o, d := types.ObjectValueFrom(ctx, PushoverAttributeTypes(), s)
+			tfObject, d := types.ObjectValueFrom(ctx, PushoverAttributeTypes(), settingsStruct)
 			if d.HasError() {
 				diags.Append(d...)
 				return
 			}
-			m.Pushover = o
+			m.Pushover = tfObject
 		},
 	},
 	"swsd": {
@@ -584,18 +584,18 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 			}
 		},
 		Set: func(m *notificationSettings, settings any, ctx context.Context, diags *diag.Diagnostics) {
-			s, err := toSettingsStruct[clientSolarWindsServiceDesk](settings)
+			settingsStruct, err := toSettingsStruct[clientSolarWindsServiceDesk](settings)
 			if err != nil {
 				diags.AddError("Marshal Error",
 					fmt.Sprintf("Error marshalling 'swsd' settings: %s", err))
 				return
 			}
-			o, d := types.ObjectValueFrom(ctx, SolarWindsServiceDeskAttributeTypes(), s)
+			tfObject, d := types.ObjectValueFrom(ctx, SolarWindsServiceDeskAttributeTypes(), settingsStruct)
 			if d.HasError() {
 				diags.Append(d...)
 				return
 			}
-			m.SolarWindsServiceDesk = o
+			m.SolarWindsServiceDesk = tfObject
 		},
 	},
 	"servicenow": {
@@ -612,18 +612,18 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 			}
 		},
 		Set: func(m *notificationSettings, settings any, ctx context.Context, diags *diag.Diagnostics) {
-			s, err := toSettingsStruct[clientServiceNow](settings)
+			settingsStruct, err := toSettingsStruct[clientServiceNow](settings)
 			if err != nil {
 				diags.AddError("Marshal Error",
 					fmt.Sprintf("Error marshalling 'servicenow' settings: %s", err))
 				return
 			}
-			o, d := types.ObjectValueFrom(ctx, ServiceNowAttributeTypes(), s)
+			tfObject, d := types.ObjectValueFrom(ctx, ServiceNowAttributeTypes(), settingsStruct)
 			if d.HasError() {
 				diags.Append(d...)
 				return
 			}
-			m.ServiceNow = o
+			m.ServiceNow = tfObject
 		},
 	},
 }
@@ -670,12 +670,12 @@ func (m *notificationResourceModel) SetSettings(settings *any, ctx context.Conte
 			return
 		}
 
-		o, d := types.ObjectValueFrom(ctx, NotificationSettingsAttributeTypes(), model)
+		tfSettings, d := types.ObjectValueFrom(ctx, NotificationSettingsAttributeTypes(), model)
 		if d.HasError() {
 			diags.Append(d...)
 			return
 		}
-		m.Settings = o
+		m.Settings = tfSettings
 	} else {
 		diags.AddError("Unsupported Notification Type Error",
 			fmt.Sprintf("%s: %s", errUnsupportedNotificationType, m.Type.ValueString()))
