@@ -95,9 +95,12 @@ func (r *notificationResource) Read(ctx context.Context, req resource.ReadReques
 	tfState.Title = types.StringValue(notification.Title)
 	tfState.Type = types.StringValue(notification.Type)
 	tfState.Description = types.StringPointerValue(notification.Description)
-	err = tfState.SetSettings(notification.Settings, ctx)
+	err = tfState.SetSettings(notification.Settings, ctx, &resp.Diagnostics)
 	if err != nil {
 		resp.Diagnostics.AddError("Settings Error", err.Error())
+		return
+	}
+	if resp.Diagnostics.HasError() {
 		return
 	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, tfState)...)
