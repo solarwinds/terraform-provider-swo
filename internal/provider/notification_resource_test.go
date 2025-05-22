@@ -514,7 +514,7 @@ func TestAccZapierNotificationResource(t *testing.T) {
 				Config: testAccZapierConfig("test-acc test one"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("swo_notification.test_zapier", "type", "zapier"),
-					resource.TestCheckResourceAttr("swo_notification.test_zapier", "settings.zapier.url", "https://hooks.zapier.com/hooks/catch/123567/abcdef/"),
+					resource.TestCheckResourceAttr("swo_notification.test_zapier", "settings.zapier.url", "https://hooks.zapier.com/hooks/catch/XXX"),
 				),
 			},
 			// ImportState testing
@@ -542,7 +542,7 @@ func testAccZapierConfig(title string) string {
   		type        = "zapier"
   		settings = {
     		zapier = {
-      			url = "https://hooks.zapier.com/hooks/catch/123567/abcdef/"
+      			url = "https://hooks.zapier.com/hooks/catch/XXX"
 			}
 		}
 	}`, title)
