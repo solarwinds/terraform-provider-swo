@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"log"
@@ -272,17 +273,26 @@ func ServiceNowAttributeTypes() map[string]attr.Type {
 }
 
 type notificationSettingsAccessor struct {
-	Get func(m *notificationSettings, ctx context.Context) any
+	/// Translates the tf type notification model into the json client model
+	Get func(m *notificationSettings, ctx context.Context, diags *diag.Diagnostics) any
 	Set func(m *notificationSettings, settings any, ctx context.Context) error
 }
 
 var settingsAccessors = map[string]notificationSettingsAccessor{
 	"email": {
-		Get: func(m *notificationSettings, ctx context.Context) any {
+		Get: func(m *notificationSettings, ctx context.Context, diags *diag.Diagnostics) any {
 			var email notificationSettingsEmail
-			m.Email.As(ctx, &email, basetypes.ObjectAsOptions{})
+			d := m.Email.As(ctx, &email, basetypes.ObjectAsOptions{})
+			if d.HasError() {
+				diags.Append(d...)
+				return nil
+			}
 			var addresses []notificationSettingsEmailAddress
-			email.Addresses.ElementsAs(ctx, &addresses, false)
+			d = email.Addresses.ElementsAs(ctx, &addresses, false)
+			if d.HasError() {
+				diags.Append(d...)
+				return nil
+			}
 
 			var c []clientEmailAddress
 			c = convertArray(addresses, func(h notificationSettingsEmailAddress) clientEmailAddress {
@@ -327,9 +337,13 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 		},
 	},
 	"slack": {
-		Get: func(m *notificationSettings, ctx context.Context) any {
+		Get: func(m *notificationSettings, ctx context.Context, diags *diag.Diagnostics) any {
 			var slack notificationSettingsSlack
-			m.Slack.As(ctx, &slack, basetypes.ObjectAsOptions{})
+			d := m.Slack.As(ctx, &slack, basetypes.ObjectAsOptions{})
+			if d.HasError() {
+				diags.Append(d...)
+				return nil
+			}
 			return clientSlack{
 				Url: slack.Url.ValueString(),
 			}
@@ -342,7 +356,7 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 		},
 	},
 	"pagerduty": {
-		Get: func(m *notificationSettings, ctx context.Context) any {
+		Get: func(m *notificationSettings, ctx context.Context, diags *diag.Diagnostics) any {
 			var pagerDuty notificationSettingsPagerDuty
 			d := m.PagerDuty.As(ctx, &pagerDuty, basetypes.ObjectAsOptions{})
 			if d.HasError() {
@@ -362,9 +376,13 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 		},
 	},
 	"webhook": {
-		Get: func(m *notificationSettings, ctx context.Context) any {
+		Get: func(m *notificationSettings, ctx context.Context, diags *diag.Diagnostics) any {
 			var webhook notificationSettingsWebhook
-			m.Webhook.As(ctx, &webhook, basetypes.ObjectAsOptions{})
+			d := m.Webhook.As(ctx, &webhook, basetypes.ObjectAsOptions{})
+			if d.HasError() {
+				diags.Append(d...)
+				return nil
+			}
 			return clientWebhook{
 				Url:             webhook.Url.ValueString(),
 				Method:          webhook.Method.ValueString(),
@@ -383,7 +401,7 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 		},
 	},
 	"opsgenie": {
-		Get: func(m *notificationSettings, ctx context.Context) any {
+		Get: func(m *notificationSettings, ctx context.Context, diags *diag.Diagnostics) any {
 			var opsGenie notificationSettingsOpsGenie
 			d := m.OpsGenie.As(ctx, &opsGenie, basetypes.ObjectAsOptions{})
 			if d.HasError() {
@@ -406,11 +424,12 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 		},
 	},
 	"amazonsns": {
-		Get: func(m *notificationSettings, ctx context.Context) any {
+		Get: func(m *notificationSettings, ctx context.Context, diags *diag.Diagnostics) any {
 			var amazonSns notificationSettingsAmazonSNS
 			d := m.AmazonSNS.As(ctx, &amazonSns, basetypes.ObjectAsOptions{})
 			if d.HasError() {
-				return newParseError("unable to parse")
+				diags.Append(d...)
+				return nil
 			}
 			return clientAmazonSNS{
 				TopicARN:        amazonSns.TopicARN.ValueString(),
@@ -429,9 +448,13 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 		},
 	},
 	"zapier": {
-		Get: func(m *notificationSettings, ctx context.Context) any {
+		Get: func(m *notificationSettings, ctx context.Context, diags *diag.Diagnostics) any {
 			var zapier notificationSettingsZapier
-			m.Zapier.As(ctx, &zapier, basetypes.ObjectAsOptions{})
+			d := m.Zapier.As(ctx, &zapier, basetypes.ObjectAsOptions{})
+			if d.HasError() {
+				diags.Append(d...)
+				return nil
+			}
 			return clientZapier{
 				Url: zapier.Url.ValueString(),
 			}
@@ -444,9 +467,13 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 		},
 	},
 	"msTeams": {
-		Get: func(m *notificationSettings, ctx context.Context) any {
+		Get: func(m *notificationSettings, ctx context.Context, diags *diag.Diagnostics) any {
 			var msTeams notificationSettingsMsTeams
-			m.MsTeams.As(ctx, &msTeams, basetypes.ObjectAsOptions{})
+			d := m.MsTeams.As(ctx, &msTeams, basetypes.ObjectAsOptions{})
+			if d.HasError() {
+				diags.Append(d...)
+				return nil
+			}
 			return clientMsTeams{
 				Url: msTeams.Url.ValueString(),
 			}
@@ -459,9 +486,13 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 		},
 	},
 	"pushover": {
-		Get: func(m *notificationSettings, ctx context.Context) any {
+		Get: func(m *notificationSettings, ctx context.Context, diags *diag.Diagnostics) any {
 			var pushover notificationSettingsPushover
-			m.Pushover.As(ctx, &pushover, basetypes.ObjectAsOptions{})
+			d := m.Pushover.As(ctx, &pushover, basetypes.ObjectAsOptions{})
+			if d.HasError() {
+				diags.Append(d...)
+				return nil
+			}
 			return clientPushover{
 				UserKey:  pushover.UserKey.ValueString(),
 				AppToken: pushover.AppToken.ValueString(),
@@ -475,9 +506,13 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 		},
 	},
 	"swsd": {
-		Get: func(m *notificationSettings, ctx context.Context) any {
+		Get: func(m *notificationSettings, ctx context.Context, diags *diag.Diagnostics) any {
 			var swoServiceDesk notificationSettingsSolarWindsServiceDesk
-			m.SolarWindsServiceDesk.As(ctx, &swoServiceDesk, basetypes.ObjectAsOptions{})
+			d := m.SolarWindsServiceDesk.As(ctx, &swoServiceDesk, basetypes.ObjectAsOptions{})
+			if d.HasError() {
+				diags.Append(d...)
+				return nil
+			}
 			return clientSolarWindsServiceDesk{
 				AppToken: swoServiceDesk.AppToken.ValueString(),
 				IsEU:     swoServiceDesk.IsEU.ValueBool(),
@@ -491,9 +526,13 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 		},
 	},
 	"servicenow": {
-		Get: func(m *notificationSettings, ctx context.Context) any {
+		Get: func(m *notificationSettings, ctx context.Context, diags *diag.Diagnostics) any {
 			var serviceNow notificationSettingsServiceNow
-			m.ServiceNow.As(ctx, &serviceNow, basetypes.ObjectAsOptions{})
+			d := m.ServiceNow.As(ctx, &serviceNow, basetypes.ObjectAsOptions{})
+			if d.HasError() {
+				diags.Append(d...)
+				return nil
+			}
 			return clientServiceNow{
 				AppToken: serviceNow.AppToken.ValueString(),
 				Instance: serviceNow.Instance.ValueString(),
@@ -560,7 +599,7 @@ func (m *notificationResourceModel) SetSettings(settings *any, ctx context.Conte
 	return nil
 }
 
-func (m *notificationResourceModel) GetSettings(ctx context.Context) any {
+func (m *notificationResourceModel) GetSettings(ctx context.Context, diags *diag.Diagnostics) any {
 
 	if accessor, found := settingsAccessors[m.Type.ValueString()]; found {
 		if m.Settings.IsNull() {
@@ -569,9 +608,16 @@ func (m *notificationResourceModel) GetSettings(ctx context.Context) any {
 		}
 
 		var settings notificationSettings
-		m.Settings.As(ctx, &settings, basetypes.ObjectAsOptions{})
-		a := accessor.Get(&settings, ctx)
-		return a
+		d := m.Settings.As(ctx, &settings, basetypes.ObjectAsOptions{})
+		if d.HasError() {
+			diags.Append(d...)
+			return nil
+		}
+		clientSettings := accessor.Get(&settings, ctx, diags)
+		if diags.HasError() {
+			return nil
+		}
+		return clientSettings
 	}
 
 	log.Printf("unsupported notification type. got %s", m.Type.ValueString())

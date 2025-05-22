@@ -42,11 +42,15 @@ func (r *notificationResource) Create(ctx context.Context, req resource.CreateRe
 	}
 
 	// Create the notification...
+	tfSettings := tfPlan.GetSettings(ctx, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	input := swoClient.CreateNotificationInput{
 		Title:       tfPlan.Title.ValueString(),
 		Description: tfPlan.Description.ValueStringPointer(),
 		Type:        tfPlan.Type.ValueString(),
-		Settings:    tfPlan.GetSettings(ctx),
+		Settings:    tfSettings,
 	}
 	newNotification, err := r.client.NotificationsService().Create(ctx, input)
 
@@ -114,15 +118,17 @@ func (r *notificationResource) Update(ctx context.Context, req resource.UpdateRe
 		return
 	}
 
-	settings := tfPlan.GetSettings(ctx)
-
+	tfSettings := tfPlan.GetSettings(ctx, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	// Update the notification...
 	_, err = r.client.NotificationsService().Update(ctx,
 		swoClient.UpdateNotificationInput{
 			Id:          nId,
 			Title:       tfPlan.Title.ValueStringPointer(),
 			Description: tfPlan.Description.ValueStringPointer(),
-			Settings:    &settings,
+			Settings:    &tfSettings,
 		})
 
 	if err != nil {
