@@ -84,7 +84,6 @@ func (r *notificationResource) Read(ctx context.Context, req resource.ReadReques
 
 	// Read the notification...
 	notification, err := r.client.NotificationsService().Read(ctx, nId, nType)
-
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error",
 			fmt.Sprintf("error reading notification %s. error: %s", nId, err))
@@ -95,11 +94,7 @@ func (r *notificationResource) Read(ctx context.Context, req resource.ReadReques
 	tfState.Title = types.StringValue(notification.Title)
 	tfState.Type = types.StringValue(notification.Type)
 	tfState.Description = types.StringPointerValue(notification.Description)
-	err = tfState.SetSettings(notification.Settings, ctx, &resp.Diagnostics)
-	if err != nil {
-		resp.Diagnostics.AddError("Settings Error", err.Error())
-		return
-	}
+	tfState.SetSettings(notification.Settings, ctx, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
