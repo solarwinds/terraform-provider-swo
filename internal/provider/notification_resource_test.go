@@ -81,10 +81,9 @@ func TestAccAmazonSnsNotificationResource(t *testing.T) {
 			},
 			// ImportState testing
 			{
-				ResourceName:            "swo_notification.test_amazonsns",
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"access_key_id", "secret_access_key"},
+				ResourceName:      "swo_notification.test_amazonsns",
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 			// Update and Read testing
 			{

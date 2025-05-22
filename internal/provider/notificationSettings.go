@@ -46,7 +46,7 @@ func NotificationSettingsAttributeTypes() map[string]attr.Type {
 }
 
 type notificationSettingsEmail struct {
-	Addresses types.Set `tfsdk:"addresses" json:"addresses"`
+	Addresses types.Set `tfsdk:"addresses"`
 }
 
 type clientEmail struct {
@@ -60,8 +60,8 @@ func EmailAttributeTypes() map[string]attr.Type {
 }
 
 type notificationSettingsEmailAddress struct {
-	Id    types.String `tfsdk:"id" json:"id"`
-	Email types.String `tfsdk:"email" json:"email"`
+	Id    types.String `tfsdk:"id"`
+	Email types.String `tfsdk:"email"`
 }
 
 type clientEmailAddress struct {
@@ -77,11 +77,11 @@ func EmailAddressAttributeTypes() map[string]attr.Type {
 }
 
 type notificationSettingsOpsGenie struct {
-	HostName   types.String `tfsdk:"hostname" json:"hostname"`
-	ApiKey     types.String `tfsdk:"api_key" json:"apiKey"`
-	Recipients types.String `tfsdk:"recipients" json:"recipients"`
-	Teams      types.String `tfsdk:"teams" json:"teams"`
-	Tags       types.String `tfsdk:"tags" json:"tags"`
+	HostName   types.String `tfsdk:"hostname"`
+	ApiKey     types.String `tfsdk:"api_key"`
+	Recipients types.String `tfsdk:"recipients"`
+	Teams      types.String `tfsdk:"teams"`
+	Tags       types.String `tfsdk:"tags"`
 }
 
 type clientOpsGenie struct {
@@ -103,7 +103,7 @@ func OpsGenieAttributeTypes() map[string]attr.Type {
 }
 
 type notificationSettingsSlack struct {
-	Url types.String `tfsdk:"url" json:"url"`
+	Url types.String `tfsdk:"url"`
 }
 
 type clientSlack struct {
@@ -117,7 +117,7 @@ func SlackAttributeTypes() map[string]attr.Type {
 }
 
 type notificationSettingsMsTeams struct {
-	Url types.String `tfsdk:"url" json:"url"`
+	Url types.String `tfsdk:"url"`
 }
 
 type clientMsTeams struct {
@@ -131,9 +131,9 @@ func MsTeamsAttributeTypes() map[string]attr.Type {
 }
 
 type notificationSettingsPagerDuty struct {
-	RoutingKey types.String `tfsdk:"routing_key" json:"routingKey"`
-	Summary    types.String `tfsdk:"summary" json:"summary"`
-	DedupKey   types.String `tfsdk:"dedup_key" json:"dedupKey"`
+	RoutingKey types.String `tfsdk:"routing_key"`
+	Summary    types.String `tfsdk:"summary"`
+	DedupKey   types.String `tfsdk:"dedup_key"`
 }
 
 type clientPagerDuty struct {
@@ -151,13 +151,13 @@ func PagerDutyAttributeTypes() map[string]attr.Type {
 }
 
 type notificationSettingsWebhook struct {
-	Url             types.String `tfsdk:"url" json:"url"`
-	Method          types.String `tfsdk:"method" json:"method"`
-	AuthType        types.String `tfsdk:"auth_type" json:"authType"`
-	AuthUsername    types.String `tfsdk:"auth_username" json:"authUsername"`
-	AuthPassword    types.String `tfsdk:"auth_password" json:"authPassword"`
-	AuthHeaderName  types.String `tfsdk:"auth_header_name" json:"authHeaderName"`
-	AuthHeaderValue types.String `tfsdk:"auth_header_value" json:"authHeaderValue"`
+	Url             types.String `tfsdk:"url" `
+	Method          types.String `tfsdk:"method"`
+	AuthType        types.String `tfsdk:"auth_type"`
+	AuthUsername    types.String `tfsdk:"auth_username"`
+	AuthPassword    types.String `tfsdk:"auth_password"`
+	AuthHeaderName  types.String `tfsdk:"auth_header_name"`
+	AuthHeaderValue types.String `tfsdk:"auth_header_value"`
 }
 
 type clientWebhook struct {
@@ -183,9 +183,9 @@ func WebhookAttributeTypes() map[string]attr.Type {
 }
 
 type notificationSettingsAmazonSNS struct {
-	TopicARN        types.String `tfsdk:"topic_arn" json:"topicARN"`
-	AccessKeyID     types.String `tfsdk:"access_key_id" json:"accessKeyId"`
-	SecretAccessKey types.String `tfsdk:"secret_access_key" json:"secretAccessKey"`
+	TopicARN        types.String `tfsdk:"topic_arn"`
+	AccessKeyID     types.String `tfsdk:"access_key_id"`
+	SecretAccessKey types.String `tfsdk:"secret_access_key"`
 }
 
 type clientAmazonSNS struct {
@@ -203,7 +203,7 @@ func AmazonSNSAttributeTypes() map[string]attr.Type {
 }
 
 type notificationSettingsZapier struct {
-	Url types.String `tfsdk:"url" json:"url"`
+	Url types.String `tfsdk:"url"`
 }
 
 type clientZapier struct {
@@ -217,8 +217,8 @@ func ZapierAttributeTypes() map[string]attr.Type {
 }
 
 type notificationSettingsPushover struct {
-	UserKey  types.String `tfsdk:"user_key" json:"userKey"`
-	AppToken types.String `tfsdk:"app_token" json:"appToken"`
+	UserKey  types.String `tfsdk:"user_key"`
+	AppToken types.String `tfsdk:"app_token"`
 }
 
 type clientPushover struct {
@@ -234,8 +234,8 @@ func PushoverAttributeTypes() map[string]attr.Type {
 }
 
 type notificationSettingsSolarWindsServiceDesk struct {
-	AppToken types.String `tfsdk:"app_token" json:"appToken"`
-	IsEU     types.Bool   `tfsdk:"is_eu" json:"isEu"`
+	AppToken types.String `tfsdk:"app_token"`
+	IsEU     types.Bool   `tfsdk:"is_eu"`
 }
 
 type clientSolarWindsServiceDesk struct {
@@ -251,8 +251,8 @@ func SolarWindsServiceDeskAttributeTypes() map[string]attr.Type {
 }
 
 type notificationSettingsServiceNow struct {
-	AppToken types.String `tfsdk:"app_token" json:"appToken"`
-	Instance types.String `tfsdk:"instance" json:"instance"`
+	AppToken types.String `tfsdk:"app_token"`
+	Instance types.String `tfsdk:"instance"`
 }
 
 type clientServiceNow struct {
