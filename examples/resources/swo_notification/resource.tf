@@ -4,8 +4,8 @@ resource "swo_notification" "amazonsns" {
   type        = "amazonsns"
   settings = {
     amazonsns = {
-      topic_arn = "arn:aws:sns:us-east-1:123456789012:topic"
-      access_key_id = "KEY_ID"
+      topic_arn         = "arn:aws:sns:us-east-1:123456789012:topic"
+      access_key_id     = "KEY_ID"
       secret_access_key = "SECRET_KEY"
     }
   }
@@ -121,13 +121,13 @@ resource "swo_notification" "test_webhook" {
   type        = "webhook"
   settings = {
     webhook = {
-      method = "GET"
-      url    = "https://webhook.example.com/"
-      auth_header_name = "X-Request-Id"
+      method            = "GET"
+      url               = "https://webhook.example.com/"
+      auth_header_name  = "X-Request-Id"
       auth_header_value = "HEADER_VALUE"
-      auth_password = "AUTH_PASSWORD"
-      auth_type = "basic"
-      auth_username = "AUTH_USERNAME"
+      auth_password     = "AUTH_PASSWORD"
+      auth_type         = "basic"
+      auth_username     = "AUTH_USERNAME"
     }
   }
 }
