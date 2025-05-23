@@ -268,12 +268,61 @@ func ServiceNowAttributeTypes() map[string]attr.Type {
 }
 
 type notificationSettingsAccessor struct {
-	/// Translates the tf type notification model into the json client model
+	/// Translates the TF type notification model into the JSON client model
 	Get func(m *notificationSettings, ctx context.Context, diags *diag.Diagnostics) any
+	/// Copy non-sensitive properties from the JSON client model into the TF type notification model
 	Set func(m *notificationSettings, settings any, ctx context.Context, diags *diag.Diagnostics)
 }
 
 var settingsAccessors = map[string]notificationSettingsAccessor{
+	"amazonsns": {
+		Get: func(m *notificationSettings, ctx context.Context, diags *diag.Diagnostics) any {
+			var amazonSns notificationSettingsAmazonSNS
+			d := m.AmazonSNS.As(ctx, &amazonSns, basetypes.ObjectAsOptions{})
+			if d.HasError() {
+				diags.Append(d...)
+				return nil
+			}
+			return clientAmazonSNS{
+				TopicARN:        amazonSns.TopicARN.ValueString(),
+				AccessKeyID:     amazonSns.AccessKeyID.ValueString(),
+				SecretAccessKey: amazonSns.SecretAccessKey.ValueString(),
+			}
+		},
+		Set: func(m *notificationSettings, settings any, ctx context.Context, diags *diag.Diagnostics) {
+			settingsStruct, err := toSettingsStruct[clientAmazonSNS](settings)
+			if err != nil {
+				diags.AddError("Marshal Error",
+					fmt.Sprintf("Error marshalling 'amazonsns' settings: %s", err))
+				return
+			}
+
+			if !m.AmazonSNS.IsNull() {
+				var amazonSns notificationSettingsAmazonSNS
+				d := m.AmazonSNS.As(ctx, &amazonSns, basetypes.ObjectAsOptions{})
+				if d.HasError() {
+					diags.Append(d...)
+					return
+				}
+
+				amazonSns.TopicARN = types.StringValue(settingsStruct.TopicARN)
+				amazonSns.AccessKeyID = types.StringValue(settingsStruct.AccessKeyID)
+				tfObject, d := types.ObjectValueFrom(ctx, AmazonSNSAttributeTypes(), amazonSns)
+				if d.HasError() {
+					diags.Append(d...)
+					return
+				}
+				m.AmazonSNS = tfObject
+			} else {
+				tfObject, d := types.ObjectValueFrom(ctx, AmazonSNSAttributeTypes(), settingsStruct)
+				if d.HasError() {
+					diags.Append(d...)
+					return
+				}
+				m.AmazonSNS = tfObject
+			}
+		},
+	},
 	"email": {
 		Get: func(m *notificationSettings, ctx context.Context, diags *diag.Diagnostics) any {
 			var email notificationSettingsEmail
@@ -341,6 +390,220 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 			m.Email = tfObject
 		},
 	},
+	"msTeams": {
+		Get: func(m *notificationSettings, ctx context.Context, diags *diag.Diagnostics) any {
+			var msTeams notificationSettingsMsTeams
+			d := m.MsTeams.As(ctx, &msTeams, basetypes.ObjectAsOptions{})
+			if d.HasError() {
+				diags.Append(d...)
+				return nil
+			}
+			return clientMsTeams{
+				Url: msTeams.Url.ValueString(),
+			}
+		},
+		Set: func(m *notificationSettings, settings any, ctx context.Context, diags *diag.Diagnostics) {
+			settingsStruct, err := toSettingsStruct[clientMsTeams](settings)
+			if err != nil {
+				diags.AddError("Marshal Error",
+					fmt.Sprintf("Error marshalling 'msTeams' settings: %s", err))
+				return
+			}
+			tfObject, d := types.ObjectValueFrom(ctx, MsTeamsAttributeTypes(), settingsStruct)
+			if d.HasError() {
+				diags.Append(d...)
+				return
+			}
+			m.MsTeams = tfObject
+		},
+	},
+	"opsgenie": {
+		Get: func(m *notificationSettings, ctx context.Context, diags *diag.Diagnostics) any {
+			var opsGenie notificationSettingsOpsGenie
+			d := m.OpsGenie.As(ctx, &opsGenie, basetypes.ObjectAsOptions{})
+			if d.HasError() {
+				return nil
+			}
+			c := clientOpsGenie{
+				HostName:   opsGenie.HostName.ValueString(),
+				ApiKey:     opsGenie.ApiKey.ValueString(),
+				Recipients: opsGenie.Recipients.ValueString(),
+				Teams:      opsGenie.Teams.ValueString(),
+				Tags:       opsGenie.Tags.ValueString(),
+			}
+			return c
+		},
+		Set: func(m *notificationSettings, settings any, ctx context.Context, diags *diag.Diagnostics) {
+			settingsStruct, err := toSettingsStruct[clientOpsGenie](settings)
+			if err != nil {
+				diags.AddError("Marshal Error",
+					fmt.Sprintf("Error marshalling 'opsgenie' settings: %s", err))
+				return
+			}
+
+			if !m.OpsGenie.IsNull() {
+				var opsGenie notificationSettingsOpsGenie
+				d := m.OpsGenie.As(ctx, &opsGenie, basetypes.ObjectAsOptions{})
+				if d.HasError() {
+					return
+				}
+
+				opsGenie.HostName = types.StringValue(settingsStruct.HostName)
+				opsGenie.Recipients = types.StringValue(settingsStruct.Recipients)
+				opsGenie.Teams = types.StringValue(settingsStruct.Teams)
+				opsGenie.Tags = types.StringValue(settingsStruct.Tags)
+				tfObject, d := types.ObjectValueFrom(ctx, OpsGenieAttributeTypes(), opsGenie)
+				if d.HasError() {
+					diags.Append(d...)
+					return
+				}
+				m.OpsGenie = tfObject
+			} else {
+				tfObject, d := types.ObjectValueFrom(ctx, OpsGenieAttributeTypes(), settingsStruct)
+				if d.HasError() {
+					diags.Append(d...)
+					return
+				}
+				m.OpsGenie = tfObject
+			}
+		},
+	},
+	"pagerduty": {
+		Get: func(m *notificationSettings, ctx context.Context, diags *diag.Diagnostics) any {
+			var pagerDuty notificationSettingsPagerDuty
+			d := m.PagerDuty.As(ctx, &pagerDuty, basetypes.ObjectAsOptions{})
+			if d.HasError() {
+				return nil
+			}
+			return clientPagerDuty{
+				RoutingKey: pagerDuty.RoutingKey.ValueString(),
+				Summary:    pagerDuty.Summary.ValueString(),
+				DedupKey:   pagerDuty.DedupKey.ValueString(),
+			}
+		},
+		Set: func(m *notificationSettings, settings any, ctx context.Context, diags *diag.Diagnostics) {
+			settingsStruct, err := toSettingsStruct[clientPagerDuty](settings)
+			if err != nil {
+				diags.AddError("Marshal Error",
+					fmt.Sprintf("Error marshalling 'pagerduty' settings: %s", err))
+				return
+			}
+
+			if !m.PagerDuty.IsNull() {
+				var pagerDuty notificationSettingsPagerDuty
+				d := m.PagerDuty.As(ctx, &pagerDuty, basetypes.ObjectAsOptions{})
+				if d.HasError() {
+					return
+				}
+
+				pagerDuty.Summary = types.StringValue(settingsStruct.Summary)
+				pagerDuty.DedupKey = types.StringValue(settingsStruct.DedupKey)
+				tfObject, d := types.ObjectValueFrom(ctx, PagerDutyAttributeTypes(), pagerDuty)
+				if d.HasError() {
+					diags.Append(d...)
+					return
+				}
+				m.PagerDuty = tfObject
+
+			} else {
+				tfObject, d := types.ObjectValueFrom(ctx, PagerDutyAttributeTypes(), settingsStruct)
+				if d.HasError() {
+					diags.Append(d...)
+					return
+				}
+				m.PagerDuty = tfObject
+			}
+		},
+	},
+	"pushover": {
+		Get: func(m *notificationSettings, ctx context.Context, diags *diag.Diagnostics) any {
+			var pushover notificationSettingsPushover
+			d := m.Pushover.As(ctx, &pushover, basetypes.ObjectAsOptions{})
+			if d.HasError() {
+				diags.Append(d...)
+				return nil
+			}
+			return clientPushover{
+				UserKey:  pushover.UserKey.ValueString(),
+				AppToken: pushover.AppToken.ValueString(),
+			}
+		},
+		Set: func(m *notificationSettings, settings any, ctx context.Context, diags *diag.Diagnostics) {
+			settingsStruct, err := toSettingsStruct[clientPushover](settings)
+			if err != nil {
+				diags.AddError("Marshal Error",
+					fmt.Sprintf("Error marshalling 'pushover' settings: %s", err))
+				return
+			}
+
+			if !m.Pushover.IsNull() {
+				var pushover notificationSettingsPushover
+				d := m.Pushover.As(ctx, &pushover, basetypes.ObjectAsOptions{})
+
+				pushover.UserKey = types.StringValue(settingsStruct.UserKey)
+
+				tfObject, d := types.ObjectValueFrom(ctx, PushoverAttributeTypes(), pushover)
+				if d.HasError() {
+					diags.Append(d...)
+					return
+				}
+				m.Pushover = tfObject
+			} else {
+				tfObject, d := types.ObjectValueFrom(ctx, PushoverAttributeTypes(), settingsStruct)
+				if d.HasError() {
+					diags.Append(d...)
+					return
+				}
+				m.Pushover = tfObject
+			}
+		},
+	},
+	"servicenow": {
+		Get: func(m *notificationSettings, ctx context.Context, diags *diag.Diagnostics) any {
+			var serviceNow notificationSettingsServiceNow
+			d := m.ServiceNow.As(ctx, &serviceNow, basetypes.ObjectAsOptions{})
+			if d.HasError() {
+				diags.Append(d...)
+				return nil
+			}
+			return clientServiceNow{
+				AppToken: serviceNow.AppToken.ValueString(),
+				Instance: serviceNow.Instance.ValueString(),
+			}
+		},
+		Set: func(m *notificationSettings, settings any, ctx context.Context, diags *diag.Diagnostics) {
+			settingsStruct, err := toSettingsStruct[clientServiceNow](settings)
+			if err != nil {
+				diags.AddError("Marshal Error",
+					fmt.Sprintf("Error marshalling 'servicenow' settings: %s", err))
+				return
+			}
+
+			if !m.ServiceNow.IsNull() {
+				var serviceNow notificationSettingsServiceNow
+				d := m.ServiceNow.As(ctx, &serviceNow, basetypes.ObjectAsOptions{})
+				if d.HasError() {
+					diags.Append(d...)
+					return
+				}
+
+				serviceNow.Instance = types.StringValue(settingsStruct.Instance)
+				tfObject, d := types.ObjectValueFrom(ctx, ServiceNowAttributeTypes(), serviceNow)
+				if d.HasError() {
+					diags.Append(d...)
+					return
+				}
+				m.ServiceNow = tfObject
+			} else {
+				tfObject, d := types.ObjectValueFrom(ctx, ServiceNowAttributeTypes(), settingsStruct)
+				if d.HasError() {
+					diags.Append(d...)
+					return
+				}
+				m.ServiceNow = tfObject
+			}
+		},
+	},
 	"slack": {
 		Get: func(m *notificationSettings, ctx context.Context, diags *diag.Diagnostics) any {
 			var slack notificationSettingsSlack
@@ -368,32 +631,50 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 			m.Slack = tfObject
 		},
 	},
-	"pagerduty": {
+	"swsd": {
 		Get: func(m *notificationSettings, ctx context.Context, diags *diag.Diagnostics) any {
-			var pagerDuty notificationSettingsPagerDuty
-			d := m.PagerDuty.As(ctx, &pagerDuty, basetypes.ObjectAsOptions{})
+			var swoServiceDesk notificationSettingsSolarWindsServiceDesk
+			d := m.SolarWindsServiceDesk.As(ctx, &swoServiceDesk, basetypes.ObjectAsOptions{})
 			if d.HasError() {
+				diags.Append(d...)
 				return nil
 			}
-			return clientPagerDuty{
-				RoutingKey: pagerDuty.RoutingKey.ValueString(),
-				Summary:    pagerDuty.Summary.ValueString(),
-				DedupKey:   pagerDuty.DedupKey.ValueString(),
+			return clientSolarWindsServiceDesk{
+				AppToken: swoServiceDesk.AppToken.ValueString(),
+				IsEU:     swoServiceDesk.IsEU.ValueBool(),
 			}
 		},
 		Set: func(m *notificationSettings, settings any, ctx context.Context, diags *diag.Diagnostics) {
-			settingsStruct, err := toSettingsStruct[clientPagerDuty](settings)
+			settingsStruct, err := toSettingsStruct[clientSolarWindsServiceDesk](settings)
 			if err != nil {
 				diags.AddError("Marshal Error",
-					fmt.Sprintf("Error marshalling 'pagerduty' settings: %s", err))
+					fmt.Sprintf("Error marshalling 'swsd' settings: %s", err))
 				return
 			}
-			tfObject, d := types.ObjectValueFrom(ctx, PagerDutyAttributeTypes(), settingsStruct)
-			if d.HasError() {
-				diags.Append(d...)
-				return
+
+			if !m.SolarWindsServiceDesk.IsNull() {
+				var swoServiceDesk notificationSettingsSolarWindsServiceDesk
+				d := m.SolarWindsServiceDesk.As(ctx, &swoServiceDesk, basetypes.ObjectAsOptions{})
+				if d.HasError() {
+					diags.Append(d...)
+					return
+				}
+
+				swoServiceDesk.IsEU = types.BoolValue(settingsStruct.IsEU)
+				tfObject, d := types.ObjectValueFrom(ctx, SolarWindsServiceDeskAttributeTypes(), swoServiceDesk)
+				if d.HasError() {
+					diags.Append(d...)
+					return
+				}
+				m.SolarWindsServiceDesk = tfObject
+			} else {
+				tfObject, d := types.ObjectValueFrom(ctx, SolarWindsServiceDeskAttributeTypes(), settingsStruct)
+				if d.HasError() {
+					diags.Append(d...)
+					return
+				}
+				m.SolarWindsServiceDesk = tfObject
 			}
-			m.PagerDuty = tfObject
 		},
 	},
 	"webhook": {
@@ -421,72 +702,38 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 					fmt.Sprintf("Error marshalling 'webhook' settings: %s", err))
 				return
 			}
-			tfObject, d := types.ObjectValueFrom(ctx, WebhookAttributeTypes(), settingsStruct)
-			if d.HasError() {
-				diags.Append(d...)
-				return
+			settingsStruct.AuthPassword = "PASSWORD"
+			settingsStruct.AuthHeaderValue = "VALUE"
+
+			if !m.Webhook.IsNull() {
+				var webhook notificationSettingsWebhook
+				d := m.Webhook.As(ctx, &webhook, basetypes.ObjectAsOptions{})
+				if d.HasError() {
+					diags.Append(d...)
+					return
+				}
+
+				webhook.Url = types.StringValue(settingsStruct.Url)
+				webhook.Method = types.StringValue(settingsStruct.Method)
+				webhook.AuthType = types.StringValue(settingsStruct.AuthType)
+				webhook.AuthUsername = types.StringValue(settingsStruct.AuthUsername)
+				webhook.AuthHeaderName = types.StringValue(settingsStruct.AuthHeaderName)
+
+				tfObject, d := types.ObjectValueFrom(ctx, WebhookAttributeTypes(), webhook)
+				if d.HasError() {
+					diags.Append(d...)
+					return
+				}
+				m.Webhook = tfObject
+
+			} else {
+				tfObject, d := types.ObjectValueFrom(ctx, WebhookAttributeTypes(), settingsStruct)
+				if d.HasError() {
+					diags.Append(d...)
+					return
+				}
+				m.Webhook = tfObject
 			}
-			m.Webhook = tfObject
-		},
-	},
-	"opsgenie": {
-		Get: func(m *notificationSettings, ctx context.Context, diags *diag.Diagnostics) any {
-			var opsGenie notificationSettingsOpsGenie
-			d := m.OpsGenie.As(ctx, &opsGenie, basetypes.ObjectAsOptions{})
-			if d.HasError() {
-				return nil
-			}
-			c := clientOpsGenie{
-				HostName:   opsGenie.HostName.ValueString(),
-				ApiKey:     opsGenie.ApiKey.ValueString(),
-				Recipients: opsGenie.Recipients.ValueString(),
-				Teams:      opsGenie.Teams.ValueString(),
-				Tags:       opsGenie.Tags.ValueString(),
-			}
-			return c
-		},
-		Set: func(m *notificationSettings, settings any, ctx context.Context, diags *diag.Diagnostics) {
-			settingsStruct, err := toSettingsStruct[clientOpsGenie](settings)
-			if err != nil {
-				diags.AddError("Marshal Error",
-					fmt.Sprintf("Error marshalling 'opsgenie' settings: %s", err))
-				return
-			}
-			tfObject, d := types.ObjectValueFrom(ctx, OpsGenieAttributeTypes(), settingsStruct)
-			if d.HasError() {
-				diags.Append(d...)
-				return
-			}
-			m.OpsGenie = tfObject
-		},
-	},
-	"amazonsns": {
-		Get: func(m *notificationSettings, ctx context.Context, diags *diag.Diagnostics) any {
-			var amazonSns notificationSettingsAmazonSNS
-			d := m.AmazonSNS.As(ctx, &amazonSns, basetypes.ObjectAsOptions{})
-			if d.HasError() {
-				diags.Append(d...)
-				return nil
-			}
-			return clientAmazonSNS{
-				TopicARN:        amazonSns.TopicARN.ValueString(),
-				AccessKeyID:     amazonSns.AccessKeyID.ValueString(),
-				SecretAccessKey: amazonSns.SecretAccessKey.ValueString(),
-			}
-		},
-		Set: func(m *notificationSettings, settings any, ctx context.Context, diags *diag.Diagnostics) {
-			settingsStruct, err := toSettingsStruct[clientAmazonSNS](settings)
-			if err != nil {
-				diags.AddError("Marshal Error",
-					fmt.Sprintf("Error marshalling 'amazonsns' settings: %s", err))
-				return
-			}
-			tfObject, d := types.ObjectValueFrom(ctx, AmazonSNSAttributeTypes(), settingsStruct)
-			if d.HasError() {
-				diags.Append(d...)
-				return
-			}
-			m.AmazonSNS = tfObject
 		},
 	},
 	"zapier": {
@@ -515,120 +762,9 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 			m.Zapier = tfObject
 		},
 	},
-	"msTeams": {
-		Get: func(m *notificationSettings, ctx context.Context, diags *diag.Diagnostics) any {
-			var msTeams notificationSettingsMsTeams
-			d := m.MsTeams.As(ctx, &msTeams, basetypes.ObjectAsOptions{})
-			if d.HasError() {
-				diags.Append(d...)
-				return nil
-			}
-			return clientMsTeams{
-				Url: msTeams.Url.ValueString(),
-			}
-		},
-		Set: func(m *notificationSettings, settings any, ctx context.Context, diags *diag.Diagnostics) {
-			settingsStruct, err := toSettingsStruct[clientMsTeams](settings)
-			if err != nil {
-				diags.AddError("Marshal Error",
-					fmt.Sprintf("Error marshalling 'msTeams' settings: %s", err))
-				return
-			}
-			tfObject, d := types.ObjectValueFrom(ctx, MsTeamsAttributeTypes(), settingsStruct)
-			if d.HasError() {
-				diags.Append(d...)
-				return
-			}
-			m.MsTeams = tfObject
-		},
-	},
-	"pushover": {
-		Get: func(m *notificationSettings, ctx context.Context, diags *diag.Diagnostics) any {
-			var pushover notificationSettingsPushover
-			d := m.Pushover.As(ctx, &pushover, basetypes.ObjectAsOptions{})
-			if d.HasError() {
-				diags.Append(d...)
-				return nil
-			}
-			return clientPushover{
-				UserKey:  pushover.UserKey.ValueString(),
-				AppToken: pushover.AppToken.ValueString(),
-			}
-		},
-		Set: func(m *notificationSettings, settings any, ctx context.Context, diags *diag.Diagnostics) {
-			settingsStruct, err := toSettingsStruct[clientPushover](settings)
-			if err != nil {
-				diags.AddError("Marshal Error",
-					fmt.Sprintf("Error marshalling 'pushover' settings: %s", err))
-				return
-			}
-			tfObject, d := types.ObjectValueFrom(ctx, PushoverAttributeTypes(), settingsStruct)
-			if d.HasError() {
-				diags.Append(d...)
-				return
-			}
-			m.Pushover = tfObject
-		},
-	},
-	"swsd": {
-		Get: func(m *notificationSettings, ctx context.Context, diags *diag.Diagnostics) any {
-			var swoServiceDesk notificationSettingsSolarWindsServiceDesk
-			d := m.SolarWindsServiceDesk.As(ctx, &swoServiceDesk, basetypes.ObjectAsOptions{})
-			if d.HasError() {
-				diags.Append(d...)
-				return nil
-			}
-			return clientSolarWindsServiceDesk{
-				AppToken: swoServiceDesk.AppToken.ValueString(),
-				IsEU:     swoServiceDesk.IsEU.ValueBool(),
-			}
-		},
-		Set: func(m *notificationSettings, settings any, ctx context.Context, diags *diag.Diagnostics) {
-			settingsStruct, err := toSettingsStruct[clientSolarWindsServiceDesk](settings)
-			if err != nil {
-				diags.AddError("Marshal Error",
-					fmt.Sprintf("Error marshalling 'swsd' settings: %s", err))
-				return
-			}
-			tfObject, d := types.ObjectValueFrom(ctx, SolarWindsServiceDeskAttributeTypes(), settingsStruct)
-			if d.HasError() {
-				diags.Append(d...)
-				return
-			}
-			m.SolarWindsServiceDesk = tfObject
-		},
-	},
-	"servicenow": {
-		Get: func(m *notificationSettings, ctx context.Context, diags *diag.Diagnostics) any {
-			var serviceNow notificationSettingsServiceNow
-			d := m.ServiceNow.As(ctx, &serviceNow, basetypes.ObjectAsOptions{})
-			if d.HasError() {
-				diags.Append(d...)
-				return nil
-			}
-			return clientServiceNow{
-				AppToken: serviceNow.AppToken.ValueString(),
-				Instance: serviceNow.Instance.ValueString(),
-			}
-		},
-		Set: func(m *notificationSettings, settings any, ctx context.Context, diags *diag.Diagnostics) {
-			settingsStruct, err := toSettingsStruct[clientServiceNow](settings)
-			if err != nil {
-				diags.AddError("Marshal Error",
-					fmt.Sprintf("Error marshalling 'servicenow' settings: %s", err))
-				return
-			}
-			tfObject, d := types.ObjectValueFrom(ctx, ServiceNowAttributeTypes(), settingsStruct)
-			if d.HasError() {
-				diags.Append(d...)
-				return
-			}
-			m.ServiceNow = tfObject
-		},
-	},
 }
 
-// Utility function to marshal anonymous json to concrete models defined by T.
+// Utility function to marshal anonymous JSON to concrete models defined by T.
 func toSettingsStruct[T any](settings any) (*T, error) {
 	data, err := json.Marshal(settings)
 	if err != nil {
@@ -644,38 +780,55 @@ func toSettingsStruct[T any](settings any) (*T, error) {
 	return &concreteSettings, nil
 }
 
-func (m *notificationResourceModel) SetSettings(settings *any, ctx context.Context, diags *diag.Diagnostics) {
+func (m *notificationResourceModel) SetSettings(clientSettings *any, ctx context.Context, diags *diag.Diagnostics) {
 
 	if accessor, found := settingsAccessors[m.Type.ValueString()]; found {
 		if m.Settings.IsNull() {
-			m.Settings = types.ObjectNull(NotificationSettingsAttributeTypes())
-		}
+			var model = notificationSettings{
+				Email:                 types.ObjectNull(EmailAttributeTypes()),
+				Slack:                 types.ObjectNull(SlackAttributeTypes()),
+				PagerDuty:             types.ObjectNull(PagerDutyAttributeTypes()),
+				MsTeams:               types.ObjectNull(MsTeamsAttributeTypes()),
+				Webhook:               types.ObjectNull(WebhookAttributeTypes()),
+				OpsGenie:              types.ObjectNull(OpsGenieAttributeTypes()),
+				AmazonSNS:             types.ObjectNull(AmazonSNSAttributeTypes()),
+				Zapier:                types.ObjectNull(ZapierAttributeTypes()),
+				Pushover:              types.ObjectNull(PushoverAttributeTypes()),
+				SolarWindsServiceDesk: types.ObjectNull(SolarWindsServiceDeskAttributeTypes()),
+				ServiceNow:            types.ObjectNull(ServiceNowAttributeTypes()),
+			}
 
-		var model = notificationSettings{
-			Email:                 types.ObjectNull(EmailAttributeTypes()),
-			Slack:                 types.ObjectNull(SlackAttributeTypes()),
-			PagerDuty:             types.ObjectNull(PagerDutyAttributeTypes()),
-			MsTeams:               types.ObjectNull(MsTeamsAttributeTypes()),
-			Webhook:               types.ObjectNull(WebhookAttributeTypes()),
-			OpsGenie:              types.ObjectNull(OpsGenieAttributeTypes()),
-			AmazonSNS:             types.ObjectNull(AmazonSNSAttributeTypes()),
-			Zapier:                types.ObjectNull(ZapierAttributeTypes()),
-			Pushover:              types.ObjectNull(PushoverAttributeTypes()),
-			SolarWindsServiceDesk: types.ObjectNull(SolarWindsServiceDeskAttributeTypes()),
-			ServiceNow:            types.ObjectNull(ServiceNowAttributeTypes()),
-		}
+			accessor.Set(&model, clientSettings, ctx, diags)
+			if diags.HasError() {
+				return
+			}
 
-		accessor.Set(&model, settings, ctx, diags)
-		if diags.HasError() {
+			tfSettings, d := types.ObjectValueFrom(ctx, NotificationSettingsAttributeTypes(), model)
+			if d.HasError() {
+				diags.Append(d...)
+				return
+			}
+			m.Settings = tfSettings
+		} else {
+			var notification notificationSettings
+			d := m.Settings.As(ctx, &notification, basetypes.ObjectAsOptions{})
+			if d.HasError() {
+				diags.Append(d...)
+				return
+			}
+
+			accessor.Set(&notification, clientSettings, ctx, diags)
+			if diags.HasError() {
+				return
+			}
+			tfSettings, d := types.ObjectValueFrom(ctx, NotificationSettingsAttributeTypes(), notification)
+			if d.HasError() {
+				diags.Append(d...)
+				return
+			}
+			m.Settings = tfSettings
 			return
 		}
-
-		tfSettings, d := types.ObjectValueFrom(ctx, NotificationSettingsAttributeTypes(), model)
-		if d.HasError() {
-			diags.Append(d...)
-			return
-		}
-		m.Settings = tfSettings
 	} else {
 		diags.AddError("Unsupported Notification Type Error",
 			fmt.Sprintf("%s: %s", errUnsupportedNotificationType, m.Type.ValueString()))

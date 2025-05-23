@@ -141,6 +141,9 @@ func (r *notificationResource) Schema(ctx context.Context, req resource.SchemaRe
 										"Requirement: "+pagerDutyRoutingKeyRegex,
 									),
 								},
+								PlanModifiers: []planmodifier.String{
+									stringplanmodifier.RequiresReplace(),
+								},
 							},
 							"summary": schema.StringAttribute{
 								Description: "A summary of the issue causing the alert to trigger.",
@@ -191,6 +194,9 @@ func (r *notificationResource) Schema(ctx context.Context, req resource.SchemaRe
 								Description: "Password for basic auth type.",
 								Optional:    true,
 								Sensitive:   true,
+								PlanModifiers: []planmodifier.String{
+									stringplanmodifier.RequiresReplace(),
+								},
 							},
 							"auth_header_name": schema.StringAttribute{
 								Description: "Header name for token auth.",
@@ -200,6 +206,9 @@ func (r *notificationResource) Schema(ctx context.Context, req resource.SchemaRe
 								Description: "Header value for token auth.",
 								Optional:    true,
 								Sensitive:   true,
+								PlanModifiers: []planmodifier.String{
+									stringplanmodifier.RequiresReplace(),
+								},
 							},
 						},
 					},
@@ -215,6 +224,9 @@ func (r *notificationResource) Schema(ctx context.Context, req resource.SchemaRe
 								Description: "API key from OpsGenie Integration. (https://support.atlassian.com/opsgenie/docs/api-key-management/)",
 								Required:    true,
 								Sensitive:   true,
+								PlanModifiers: []planmodifier.String{
+									stringplanmodifier.RequiresReplace(),
+								},
 							},
 							"recipients": schema.StringAttribute{
 								Description: "Specifies who should be notified by email for the alert.",
@@ -252,6 +264,9 @@ func (r *notificationResource) Schema(ctx context.Context, req resource.SchemaRe
 								Description: "Secret access key for Amazon SNS.",
 								Required:    true,
 								Sensitive:   true,
+								PlanModifiers: []planmodifier.String{
+									stringplanmodifier.RequiresReplace(),
+								},
 							},
 						},
 					},
@@ -299,6 +314,9 @@ func (r *notificationResource) Schema(ctx context.Context, req resource.SchemaRe
 								Description: "API token/APP token from registered Pushover application. (https://pushover.net/api)",
 								Required:    true,
 								Sensitive:   true,
+								PlanModifiers: []planmodifier.String{
+									stringplanmodifier.RequiresReplace(),
+								},
 							},
 						},
 					},
@@ -310,6 +328,9 @@ func (r *notificationResource) Schema(ctx context.Context, req resource.SchemaRe
 								Description: "Token copied from SolarWinds Service Desk",
 								Required:    true,
 								Sensitive:   true,
+								PlanModifiers: []planmodifier.String{
+									stringplanmodifier.RequiresReplace(),
+								},
 							},
 							"is_eu": schema.BoolAttribute{
 								Description: "Is in the EU.",
@@ -325,6 +346,9 @@ func (r *notificationResource) Schema(ctx context.Context, req resource.SchemaRe
 								Description: "ServiceNow access token",
 								Required:    true,
 								Sensitive:   true,
+								PlanModifiers: []planmodifier.String{
+									stringplanmodifier.RequiresReplace(),
+								},
 							},
 							"instance": schema.StringAttribute{
 								Description: "Instance name for this integration",

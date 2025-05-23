@@ -7,6 +7,56 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
+func TestAccAmazonSnsNotificationResource(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		IsUnitTest:               true,
+		Steps: []resource.TestStep{
+			// Create and Read testing
+			{
+				Config: testAccAmazonSnsConfig("test-acc test one"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("swo_notification.test_amazonsns", "type", "amazonsns"),
+					resource.TestCheckResourceAttr("swo_notification.test_amazonsns", "settings.amazonsns.access_key_id", "KEY_ID"),
+					resource.TestCheckResourceAttr("swo_notification.test_amazonsns", "settings.amazonsns.secret_access_key", "SECRET_KEY"),
+					resource.TestCheckResourceAttr("swo_notification.test_amazonsns", "settings.amazonsns.topic_arn", "arn:aws:sns:us-east-1:123456789012:topic"),
+				),
+			},
+			// ImportState testing
+			{
+				ResourceName:            "swo_notification.test_amazonsns",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"settings.amazonsns.secret_access_key"},
+			},
+			// Update and Read testing
+			{
+				Config: testAccAmazonSnsConfig("test-acc test two"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("swo_notification.test_amazonsns", "title", "test-acc test two"),
+				),
+			},
+			// Delete testing automatically occurs in TestCase
+		},
+	})
+}
+func testAccAmazonSnsConfig(title string) string {
+	return providerConfig() + fmt.Sprintf(`
+	resource "swo_notification" "test_amazonsns" {
+  		title       = %[1]q
+  		description = "testing..."
+  		type        = "amazonsns"
+  		settings = {
+    		amazonsns = {
+				topic_arn = "arn:aws:sns:us-east-1:123456789012:topic"
+				access_key_id = "KEY_ID"
+				secret_access_key = "SECRET_KEY"
+			}
+		}
+	}`, title)
+}
+
 func TestAccEmailResource(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -63,55 +113,6 @@ func testAccEmailConfig(title string) string {
 	}`, title)
 }
 
-func TestAccAmazonSnsNotificationResource(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
-		IsUnitTest:               true,
-		Steps: []resource.TestStep{
-			// Create and Read testing
-			{
-				Config: testAccAmazonSnsConfig("test-acc test one"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_notification.test_amazonsns", "type", "amazonsns"),
-					resource.TestCheckResourceAttr("swo_notification.test_amazonsns", "settings.amazonsns.access_key_id", "KEY_ID"),
-					resource.TestCheckResourceAttr("swo_notification.test_amazonsns", "settings.amazonsns.secret_access_key", "SECRET_KEY"),
-					resource.TestCheckResourceAttr("swo_notification.test_amazonsns", "settings.amazonsns.topic_arn", "arn:aws:sns:us-east-1:123456789012:topic"),
-				),
-			},
-			// ImportState testing
-			{
-				ResourceName:      "swo_notification.test_amazonsns",
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			// Update and Read testing
-			{
-				Config: testAccAmazonSnsConfig("test-acc test two"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_notification.test_amazonsns", "title", "test-acc test two"),
-				),
-			},
-			// Delete testing automatically occurs in TestCase
-		},
-	})
-}
-func testAccAmazonSnsConfig(title string) string {
-	return providerConfig() + fmt.Sprintf(`
-	resource "swo_notification" "test_amazonsns" {
-  		title       = %[1]q
-  		description = "testing..."
-  		type        = "amazonsns"
-  		settings = {
-    		amazonsns = {
-				topic_arn = "arn:aws:sns:us-east-1:123456789012:topic"
-				access_key_id = "KEY_ID"
-				secret_access_key = "SECRET_KEY"
-			}
-		}
-	}`, title)
-}
-
 func TestAccMsTeamsNotificationResource(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -123,7 +124,7 @@ func TestAccMsTeamsNotificationResource(t *testing.T) {
 				Config: testAccMsTeamsConfig("test-acc test one"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("swo_notification.test_msteams", "type", "msTeams"),
-					resource.TestCheckResourceAttr("swo_notification.test_msteams", "settings.msteams.url", "https://solarwinds.webhook.office.com/webhookb2/d31597c"),
+					resource.TestCheckResourceAttr("swo_notification.test_msteams", "settings.msteams.url", "https://XXX.webhook.office.com/webhookb2/XXXXX"),
 				),
 			},
 			// ImportState testing
@@ -151,7 +152,7 @@ func testAccMsTeamsConfig(title string) string {
   		type        = "msTeams"
   		settings = {
     		msteams = {
-      			url = "https://solarwinds.webhook.office.com/webhookb2/d31597c"
+      			url = "https://XXX.webhook.office.com/webhookb2/XXXXX"
 			}
 		}
 	}`, title)
@@ -177,9 +178,10 @@ func TestAccOpsGenieNotificationResource(t *testing.T) {
 			},
 			// ImportState testing
 			{
-				ResourceName:      "swo_notification.test_opsgenie",
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            "swo_notification.test_opsgenie",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"settings.opsgenie.api_key"},
 			},
 			// Update and Read testing
 			{
@@ -206,6 +208,152 @@ func testAccOpsGenieConfig(title string) string {
       			teams      = "team1, team2"
       			tags       = "tag1, tag2"
 			}
+		}
+	}`, title)
+}
+
+func TestAccPagerDutyNotificationResource(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		IsUnitTest:               true,
+		Steps: []resource.TestStep{
+			// Create and Read testing
+			{
+				Config: testAccPagerdutyConfig("test-acc test one"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("swo_notification.test_pagerduty", "type", "pagerduty"),
+					resource.TestCheckResourceAttr("swo_notification.test_pagerduty", "settings.pagerduty.routing_key", "99999999999999999999999999999999"),
+					resource.TestCheckResourceAttr("swo_notification.test_pagerduty", "settings.pagerduty.summary", "some-summary"),
+					resource.TestCheckResourceAttr("swo_notification.test_pagerduty", "settings.pagerduty.dedup_key", "DEDUP_KEY"),
+				),
+			},
+			// ImportState testing
+			{
+				ResourceName:            "swo_notification.test_pagerduty",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"settings.pagerduty.routing_key"},
+			},
+			// Update and Read testing
+			{
+				Config: testAccPagerdutyConfig("test-acc test two"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("swo_notification.test_pagerduty", "title", "test-acc test two"),
+				),
+			},
+			// Delete testing automatically occurs in TestCase
+		},
+	})
+}
+func testAccPagerdutyConfig(title string) string {
+	return providerConfig() + fmt.Sprintf(`
+	resource "swo_notification" "test_pagerduty" {
+  		title       = %[1]q
+  		description = "testing..."
+  		type        = "pagerduty"
+  		settings = {
+			pagerduty = {
+				routing_key = "99999999999999999999999999999999"
+      			summary     = "some-summary"
+      			dedup_key   = "DEDUP_KEY"
+			}
+		}
+	}`, title)
+}
+
+func TestAccPushoverNotificationResource(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		IsUnitTest:               true,
+		Steps: []resource.TestStep{
+			// Create and Read testing
+			{
+				Config: testAccPushoverConfig("test-acc test one"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("swo_notification.test_pushover", "type", "pushover"),
+					resource.TestCheckResourceAttr("swo_notification.test_pushover", "settings.pushover.app_token", "APP_TOKEN"),
+					resource.TestCheckResourceAttr("swo_notification.test_pushover", "settings.pushover.user_key", "123xyz"),
+				),
+			},
+			// ImportState testing
+			{
+				ResourceName:            "swo_notification.test_pushover",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"settings.pushover.app_token"},
+			},
+			// Update and Read testing
+			{
+				Config: testAccPushoverConfig("test-acc test two"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("swo_notification.test_pushover", "title", "test-acc test two"),
+				),
+			},
+			// Delete testing automatically occurs in TestCase
+		},
+	})
+}
+func testAccPushoverConfig(title string) string {
+	return providerConfig() + fmt.Sprintf(`
+	resource "swo_notification" "test_pushover" {
+  		title       = %[1]q
+  		description = "testing..."
+  		type        = "pushover"
+  		settings = {
+    		pushover = {
+      			app_token = "APP_TOKEN"
+				user_key  = "123xyz"
+			}
+		}
+	}`, title)
+}
+
+func TestAccServiceNowNotificationResource(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		IsUnitTest:               true,
+		Steps: []resource.TestStep{
+			// Create and Read testing
+			{
+				Config: testAccServicenowConfig("test-acc test one"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("swo_notification.test_servicenow", "type", "servicenow"),
+					resource.TestCheckResourceAttr("swo_notification.test_servicenow", "settings.servicenow.app_token", "APP_TOKEN"),
+					resource.TestCheckResourceAttr("swo_notification.test_servicenow", "settings.servicenow.instance", "US"),
+				),
+			},
+			// ImportState testing
+			{
+				ResourceName:            "swo_notification.test_servicenow",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"settings.servicenow.app_token"},
+			},
+			// Update and Read testing
+			{
+				Config: testAccServicenowConfig("test-acc test two"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("swo_notification.test_servicenow", "title", "test-acc test two"),
+				),
+			},
+			// Delete testing automatically occurs in TestCase
+		},
+	})
+}
+func testAccServicenowConfig(title string) string {
+	return providerConfig() + fmt.Sprintf(`
+	resource "swo_notification" "test_servicenow" {
+  		title       = %[1]q
+  		description = "testing..."
+  		type        = "servicenow"
+  		settings = {
+    		servicenow = {
+      			app_token = "APP_TOKEN"
+      			instance  = "US"
+    		}
 		}
 	}`, title)
 }
@@ -255,102 +403,6 @@ func testAccSlackConfig(title string) string {
 	}`, title)
 }
 
-func TestAccPagerDutyNotificationResource(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
-		IsUnitTest:               true,
-		Steps: []resource.TestStep{
-			// Create and Read testing
-			{
-				Config: testAccPagerdutyConfig("test-acc test one"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_notification.test_pagerduty", "type", "pagerduty"),
-					resource.TestCheckResourceAttr("swo_notification.test_pagerduty", "settings.pagerduty.routing_key", "99999999999999999999999999999999"),
-					resource.TestCheckResourceAttr("swo_notification.test_pagerduty", "settings.pagerduty.summary", "some-summary"),
-					resource.TestCheckResourceAttr("swo_notification.test_pagerduty", "settings.pagerduty.dedup_key", "DEDUP"),
-				),
-			},
-			// ImportState testing
-			{
-				ResourceName:      "swo_notification.test_pagerduty",
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			// Update and Read testing
-			{
-				Config: testAccPagerdutyConfig("test-acc test two"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_notification.test_pagerduty", "title", "test-acc test two"),
-				),
-			},
-			// Delete testing automatically occurs in TestCase
-		},
-	})
-}
-func testAccPagerdutyConfig(title string) string {
-	return providerConfig() + fmt.Sprintf(`
-	resource "swo_notification" "test_pagerduty" {
-  		title       = %[1]q
-  		description = "testing..."
-  		type        = "pagerduty"
-  		settings = {
-			pagerduty = {
-				routing_key = "99999999999999999999999999999999"
-      			summary     = "some-summary"
-      			dedup_key   = "DEDUP"
-			}
-		}
-	}`, title)
-}
-
-func TestAccServiceNowNotificationResource(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
-		IsUnitTest:               true,
-		Steps: []resource.TestStep{
-			// Create and Read testing
-			{
-				Config: testAccServicenowConfig("test-acc test one"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_notification.test_servicenow", "type", "servicenow"),
-					resource.TestCheckResourceAttr("swo_notification.test_servicenow", "settings.servicenow.app_token", "API_TOKEN"),
-					resource.TestCheckResourceAttr("swo_notification.test_servicenow", "settings.servicenow.instance", "US"),
-				),
-			},
-			// ImportState testing
-			{
-				ResourceName:      "swo_notification.test_servicenow",
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			// Update and Read testing
-			{
-				Config: testAccServicenowConfig("test-acc test two"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_notification.test_servicenow", "title", "test-acc test two"),
-				),
-			},
-			// Delete testing automatically occurs in TestCase
-		},
-	})
-}
-func testAccServicenowConfig(title string) string {
-	return providerConfig() + fmt.Sprintf(`
-	resource "swo_notification" "test_servicenow" {
-  		title       = %[1]q
-  		description = "testing..."
-  		type        = "servicenow"
-  		settings = {
-    		servicenow = {
-      			app_token = "API_TOKEN"
-      			instance  = "US"
-    		}
-		}
-	}`, title)
-}
-
 func TestAccSwsdNotificationResource(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -368,9 +420,10 @@ func TestAccSwsdNotificationResource(t *testing.T) {
 			},
 			// ImportState testing
 			{
-				ResourceName:      "swo_notification.test_swsd",
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            "swo_notification.test_swsd",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"settings.swsd.app_token"},
 			},
 			// Update and Read testing
 			{
@@ -398,53 +451,6 @@ func testAccSwsdConfig(title string) string {
 	}`, title)
 }
 
-func TestAccPushoverNotificationResource(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
-		IsUnitTest:               true,
-		Steps: []resource.TestStep{
-			// Create and Read testing
-			{
-				Config: testAccPushoverConfig("test-acc test one"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_notification.test_pushover", "type", "pushover"),
-					resource.TestCheckResourceAttr("swo_notification.test_pushover", "settings.pushover.app_token", "APP_TOKEN"),
-					resource.TestCheckResourceAttr("swo_notification.test_pushover", "settings.pushover.user_key", "123xyz"),
-				),
-			},
-			// ImportState testing
-			{
-				ResourceName:      "swo_notification.test_pushover",
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			// Update and Read testing
-			{
-				Config: testAccPushoverConfig("test-acc test two"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_notification.test_pushover", "title", "test-acc test two"),
-				),
-			},
-			// Delete testing automatically occurs in TestCase
-		},
-	})
-}
-func testAccPushoverConfig(title string) string {
-	return providerConfig() + fmt.Sprintf(`
-	resource "swo_notification" "test_pushover" {
-  		title       = %[1]q
-  		description = "testing..."
-  		type        = "pushover"
-  		settings = {
-    		pushover = {
-      			app_token = "APP_TOKEN"
-				user_key  = "123xyz"
-			}
-		}
-	}`, title)
-}
-
 func TestAccWebhookNotificationResource(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -458,18 +464,19 @@ func TestAccWebhookNotificationResource(t *testing.T) {
 					resource.TestCheckResourceAttr("swo_notification.test_webhook", "type", "webhook"),
 					resource.TestCheckResourceAttr("swo_notification.test_webhook", "settings.webhook.method", "GET"),
 					resource.TestCheckResourceAttr("swo_notification.test_webhook", "settings.webhook.url", "https://webhook.example.com/"),
-					resource.TestCheckResourceAttr("swo_notification.test_webhook", "settings.webhook.auth_header_name", "X-Slack-Request-Id"),
-					resource.TestCheckResourceAttr("swo_notification.test_webhook", "settings.webhook.auth_header_value", "VALUE"),
-					resource.TestCheckResourceAttr("swo_notification.test_webhook", "settings.webhook.auth_password", "PASSWORD"),
+					resource.TestCheckResourceAttr("swo_notification.test_webhook", "settings.webhook.auth_header_name", "X-Request-Id"),
+					resource.TestCheckResourceAttr("swo_notification.test_webhook", "settings.webhook.auth_header_value", "HEADER_VALUE"),
+					resource.TestCheckResourceAttr("swo_notification.test_webhook", "settings.webhook.auth_password", "AUTH_PASSWORD"),
 					resource.TestCheckResourceAttr("swo_notification.test_webhook", "settings.webhook.auth_type", "basic"),
-					resource.TestCheckResourceAttr("swo_notification.test_webhook", "settings.webhook.auth_username", "USERNAME"),
+					resource.TestCheckResourceAttr("swo_notification.test_webhook", "settings.webhook.auth_username", "AUTH_USERNAME"),
 				),
 			},
 			// ImportState testing
 			{
-				ResourceName:      "swo_notification.test_webhook",
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            "swo_notification.test_webhook",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"settings.webhook.auth_password", "settings.webhook.auth_header_value"},
 			},
 			// Update and Read testing
 			{
@@ -492,11 +499,11 @@ func testAccWebhookConfig(title string) string {
     		webhook = {
       			method = "GET"
 				url    = "https://webhook.example.com/"
-				auth_header_name = "X-Slack-Request-Id"
-				auth_header_value = "VALUE"
-				auth_password = "PASSWORD"
+				auth_header_name = "X-Request-Id"
+				auth_header_value = "HEADER_VALUE"
+				auth_password = "AUTH_PASSWORD"
 				auth_type = "basic"
-				auth_username = "USERNAME"
+				auth_username = "AUTH_USERNAME"
 			}
 		}
 	}`, title)
