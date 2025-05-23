@@ -171,7 +171,7 @@ func TestAccOpsGenieNotificationResource(t *testing.T) {
 					resource.TestCheckResourceAttr("swo_notification.test_opsgenie", "type", "opsgenie"),
 					resource.TestCheckResourceAttr("swo_notification.test_opsgenie", "settings.opsgenie.hostname", "hostname"),
 					resource.TestCheckResourceAttr("swo_notification.test_opsgenie", "settings.opsgenie.api_key", "API_KEY"),
-					resource.TestCheckResourceAttr("swo_notification.test_opsgenie", "settings.opsgenie.recipients", "alice"),
+					resource.TestCheckResourceAttr("swo_notification.test_opsgenie", "settings.opsgenie.recipients", "on-call recipient"),
 					resource.TestCheckResourceAttr("swo_notification.test_opsgenie", "settings.opsgenie.teams", "team1, team2"),
 					resource.TestCheckResourceAttr("swo_notification.test_opsgenie", "settings.opsgenie.tags", "tag1, tag2"),
 				),
@@ -204,7 +204,7 @@ func testAccOpsGenieConfig(title string) string {
     		opsgenie = {
       			hostname   = "hostname"
       			api_key     = "API_KEY"
-      			recipients = "alice"
+      			recipients = "on-call recipient"
       			teams      = "team1, team2"
       			tags       = "tag1, tag2"
 			}

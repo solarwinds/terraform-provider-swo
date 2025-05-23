@@ -153,7 +153,7 @@ func (r *notificationResource) Schema(ctx context.Context, req resource.SchemaRe
 								},
 							},
 							"dedup_key": schema.StringAttribute{
-								Description: "deduplication key for correlating trigger conditions. (https://support.pagerduty.com/docs/event-management) ",
+								Description: "Deduplication key for correlating trigger conditions. (https://support.pagerduty.com/docs/event-management) ",
 								Required:    true,
 							},
 						},
