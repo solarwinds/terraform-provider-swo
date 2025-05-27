@@ -539,7 +539,10 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 			if !m.Pushover.IsNull() {
 				var pushover notificationSettingsPushover
 				d := m.Pushover.As(ctx, &pushover, basetypes.ObjectAsOptions{})
-
+				if d.HasError() {
+					diags.Append(d...)
+					return
+				}
 				pushover.UserKey = types.StringValue(settingsStruct.UserKey)
 
 				tfObject, d := types.ObjectValueFrom(ctx, PushoverAttributeTypes(), pushover)
