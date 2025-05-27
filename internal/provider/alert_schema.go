@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -16,35 +17,59 @@ import (
 
 // The main Alert Resource model that is derived from the schema.
 type alertResourceModel struct {
-	Id                  types.String            `tfsdk:"id"`
-	Name                types.String            `tfsdk:"name"`
-	NotificationActions []alertActionInputModel `tfsdk:"notification_actions"`
-	Description         types.String            `tfsdk:"description"`
-	Severity            types.String            `tfsdk:"severity"`
-	Enabled             types.Bool              `tfsdk:"enabled"`
-	Conditions          []alertConditionModel   `tfsdk:"conditions"`
-	Notifications       types.List              `tfsdk:"notifications"`
-	TriggerResetActions types.Bool              `tfsdk:"trigger_reset_actions"`
-	RunbookLink         types.String            `tfsdk:"runbook_link"`
-	TriggerDelaySeconds types.Int64             `tfsdk:"trigger_delay_seconds"`
+	Id                  types.String `tfsdk:"id"`
+	Name                types.String `tfsdk:"name"`
+	NotificationActions types.Set    `tfsdk:"notification_actions"` //alertActionInputModel
+	Description         types.String `tfsdk:"description"`
+	Severity            types.String `tfsdk:"severity"`
+	Enabled             types.Bool   `tfsdk:"enabled"`
+	Conditions          types.Set    `tfsdk:"conditions"` //alertConditionModel
+	Notifications       types.List   `tfsdk:"notifications"`
+	TriggerResetActions types.Bool   `tfsdk:"trigger_reset_actions"`
+	RunbookLink         types.String `tfsdk:"runbook_link"`
+	TriggerDelaySeconds types.Int64  `tfsdk:"trigger_delay_seconds"`
 }
 
 type alertConditionModel struct {
-	MetricName        types.String      `tfsdk:"metric_name"`
-	Threshold         types.String      `tfsdk:"threshold"`
-	Duration          types.String      `tfsdk:"duration"`
-	AggregationType   types.String      `tfsdk:"aggregation_type"`
-	EntityIds         types.List        `tfsdk:"entity_ids"`
-	TargetEntityTypes types.List        `tfsdk:"target_entity_types"`
-	IncludeTags       *[]alertTagsModel `tfsdk:"include_tags"`
-	ExcludeTags       *[]alertTagsModel `tfsdk:"exclude_tags"`
-	GroupByMetricTag  types.List        `tfsdk:"group_by_metric_tag"`
-	NotReporting      types.Bool        `tfsdk:"not_reporting"`
+	MetricName        types.String `tfsdk:"metric_name"`
+	Threshold         types.String `tfsdk:"threshold"`
+	Duration          types.String `tfsdk:"duration"`
+	AggregationType   types.String `tfsdk:"aggregation_type"`
+	EntityIds         types.List   `tfsdk:"entity_ids"`
+	QuerySearch       types.String `tfsdk:"query_search"`
+	TargetEntityTypes types.List   `tfsdk:"target_entity_types"`
+	IncludeTags       types.Set    `tfsdk:"include_tags"`
+	ExcludeTags       types.Set    `tfsdk:"exclude_tags"`
+	GroupByMetricTag  types.List   `tfsdk:"group_by_metric_tag"`
+	NotReporting      types.Bool   `tfsdk:"not_reporting"`
+}
+
+func AlertConditionAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"metric_name":         types.StringType,
+		"threshold":           types.StringType,
+		"duration":            types.StringType,
+		"aggregation_type":    types.StringType,
+		"entity_ids":          types.ListType{ElemType: types.StringType},
+		"query_search":        types.StringType,
+		"target_entity_types": types.ListType{ElemType: types.StringType},
+		"include_tags":        types.SetType{ElemType: types.ObjectType{AttrTypes: AlertTagAttributeTypes()}},
+		"exclude_tags":        types.SetType{ElemType: types.ObjectType{AttrTypes: AlertTagAttributeTypes()}},
+		"group_by_metric_tag": types.ListType{ElemType: types.StringType},
+		"not_reporting":       types.BoolType,
+	}
 }
 
 type alertTagsModel struct {
 	Name   types.String `tfsdk:"name"`
 	Values types.List   `tfsdk:"values"`
+}
+
+func AlertTagAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"name":  types.StringType,
+		"value": types.ListType{ElemType: types.StringType},
+	}
 }
 
 type alertActionInputModel struct {
@@ -82,7 +107,9 @@ func (r *alertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"configuration_ids": schema.ListAttribute{
-							Description: "List of configuration_ids in `id:type` format. Example: `[\"4661:email\", \"8112:webhook\", \"2456:newrelic\"]`. Valid `type` values are [`email`|`amazonsns`|`msteams`|`newrelic`|`opsgenie`|`pagerduty`|`pushover`|`servicenow`|`slack`|`webhook`|`zapier`|`swsd`].",
+							Description: "List of configuration_ids in `id:type` format. " +
+								"Example: `[\"4661:email\", \"8112:webhook\", \"2456:newrelic\"]`. " +
+								"Valid `type` values are [`email`|`amazonsns`|`msteams`|`newrelic`|`opsgenie`|`pagerduty`|`pushover`|`servicenow`|`slack`|`webhook`|`zapier`|`swsd`].",
 							Required:    true,
 							ElementType: types.StringType,
 							Validators: []validator.List{
@@ -90,8 +117,9 @@ func (r *alertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 							},
 						},
 						"resend_interval_seconds": schema.Int64Attribute{
-							Description: "How often should the notification be resent in case alert keeps being triggered. Null means notification is sent only once. Valid values are 60, 600, 3600, 86400.",
-							Optional:    true,
+							Description: "How often should the notification be resent in case alert keeps being triggered. " +
+								"Null means notification is sent only once. Valid values are 60, 600, 3600, 86400.",
+							Optional: true,
 							Validators: []validator.Int64{
 								int64validator.OneOf(60, 600, 3600, 86400),
 							},
@@ -136,11 +164,13 @@ func (r *alertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 							Required:    true,
 						},
 						"threshold": schema.StringAttribute{
-							Description: "Operator and value that represent the threshold of an the alert. When the threshold is breached it triggers the alert. For Operator - binaryOperator:(=|!=|>|<|>=|<=), logicalOperator:(AND|OR) E.g. '>=10'",
-							Required:    true,
+							Description: "Operator and value that represent the threshold of an the alert. " +
+								"When the threshold is breached it triggers the alert. " +
+								"For Operator - binaryOperator:(=|!=|>|<|>=|<=), logicalOperator:(AND|OR) E.g. '>=10'",
+							Required: true,
 						},
 						"duration": schema.StringAttribute{
-							Description: "How long the threshold has been met before triggering an alert.",
+							Description: "The duration window determines how frequently the alert is evaluated.",
 							Required:    true,
 						},
 						"aggregation_type": schema.StringAttribute{
@@ -158,9 +188,16 @@ func (r *alertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 							},
 						},
 						"entity_ids": schema.ListAttribute{
-							Description: "A list of Entity IDs that will be used to filter on the alert. The alert will only trigger if the alert matches one or more of the entity IDs. Must match across all alert conditions.",
+							Description: "A list of Entity IDs that will be used to filter on the alert. " +
+								"The alert will only trigger if the alert matches one or more of the entity IDs. " +
+								"Must match across all alert conditions.",
 							Optional:    true,
 							ElementType: types.StringType,
+						},
+						"query_search": schema.StringAttribute{
+							Description: "Case-sensitive. System will automatically match existing and newly added " +
+								"entities matching the following query string.",
+							Optional: true,
 						},
 						"target_entity_types": schema.ListAttribute{
 							Description: "The entity types that the alert will be applied to. Must match across all alert conditions.",
@@ -207,10 +244,11 @@ func (r *alertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 							ElementType: types.StringType,
 						},
 						"not_reporting": schema.BoolAttribute{
-							Description: "True if the alert should trigger when the metric is not reporting. If true, threshold must be '' and aggregation_type must be 'COUNT'.",
-							Computed:    true,
-							Optional:    true,
-							Default:     booldefault.StaticBool(false),
+							Description: "True if the alert should trigger when the metric is not reporting. " +
+								"If true, threshold must be '' and aggregation_type must be 'COUNT'.",
+							Computed: true,
+							Optional: true,
+							Default:  booldefault.StaticBool(false),
 						},
 					},
 				},
@@ -226,10 +264,11 @@ func (r *alertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 				Optional:    true,
 			},
 			"trigger_delay_seconds": schema.Int64Attribute{
-				Description: "Number of seconds during which the conditions must be continually met before an alert is triggered. Value must be between 60 to 86400 seconds, and value has to be divisible by 60.",
-				Optional:    true,
-				Computed:    true,
-				Default:     int64default.StaticInt64(0),
+				Description: "Trigger the alert after the alert condition persists for a specific duration. This prevents false positives. " +
+					"Value must be between 60 and 86400 seconds, and value has to be divisible by 60.",
+				Optional: true,
+				Computed: true,
+				Default:  int64default.StaticInt64(0),
 			},
 		},
 	}
