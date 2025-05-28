@@ -20,12 +20,11 @@ import (
 
 const (
 	emailRegex               = `^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$`
-	phoneNumberRegex         = `^\+(?:[0-9] ?){6,14}[0-9]$`
 	snsTopicArnRegex         = `^arn:aws:sns:[^:]+:[0-9]+:[a-zA-Z0-9\-_]+$`
 	zapierHooksRegex         = `^https:\/\/hooks\.zapier\.com\/hooks\/catch.*`
 	slackHooksRegex          = `^https:\/\/hooks\.slack\.com.*`
 	pagerDutyRoutingKeyRegex = `^[a-zA-Z0-9]{32}$`
-	msTeamsRegex             = `^https:\/\/.*\.office\.com\/webhook.*`
+	msTeamsRegex             = `^https://[a-zA-Z0-9.-]+.webhook.office.com/webhookb2/[a-zA-Z0-9@-]+`
 	httpSchemeRegex          = `^(http|https)`
 )
 
@@ -39,11 +38,11 @@ func newParseError(msg string) error {
 
 // The main Notification Resource model that is derived from the schema.
 type notificationResourceModel struct {
-	Id          types.String          `tfsdk:"id"`
-	Title       types.String          `tfsdk:"title"`
-	Description types.String          `tfsdk:"description"`
-	Type        types.String          `tfsdk:"type"`
-	Settings    *notificationSettings `tfsdk:"settings"`
+	Id          types.String `tfsdk:"id"`
+	Title       types.String `tfsdk:"title"`
+	Description types.String `tfsdk:"description"`
+	Type        types.String `tfsdk:"type"`
+	Settings    types.Object `tfsdk:"settings"`
 }
 
 func ParseNotificationId(id types.String) (idValue string, notificationType string, err error) {
@@ -142,6 +141,9 @@ func (r *notificationResource) Schema(ctx context.Context, req resource.SchemaRe
 										"Requirement: "+pagerDutyRoutingKeyRegex,
 									),
 								},
+								PlanModifiers: []planmodifier.String{
+									stringplanmodifier.RequiresReplace(),
+								},
 							},
 							"summary": schema.StringAttribute{
 								Description: "A summary of the issue causing the alert to trigger.",
@@ -151,7 +153,7 @@ func (r *notificationResource) Schema(ctx context.Context, req resource.SchemaRe
 								},
 							},
 							"dedup_key": schema.StringAttribute{
-								Description: "deduplication key for correlating trigger conditions. (https://support.pagerduty.com/docs/event-management) ",
+								Description: "Deduplication key for correlating trigger conditions. (https://support.pagerduty.com/docs/event-management) ",
 								Required:    true,
 							},
 						},
@@ -192,6 +194,9 @@ func (r *notificationResource) Schema(ctx context.Context, req resource.SchemaRe
 								Description: "Password for basic auth type.",
 								Optional:    true,
 								Sensitive:   true,
+								PlanModifiers: []planmodifier.String{
+									stringplanmodifier.RequiresReplace(),
+								},
 							},
 							"auth_header_name": schema.StringAttribute{
 								Description: "Header name for token auth.",
@@ -201,22 +206,9 @@ func (r *notificationResource) Schema(ctx context.Context, req resource.SchemaRe
 								Description: "Header value for token auth.",
 								Optional:    true,
 								Sensitive:   true,
-							},
-						},
-					},
-					"victorops": schema.SingleNestedAttribute{
-						Description: "Integration for sending events to VictorOps.",
-						Optional:    true,
-						Attributes: map[string]schema.Attribute{
-							"api_key": schema.StringAttribute{
-								Description: "API Key for a VictorOps integration. (https://help.victorops.com/knowledge-base/api/)",
-								Required:    true,
-								Sensitive:   true,
-							},
-							"routing_key": schema.StringAttribute{
-								Description: "Key for live call routing. (https://help.victorops.com/knowledge-base/routing-keys/)",
-								Optional:    true,
-								Sensitive:   true,
+								PlanModifiers: []planmodifier.String{
+									stringplanmodifier.RequiresReplace(),
+								},
 							},
 						},
 					},
@@ -232,6 +224,9 @@ func (r *notificationResource) Schema(ctx context.Context, req resource.SchemaRe
 								Description: "API key from OpsGenie Integration. (https://support.atlassian.com/opsgenie/docs/api-key-management/)",
 								Required:    true,
 								Sensitive:   true,
+								PlanModifiers: []planmodifier.String{
+									stringplanmodifier.RequiresReplace(),
+								},
 							},
 							"recipients": schema.StringAttribute{
 								Description: "Specifies who should be notified by email for the alert.",
@@ -269,6 +264,9 @@ func (r *notificationResource) Schema(ctx context.Context, req resource.SchemaRe
 								Description: "Secret access key for Amazon SNS.",
 								Required:    true,
 								Sensitive:   true,
+								PlanModifiers: []planmodifier.String{
+									stringplanmodifier.RequiresReplace(),
+								},
 							},
 						},
 					},
@@ -316,21 +314,8 @@ func (r *notificationResource) Schema(ctx context.Context, req resource.SchemaRe
 								Description: "API token/APP token from registered Pushover application. (https://pushover.net/api)",
 								Required:    true,
 								Sensitive:   true,
-							},
-						},
-					},
-					"sms": schema.SingleNestedAttribute{
-						Description: "For sending alerts Through SMS/Text.",
-						Optional:    true,
-						Attributes: map[string]schema.Attribute{
-							"phone_numbers": schema.StringAttribute{
-								Description: "Phone number alerts will be texted to.",
-								Required:    true,
-								Validators: []validator.String{
-									stringvalidator.RegexMatches(
-										regexp.MustCompile(phoneNumberRegex),
-										"Requirement: "+phoneNumberRegex,
-									),
+								PlanModifiers: []planmodifier.String{
+									stringplanmodifier.RequiresReplace(),
 								},
 							},
 						},
@@ -343,6 +328,9 @@ func (r *notificationResource) Schema(ctx context.Context, req resource.SchemaRe
 								Description: "Token copied from SolarWinds Service Desk",
 								Required:    true,
 								Sensitive:   true,
+								PlanModifiers: []planmodifier.String{
+									stringplanmodifier.RequiresReplace(),
+								},
 							},
 							"is_eu": schema.BoolAttribute{
 								Description: "Is in the EU.",
@@ -358,6 +346,9 @@ func (r *notificationResource) Schema(ctx context.Context, req resource.SchemaRe
 								Description: "ServiceNow access token",
 								Required:    true,
 								Sensitive:   true,
+								PlanModifiers: []planmodifier.String{
+									stringplanmodifier.RequiresReplace(),
+								},
 							},
 							"instance": schema.StringAttribute{
 								Description: "Instance name for this integration",
