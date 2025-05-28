@@ -13,33 +13,103 @@ A terraform resource for managing notifications.
 ## Example Usage
 
 ```terraform
-resource "swo_notification" "msteams" {
-  title       = "Microsoft teams notification"
-  description = "testing..."
-  type        = "msTeams"
+resource "swo_notification" "amazonsns" {
+  title       = "Amazon SNS notification"
+  description = "This is a description"
+  type        = "amazonsns"
   settings = {
-    msteams = {
-      url = "https://www.office.com/webhook"
+    amazonsns = {
+      topic_arn         = "arn:aws:sns:us-east-1:123456789012:topic"
+      access_key_id     = "KEY_ID"
+      secret_access_key = "SECRET_KEY"
     }
   }
 }
+
+resource "swo_notification" "email" {
+  title       = "Email notification"
+  description = "This is a description"
+  type        = "email"
+  settings = {
+    email = {
+      addresses = [
+        {
+          email = "test1@host.com"
+        },
+        {
+          email = "test2@host.com"
+        },
+      ]
+    }
+  }
+}
+
+resource "swo_notification" "msteams" {
+  title       = "Microsoft Teams notification"
+  description = "This is a description"
+  type        = "msTeams"
+  settings = {
+    msteams = {
+      url = "https://XXX.webhook.office.com/webhookb2/XXXXX"
+    }
+  }
+}
+
 resource "swo_notification" "opsgenie" {
   title       = "OpsGenie notification"
-  description = "testing..."
+  description = "This is a description"
   type        = "opsgenie"
   settings = {
     opsgenie = {
       hostname   = "hostname"
-      apikey     = "123xyz"
-      recipients = "alice"
+      apikey     = "API_KEY"
+      recipients = "on-call recipient"
       teams      = "team1, team2"
       tags       = "tag1, tag2"
     }
   }
 }
+
+resource "swo_notification" "pagerduty" {
+  title       = "PagerDuty notification"
+  description = "This is a description"
+  type        = "pagerduty"
+  settings = {
+    pagerduty = {
+      routing_key = "99999999999999999999999999999999"
+      summary     = "some-summary"
+      dedup_key   = "DEDUP_KEY"
+    }
+  }
+}
+
+resource "swo_notification" "pushover" {
+  title       = "Pushover notification"
+  description = "This is a description"
+  type        = "pushover"
+  settings = {
+    pushover = {
+      app_token = "APP_TOKEN"
+      user_key  = "123xyz"
+    }
+  }
+}
+
+resource "swo_notification" "servicenow" {
+  title       = "ServiceNow notification"
+  description = "This is a description"
+  type        = "servicenow"
+  settings = {
+    servicenow = {
+      app_token = "APP_TOKEN"
+      instance  = "US"
+    }
+  }
+}
+
 resource "swo_notification" "slack" {
   title       = "Slack notification"
-  description = "testing..."
+  description = "This is a description"
   type        = "slack"
   settings = {
     slack = {
@@ -47,73 +117,43 @@ resource "swo_notification" "slack" {
     }
   }
 }
-resource "swo_notification" "pagerduty" {
-  title       = "PagerDuty notification"
-  description = "testing..."
-  type        = "pagerduty"
-  settings = {
-    pagerduty = {
-      routing_key = "99999999999999999999999999999999"
-      summary     = "summary"
-      dedup_key   = "dedup"
-    }
-  }
-}
-resource "swo_notification" "victorops" {
-  title       = "VictorOps notification"
-  description = "testing..."
-  type        = "victorops"
-  settings = {
-    victorops = {
-      api_key     = "xyz"
-      routing_key = "123"
-    }
-  }
-}
-resource "swo_notification" "sms" {
-  title       = "SMS notification"
-  description = "testing..."
-  type        = "sms"
-  settings = {
-    sms = {
-      phone_numbers = "+1 999 999 9999"
-    }
-  }
-}
-resource "swo_notification" "servicenow" {
-  title       = "ServiceNow notification"
-  description = "testing..."
-  type        = "servicenow"
-  settings = {
-    servicenow = {
-      app_token = "xyz"
-      instance  = "US"
-    }
-  }
-}
+
 resource "swo_notification" "swsd" {
   title       = "SolarWinds Service Desk notification"
-  description = "testing..."
+  description = "This is a description"
   type        = "swsd"
   settings = {
     swsd = {
-      app_token = "xyz"
+      app_token = "APP_TOKEN"
       is_eu     = false
     }
   }
 }
 
-resource "swo_notification" "email" {
-  title       = "Email notification"
-  description = "testing..."
-  type        = "email"
+resource "swo_notification" "test_webhook" {
+  title       = "Webhook notification"
+  description = "This is a description"
+  type        = "webhook"
   settings = {
-    email = {
-      addresses = [
-        {
-          email = "bob@xyz.com"
-        },
-      ]
+    webhook = {
+      method            = "GET"
+      url               = "https://webhook.example.com/"
+      auth_header_name  = "X-Request-Id"
+      auth_header_value = "HEADER_VALUE"
+      auth_password     = "AUTH_PASSWORD"
+      auth_type         = "basic"
+      auth_username     = "AUTH_USERNAME"
+    }
+  }
+}
+
+resource "swo_notification" "test_zapier" {
+  title       = "Zapier notification"
+  description = "This is a description"
+  type        = "zapier"
+  settings = {
+    zapier = {
+      url = "https://hooks.zapier.com/hooks/catch/XXX"
     }
   }
 }
@@ -149,9 +189,7 @@ Optional:
 - `pushover` (Attributes) Integration for Sending alerts to Pushover. (see [below for nested schema](#nestedatt--settings--pushover))
 - `servicenow` (Attributes) Integration with SolarWinds Observability creates new incidents based on SolarWinds Observability alerts. (see [below for nested schema](#nestedatt--settings--servicenow))
 - `slack` (Attributes) Integration for sending static alerts to a Slack channel. (see [below for nested schema](#nestedatt--settings--slack))
-- `sms` (Attributes) For sending alerts Through SMS/Text. (see [below for nested schema](#nestedatt--settings--sms))
 - `swsd` (Attributes) Integration with SolarWinds Observability creates new incidents based on SolarWinds Observability alerts. (see [below for nested schema](#nestedatt--settings--swsd))
-- `victorops` (Attributes) Integration for sending events to VictorOps. (see [below for nested schema](#nestedatt--settings--victorops))
 - `webhook` (Attributes) Integration with an existing notification service. (see [below for nested schema](#nestedatt--settings--webhook))
 - `zapier` (Attributes) Integration for sending alerts to Zapier. (see [below for nested schema](#nestedatt--settings--zapier))
 
@@ -213,7 +251,7 @@ Optional:
 
 Required:
 
-- `dedup_key` (String) deduplication key for correlating trigger conditions. (https://support.pagerduty.com/docs/event-management)
+- `dedup_key` (String) Deduplication key for correlating trigger conditions. (https://support.pagerduty.com/docs/event-management)
 - `routing_key` (String, Sensitive) Key for live call routing. (https://support.pagerduty.com/docs/live-call-routing)
 - `summary` (String) A summary of the issue causing the alert to trigger.
 
@@ -244,14 +282,6 @@ Required:
 - `url` (String) Slack Incoming Webhook URL. (https://api.slack.com/messaging/webhooks)
 
 
-<a id="nestedatt--settings--sms"></a>
-### Nested Schema for `settings.sms`
-
-Required:
-
-- `phone_numbers` (String) Phone number alerts will be texted to.
-
-
 <a id="nestedatt--settings--swsd"></a>
 ### Nested Schema for `settings.swsd`
 
@@ -259,18 +289,6 @@ Required:
 
 - `app_token` (String, Sensitive) Token copied from SolarWinds Service Desk
 - `is_eu` (Boolean) Is in the EU.
-
-
-<a id="nestedatt--settings--victorops"></a>
-### Nested Schema for `settings.victorops`
-
-Required:
-
-- `api_key` (String, Sensitive) API Key for a VictorOps integration. (https://help.victorops.com/knowledge-base/api/)
-
-Optional:
-
-- `routing_key` (String, Sensitive) Key for live call routing. (https://help.victorops.com/knowledge-base/routing-keys/)
 
 
 <a id="nestedatt--settings--webhook"></a>

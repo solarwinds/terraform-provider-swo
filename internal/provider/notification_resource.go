@@ -3,7 +3,6 @@ package provider
 import (
 	"context"
 	"fmt"
-
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -43,13 +42,17 @@ func (r *notificationResource) Create(ctx context.Context, req resource.CreateRe
 	}
 
 	// Create the notification...
-	newNotification, err := r.client.NotificationsService().Create(ctx,
-		swoClient.CreateNotificationInput{
-			Title:       tfPlan.Title.ValueString(),
-			Description: tfPlan.Description.ValueStringPointer(),
-			Type:        tfPlan.Type.ValueString(),
-			Settings:    tfPlan.GetSettings(),
-		})
+	tfSettings := tfPlan.GetSettings(ctx, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	input := swoClient.CreateNotificationInput{
+		Title:       tfPlan.Title.ValueString(),
+		Description: tfPlan.Description.ValueStringPointer(),
+		Type:        tfPlan.Type.ValueString(),
+		Settings:    tfSettings,
+	}
+	newNotification, err := r.client.NotificationsService().Create(ctx, input)
 
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error",
@@ -81,7 +84,6 @@ func (r *notificationResource) Read(ctx context.Context, req resource.ReadReques
 
 	// Read the notification...
 	notification, err := r.client.NotificationsService().Read(ctx, nId, nType)
-
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error",
 			fmt.Sprintf("error reading notification %s. error: %s", nId, err))
@@ -92,13 +94,10 @@ func (r *notificationResource) Read(ctx context.Context, req resource.ReadReques
 	tfState.Title = types.StringValue(notification.Title)
 	tfState.Type = types.StringValue(notification.Type)
 	tfState.Description = types.StringPointerValue(notification.Description)
-
-	err = tfState.SetSettings(notification.Settings)
-	if err != nil {
-		resp.Diagnostics.AddError("Settings Error", err.Error())
+	tfState.SetSettings(notification.Settings, ctx, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
 		return
 	}
-
 	resp.Diagnostics.Append(resp.State.Set(ctx, tfState)...)
 }
 
@@ -117,15 +116,17 @@ func (r *notificationResource) Update(ctx context.Context, req resource.UpdateRe
 		return
 	}
 
-	settings := tfPlan.GetSettings()
-
+	tfSettings := tfPlan.GetSettings(ctx, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	// Update the notification...
 	_, err = r.client.NotificationsService().Update(ctx,
 		swoClient.UpdateNotificationInput{
 			Id:          nId,
 			Title:       tfPlan.Title.ValueStringPointer(),
 			Description: tfPlan.Description.ValueStringPointer(),
-			Settings:    &settings,
+			Settings:    &tfSettings,
 		})
 
 	if err != nil {
