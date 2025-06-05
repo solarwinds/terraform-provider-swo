@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 
-	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -118,11 +117,8 @@ func (r *alertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 						},
 						"resend_interval_seconds": schema.Int64Attribute{
 							Description: "How often should the notification be resent in case alert keeps being triggered. " +
-								"Null means notification is sent only once. Valid values are 60, 600, 3600, 86400.",
+								"Null means notification is sent only once. Value must be between 60 and 86400 seconds, and value must be divisible by 60.",
 							Optional: true,
-							Validators: []validator.Int64{
-								int64validator.OneOf(60, 600, 3600, 86400),
-							},
 						},
 					},
 				},
@@ -265,7 +261,7 @@ func (r *alertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 			},
 			"trigger_delay_seconds": schema.Int64Attribute{
 				Description: "Trigger the alert after the alert condition persists for a specific duration. This prevents false positives. " +
-					"Value must be between 60 and 86400 seconds, and value has to be divisible by 60.",
+					"Value must be between 60 and 86400 seconds, and value must be divisible by 60.",
 				Optional: true,
 				Computed: true,
 				Default:  int64default.StaticInt64(0),
