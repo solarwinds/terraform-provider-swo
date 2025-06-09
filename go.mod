@@ -11,11 +11,11 @@ require (
 	github.com/hashicorp/terraform-plugin-docs v0.21.0
 	github.com/hashicorp/terraform-plugin-framework v1.15.0
 	github.com/hashicorp/terraform-plugin-framework-validators v0.18.0
-	github.com/hashicorp/terraform-plugin-go v0.27.0
+	github.com/hashicorp/terraform-plugin-go v0.28.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.37.0
 	github.com/joho/godotenv v1.5.1
 	github.com/solarwinds/swo-client-go v0.0.16
-	github.com/solarwinds/swo-sdk-go/swov1 v0.1.9
+	github.com/solarwinds/swo-sdk-go/swov1 v0.2.0
 	golang.org/x/exp v0.0.0-20230809150735-7b3493d9a819
 )
 
