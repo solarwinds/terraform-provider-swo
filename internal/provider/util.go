@@ -4,11 +4,19 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 	"net/url"
 	"strings"
+
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
+
+func stringPtrValue(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
+}
 
 func convertArray[A, B any](source []A, accumulator func(A) B) []B {
 	if source == nil {

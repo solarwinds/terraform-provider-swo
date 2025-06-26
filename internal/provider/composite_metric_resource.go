@@ -36,14 +36,6 @@ func NewCompositeMetricResource() resource.Resource {
 	return &compositeMetricResource{}
 }
 
-// stringPtrValue safely dereferences a string pointer, returning empty string if nil
-func stringPtrValue(s *string) string {
-	if s == nil {
-		return ""
-	}
-	return *s
-}
-
 func (r *compositeMetricResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	client, _ := req.ProviderData.(providerClients)
 	r.client = client.SwoV1Client
