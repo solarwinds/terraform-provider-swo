@@ -166,10 +166,10 @@ func (r *compositeMetricResource) ImportState(ctx context.Context, req resource.
 func (r *compositeMetricResource) updatePlanFromMetric(tfPlan compositeMetricResourceModel, name string, displayName *string, description *string, formula string, units *string) compositeMetricResourceModel {
 	tfPlan.Name = types.StringValue(name)
 	tfPlan.Id = tfPlan.Name
-	tfPlan.DisplayName = types.StringValue(stringPtrValue(displayName))
-	tfPlan.Description = types.StringValue(stringPtrValue(description))
+	tfPlan.DisplayName = types.StringPointerValue(displayName)
+	tfPlan.Description = types.StringPointerValue(description)
 	tfPlan.Formula = types.StringValue(formula)
-	tfPlan.Unit = types.StringValue(stringPtrValue(units))
+	tfPlan.Unit = types.StringPointerValue(units)
 
 	return tfPlan
 }
@@ -179,5 +179,12 @@ func (r *compositeMetricResource) updatePlanMetricInfo(tfPlan compositeMetricRes
 }
 
 func (r *compositeMetricResource) updatePlanCommonMetricInfo(tfPlan compositeMetricResourceModel, compositeMetric *components.CommonMetricInfo) compositeMetricResourceModel {
-	return r.updatePlanFromMetric(tfPlan, compositeMetric.Name, compositeMetric.DisplayName, compositeMetric.Description, stringPtrValue(compositeMetric.Formula), compositeMetric.Units)
+	tfPlan.Name = types.StringValue(compositeMetric.Name)
+	tfPlan.Id = tfPlan.Name
+	tfPlan.DisplayName = types.StringPointerValue(compositeMetric.DisplayName)
+	tfPlan.Description = types.StringPointerValue(compositeMetric.Description)
+	tfPlan.Formula = types.StringPointerValue(compositeMetric.Formula)
+	tfPlan.Unit = types.StringPointerValue(compositeMetric.Units)
+
+	return tfPlan
 }
