@@ -30,11 +30,11 @@ func (r *compositeMetricResource) Schema(ctx context.Context, req resource.Schem
 			},
 			"display_name": schema.StringAttribute{
 				Description: "Display name of the composite metric. A short description of the metric.",
-				Required:    true,
+				Optional:    true,
 			},
 			"description": schema.StringAttribute{
 				Description: "Description of the composite metric. A detailed description of the metric.",
-				Required:    true,
+				Optional:    true,
 			},
 			"formula": schema.StringAttribute{
 				Description: "PromQL query to calculate the composite metric. example: rate(system.disk.io[5m])",
@@ -42,7 +42,7 @@ func (r *compositeMetricResource) Schema(ctx context.Context, req resource.Schem
 			},
 			"unit": schema.StringAttribute{
 				Description: "Unit of the composite metric. example: bytes/s",
-				Required:    true,
+				Optional:    true,
 			},
 		},
 	}

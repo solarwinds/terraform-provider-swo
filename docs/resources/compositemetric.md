@@ -27,10 +27,13 @@ resource "swo_compositemetric" "disk_io_rate" {
 
 ### Required
 
-- `description` (String) Description of the composite metric. A detailed description of the metric.
-- `display_name` (String) Display name of the composite metric. A short description of the metric.
 - `formula` (String) PromQL query to calculate the composite metric. example: rate(system.disk.io[5m])
 - `name` (String) The metric name.
+
+### Optional
+
+- `description` (String) Description of the composite metric. A detailed description of the metric.
+- `display_name` (String) Display name of the composite metric. A short description of the metric.
 - `unit` (String) Unit of the composite metric. example: bytes/s
 
 ### Read-Only

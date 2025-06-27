@@ -163,24 +163,22 @@ func (r *compositeMetricResource) ImportState(ctx context.Context, req resource.
 	resource.ImportStatePassthroughID(ctx, path.Root("name"), req, resp)
 }
 
-func (r *compositeMetricResource) updatePlanMetricInfo(tfPlan compositeMetricResourceModel, compositeMetric *components.CompositeMetric) compositeMetricResourceModel {
-	tfPlan.Name = types.StringValue(compositeMetric.Name)
+func (r *compositeMetricResource) updatePlanFromMetric(tfPlan compositeMetricResourceModel, name string, displayName *string, description *string, formula *string, units *string) compositeMetricResourceModel {
+	tfPlan.Name = types.StringValue(name)
 	tfPlan.Id = tfPlan.Name
-	tfPlan.DisplayName = types.StringValue(*compositeMetric.DisplayName)
-	tfPlan.Description = types.StringValue(*compositeMetric.Description)
-	tfPlan.Formula = types.StringValue(compositeMetric.Formula)
-	tfPlan.Unit = types.StringValue(*compositeMetric.Units)
+	tfPlan.DisplayName = types.StringPointerValue(displayName)
+	tfPlan.Description = types.StringPointerValue(description)
+	tfPlan.Formula = types.StringPointerValue(formula)
+	tfPlan.Unit = types.StringPointerValue(units)
 
 	return tfPlan
 }
 
-func (r *compositeMetricResource) updatePlanCommonMetricInfo(tfPlan compositeMetricResourceModel, compositeMetric *components.CommonMetricInfo) compositeMetricResourceModel {
-	tfPlan.Name = types.StringValue(compositeMetric.Name)
-	tfPlan.Id = tfPlan.Name
-	tfPlan.DisplayName = types.StringValue(*compositeMetric.DisplayName)
-	tfPlan.Description = types.StringValue(*compositeMetric.Description)
-	tfPlan.Formula = types.StringValue(*compositeMetric.Formula)
-	tfPlan.Unit = types.StringValue(*compositeMetric.Units)
+func (r *compositeMetricResource) updatePlanMetricInfo(tfPlan compositeMetricResourceModel, compositeMetric *components.CompositeMetric) compositeMetricResourceModel {
+	formula := compositeMetric.Formula
+	return r.updatePlanFromMetric(tfPlan, compositeMetric.Name, compositeMetric.DisplayName, compositeMetric.Description, &formula, compositeMetric.Units)
+}
 
-	return tfPlan
+func (r *compositeMetricResource) updatePlanCommonMetricInfo(tfPlan compositeMetricResourceModel, compositeMetric *components.CommonMetricInfo) compositeMetricResourceModel {
+	return r.updatePlanFromMetric(tfPlan, compositeMetric.Name, compositeMetric.DisplayName, compositeMetric.Description, compositeMetric.Formula, compositeMetric.Units)
 }
