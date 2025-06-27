@@ -41,7 +41,7 @@ func TestAccCompositeMetricResource(t *testing.T) {
 					resource.TestCheckResourceAttr("swo_compositemetric.test", "name", metricName),
 					resource.TestCheckResourceAttr("swo_compositemetric.test", "display_name", "display name two"),
 					resource.TestCheckResourceAttr("swo_compositemetric.test", "description", "Update metric description"),
-					resource.TestCheckResourceAttr("swo_compositemetric.test", "formula", "avg(system.memory.used)"),
+					resource.TestCheckResourceAttr("swo_compositemetric.test", "formula", "SUM(synthetics.https.response.time)"),
 					resource.TestCheckResourceAttr("swo_compositemetric.test", "unit", "m/s"),
 				),
 			},
@@ -132,7 +132,7 @@ func testAccCompositeUpdateMetricResourceConfig(name string, displayName string)
 		name        = %[1]q
 		display_name = %[2]q
 		description = "Update metric description"
-		formula = "avg(system.memory.used)"
+		formula = "SUM(synthetics.https.response.time)"
 		unit = "m/s"
 	}`, name, displayName)
 }
