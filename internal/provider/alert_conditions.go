@@ -167,24 +167,33 @@ func (model alertConditionModel) toMetricFieldConditionInput(ctx context.Context
 		GroupByMetricTag: groupByMetricTag,
 	}
 
-	var entityFilterTypes, entityFilterIds []string
-	d = model.TargetEntityTypes.ElementsAs(ctx, &entityFilterTypes, false)
-	diags.Append(d...)
-	if diags.HasError() {
-		return swoClient.AlertConditionNodeInput{}
+	// Metric Group alerts do not use entity types. It is necessary to drop the entire entityFilter field
+	// when calling the Alerting API because presence/absence of this field determines the type of the
+	// Alert definition (Entity vs. Metric Group).
+	if !model.TargetEntityTypes.IsNull() {
+		var entityFilterTypes, entityFilterIds []string
+		d = model.TargetEntityTypes.ElementsAs(ctx, &entityFilterTypes, false)
+		diags.Append(d...)
+
+		if diags.HasError() {
+			return swoClient.AlertConditionNodeInput{}
+		}
+		d = model.EntityIds.ElementsAs(ctx, &entityFilterIds, false)
+		diags.Append(d...)
+		if diags.HasError() {
+			return swoClient.AlertConditionNodeInput{}
+		}
+		querySearch := model.QuerySearch.ValueString()
+
+		entityFilter := &swoClient.AlertConditionNodeEntityFilterInput{
+			Types: entityFilterTypes,
+			Ids:   entityFilterIds,
+			Query: &querySearch,
+		}
+		metricFieldCondition.EntityFilter = entityFilter
+	} else {
+		metricFieldCondition.EntityFilter = nil
 	}
-	d = model.EntityIds.ElementsAs(ctx, &entityFilterIds, false)
-	diags.Append(d...)
-	if diags.HasError() {
-		return swoClient.AlertConditionNodeInput{}
-	}
-	querySearch := model.QuerySearch.ValueString()
-	entityFilter := &swoClient.AlertConditionNodeEntityFilterInput{
-		Types: entityFilterTypes,
-		Ids:   entityFilterIds,
-		Query: &querySearch,
-	}
-	metricFieldCondition.EntityFilter = entityFilter
 
 	var includeTags []alertTagsModel
 	var excludeTags []alertTagsModel

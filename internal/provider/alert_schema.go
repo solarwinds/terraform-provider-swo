@@ -197,7 +197,7 @@ func (r *alertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 						},
 						"target_entity_types": schema.ListAttribute{
 							Description: "The entity types that the alert will be applied to. Must match across all alert conditions.",
-							Required:    true,
+							Optional:    true,
 							ElementType: types.StringType,
 						},
 						"include_tags": schema.SetNestedAttribute{
