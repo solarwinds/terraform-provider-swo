@@ -30,10 +30,15 @@ type alertResourceModel struct {
 }
 
 type alertConditionModel struct {
-	MetricName        types.String `tfsdk:"metric_name"`
-	Threshold         types.String `tfsdk:"threshold"`
-	Duration          types.String `tfsdk:"duration"`
-	AggregationType   types.String `tfsdk:"aggregation_type"`
+	MetricName      types.String `tfsdk:"metric_name"`
+	Threshold       types.String `tfsdk:"threshold"`
+	Duration        types.String `tfsdk:"duration"`
+	AggregationType types.String `tfsdk:"aggregation_type"`
+
+	AttributeName     types.String `tfsdk:"attribute_name"`
+	AttributeOperator types.String `tfsdk:"attribute_operator"`
+	AttributeValue    types.String `tfsdk:"attribute_value"`
+
 	EntityIds         types.List   `tfsdk:"entity_ids"`
 	QuerySearch       types.String `tfsdk:"query_search"`
 	TargetEntityTypes types.List   `tfsdk:"target_entity_types"`
@@ -45,10 +50,15 @@ type alertConditionModel struct {
 
 func AlertConditionAttributeTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"metric_name":         types.StringType,
-		"threshold":           types.StringType,
-		"duration":            types.StringType,
-		"aggregation_type":    types.StringType,
+		"metric_name":      types.StringType,
+		"threshold":        types.StringType,
+		"duration":         types.StringType,
+		"aggregation_type": types.StringType,
+
+		"attribute_names":    types.StringType,
+		"attribute_operator": types.StringType,
+		"attribute_values":   types.StringType,
+
 		"entity_ids":          types.ListType{ElemType: types.StringType},
 		"query_search":        types.StringType,
 		"target_entity_types": types.ListType{ElemType: types.StringType},
@@ -156,22 +166,26 @@ func (r *alertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"metric_name": schema.StringAttribute{
-							Description: "The field name of the metric to be filtered on.",
-							Required:    true,
+							Description: "The field name of the metric to be filtered on." +
+								"Required field when condition is for a metric.",
+							Optional: true,
 						},
 						"threshold": schema.StringAttribute{
 							Description: "Operator and value that represent the threshold of an the alert. " +
 								"When the threshold is breached it triggers the alert. " +
-								"For Operator - binaryOperator:(=|!=|>|<|>=|<=), logicalOperator:(AND|OR) E.g. '>=10'",
-							Required: true,
+								"For Operator - binaryOperator:(=|!=|>|<|>=|<=) E.g. '>=10'" +
+								"Required field when condition is for a metric.",
+							Optional: true,
 						},
 						"duration": schema.StringAttribute{
-							Description: "The duration window determines how frequently the alert is evaluated.",
-							Required:    true,
+							Description: "The duration window determines how frequently the alert is evaluated." +
+								"Required field when condition is for a metric.",
+							Optional: true,
 						},
 						"aggregation_type": schema.StringAttribute{
-							Description: "The aggregation function that will be applied to the metric.",
-							Required:    true,
+							Description: "The aggregation function that will be applied to the metric." +
+								"Required field when condition is for a metric.",
+							Optional: true,
 							Validators: []validator.String{
 								validators.SingleOption(
 									swoClient.AlertOperatorAvg,
@@ -183,6 +197,34 @@ func (r *alertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 								),
 							},
 						},
+
+						"attribute_name": schema.StringAttribute{
+							Description: "The attribute name of the entity to be filtered on." +
+								"Required field when condition is for a attribute.",
+							Optional: true,
+						},
+						"attribute_operation": schema.StringAttribute{
+							Description: "Select an operator, and then specify the values that trigger this alert." +
+								"Required field when condition is for a attribute.",
+							Optional: true,
+							Validators: []validator.String{
+								validators.SingleOption(
+									swoClient.AlertOperatorEq,
+									swoClient.AlertOperatorNe,
+									swoClient.AlertOperatorGt,
+									swoClient.AlertOperatorLt,
+									swoClient.AlertOperatorGe,
+									swoClient.AlertOperatorLe,
+									swoClient.AlertOperatorIn,
+								),
+							},
+						},
+						"attribute_value": schema.StringAttribute{
+							Description: "Select an operator, and then specify the values that trigger this alert." +
+								"Required field when condition is for a attribute.",
+							Optional: true,
+						},
+
 						"entity_ids": schema.ListAttribute{
 							Description: "A list of Entity IDs that will be used to filter on the alert. " +
 								"The alert will only trigger if the alert matches one or more of the entity IDs. " +

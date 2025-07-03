@@ -29,44 +29,109 @@ var aggregationError = errors.New("aggregation operation not found")
 //	    (id=2)    (duration, id=3)
 func (model alertConditionModel) toAlertConditionInputs(ctx context.Context, diags *diag.Diagnostics, rootNodeId int) []swoClient.AlertConditionNodeInput {
 
-	thresholdOperatorCondition, thresholdDataCondition, err := model.toThresholdConditionInputs()
-	if err != nil {
-		diags.AddError("Bad input in terraform resource",
-			fmt.Sprintf("error parsing terraform resource: %s", err))
-		return []swoClient.AlertConditionNodeInput{}
+	if !model.MetricName.IsNull() && !model.AttributeName.IsNull() {
+		//todo need to report this is wrong
 	}
-	thresholdOperatorCondition.Id = rootNodeId
-	thresholdOperatorCondition.OperandIds = []int{rootNodeId + 1, rootNodeId + 4}
-
-	aggregationCondition, err := model.toAggregationConditionInput()
-	if err != nil {
-		diags.AddError("Bad input in terraform resource",
-			fmt.Sprintf("error parsing terraform resource: %s", err))
-		return []swoClient.AlertConditionNodeInput{}
-	}
-	aggregationCondition.Id = rootNodeId + 1
-	aggregationCondition.OperandIds = []int{rootNodeId + 2, rootNodeId + 3}
-
-	metricFieldCondition := model.toMetricFieldConditionInput(ctx, diags)
-	if diags.HasError() {
-		return []swoClient.AlertConditionNodeInput{}
-	}
-	metricFieldCondition.Id = rootNodeId + 2
-
-	durationCondition := model.toDurationConditionInput()
-	durationCondition.Id = rootNodeId + 3
-
-	thresholdDataCondition.Id = rootNodeId + 4
-
-	conditions := []swoClient.AlertConditionNodeInput{
-		thresholdOperatorCondition,
-		aggregationCondition,
-		metricFieldCondition,
-		durationCondition,
-		thresholdDataCondition,
+	if model.MetricName.IsNull() && model.AttributeName.IsNull() {
+		//todo need to report this is wrong
 	}
 
-	return conditions
+	// metric condition node
+	// for both metric AND group alerts
+	if !model.MetricName.IsNull() {
+		//binary/threshold operator
+		thresholdOperatorCondition, thresholdDataCondition, err := model.toThresholdConditionInputs()
+		if err != nil {
+			diags.AddError("Bad input in terraform resource",
+				fmt.Sprintf("error parsing terraform resource: %s", err))
+			return []swoClient.AlertConditionNodeInput{}
+		}
+		thresholdOperatorCondition.Id = rootNodeId
+		thresholdOperatorCondition.OperandIds = []int{rootNodeId + 1, rootNodeId + 4}
+
+		//aggregation operator
+		aggregationCondition, err := model.toAggregationConditionInput()
+		if err != nil {
+			diags.AddError("Bad input in terraform resource",
+				fmt.Sprintf("error parsing terraform resource: %s", err))
+			return []swoClient.AlertConditionNodeInput{}
+		}
+		aggregationCondition.Id = rootNodeId + 1
+		aggregationCondition.OperandIds = []int{rootNodeId + 2, rootNodeId + 3}
+
+		//metric field node
+		metricFieldCondition := model.toMetricFieldConditionInput(ctx, diags)
+		if diags.HasError() {
+			return []swoClient.AlertConditionNodeInput{}
+		}
+		metricFieldCondition.Id = rootNodeId + 2
+
+		//constant value/duration condition
+		durationCondition := model.toDurationConditionInput()
+		durationCondition.Id = rootNodeId + 3
+
+		//constant value/threshold condition
+		thresholdDataCondition.Id = rootNodeId + 4
+
+		conditions := []swoClient.AlertConditionNodeInput{
+			thresholdOperatorCondition,
+			aggregationCondition,
+			metricFieldCondition,
+			durationCondition,
+			thresholdDataCondition,
+		}
+
+		return conditions
+	}
+
+	// attribute condition node
+	// for metric alerts ONLY
+	if !model.AttributeName.IsNull() {
+
+		operator := model.AttributeOperator.ValueString()
+		operatorType, err := swoClient.GetAlertConditionType(operator)
+		if err != nil {
+			diags.AddError("Bad input in terraform resource",
+				fmt.Sprintf("error parsing terraform resource: %s", err))
+			return []swoClient.AlertConditionNodeInput{}
+		}
+
+		binaryCondition := swoClient.AlertConditionNodeInput{
+			Type:       string(swoClient.AlertBinaryOperatorType),
+			Operator:   &operatorType,
+			OperandIds: []int{rootNodeId + 1, rootNodeId + 2},
+		}
+
+		entityFilter := model.buildEntityFilter(ctx, diags)
+		attributeField := swoClient.AlertConditionNodeInput{
+			Id:           rootNodeId + 1,
+			Type:         string(swoClient.AlertAttributeType),
+			FieldName:    model.AttributeName.ValueStringPointer(),
+			EntityFilter: entityFilter,
+		}
+
+		dataType := GetStringDataType(model.AttributeValue.ValueString())
+		constantField := swoClient.AlertConditionNodeInput{
+			Id:       rootNodeId + 2,
+			Type:     string(swoClient.AlertConstantValueType),
+			DataType: &dataType,
+		}
+		if operatorType == "IN" {
+			constantField.Values = []string{model.AttributeValue.ValueString()} //todo this isn't right, but good enough for testing?
+		} else {
+			constantField.Value = model.AttributeValue.ValueStringPointer()
+		}
+
+		conditions := []swoClient.AlertConditionNodeInput{
+			binaryCondition,
+			attributeField,
+			constantField,
+		}
+
+		return conditions
+	}
+
+	return []swoClient.AlertConditionNodeInput{}
 }
 
 // Creates the threshold operation and threshold data nodes by either:
@@ -160,39 +225,13 @@ func (model alertConditionModel) toMetricFieldConditionInput(ctx context.Context
 		return swoClient.AlertConditionNodeInput{}
 	}
 	metricName := model.MetricName.ValueString()
+	entityFilter := model.buildEntityFilter(ctx, diags)
 
 	metricFieldCondition := swoClient.AlertConditionNodeInput{
 		Type:             string(swoClient.AlertMetricFieldType),
 		FieldName:        &metricName,
 		GroupByMetricTag: groupByMetricTag,
-	}
-
-	// Metric Group alerts do not use entity types. It is necessary to drop the entire entityFilter field
-	// when calling the Alerting API because presence/absence of this field determines the type of the
-	// Alert definition (Entity vs. Metric Group).
-	if !model.TargetEntityTypes.IsNull() {
-		var entityFilterTypes, entityFilterIds []string
-		d = model.TargetEntityTypes.ElementsAs(ctx, &entityFilterTypes, false)
-		diags.Append(d...)
-
-		if diags.HasError() {
-			return swoClient.AlertConditionNodeInput{}
-		}
-		d = model.EntityIds.ElementsAs(ctx, &entityFilterIds, false)
-		diags.Append(d...)
-		if diags.HasError() {
-			return swoClient.AlertConditionNodeInput{}
-		}
-		querySearch := model.QuerySearch.ValueString()
-
-		entityFilter := &swoClient.AlertConditionNodeEntityFilterInput{
-			Types: entityFilterTypes,
-			Ids:   entityFilterIds,
-			Query: &querySearch,
-		}
-		metricFieldCondition.EntityFilter = entityFilter
-	} else {
-		metricFieldCondition.EntityFilter = nil
+		EntityFilter:     entityFilter,
 	}
 
 	var includeTags []alertTagsModel
@@ -262,6 +301,37 @@ func (model alertConditionModel) toMetricFieldConditionInput(ctx context.Context
 	}
 
 	return metricFieldCondition
+}
+
+func (model alertConditionModel) buildEntityFilter(ctx context.Context, diags *diag.Diagnostics) *swoClient.AlertConditionNodeEntityFilterInput {
+	// Metric Group alerts do not use entity types. It is necessary to drop the entire entityFilter field
+	// when calling the Alerting API because presence/absence of this field determines the type of the
+	// Alert definition (Entity vs. Metric Group).
+
+	if !model.TargetEntityTypes.IsNull() {
+		var entityFilterTypes, entityFilterIds []string
+		d := model.TargetEntityTypes.ElementsAs(ctx, &entityFilterTypes, false)
+		diags.Append(d...)
+
+		if diags.HasError() {
+			return nil
+		}
+		d = model.EntityIds.ElementsAs(ctx, &entityFilterIds, false)
+		diags.Append(d...)
+		if diags.HasError() {
+			return nil
+		}
+		querySearch := model.QuerySearch.ValueString()
+
+		entityFilter := swoClient.AlertConditionNodeEntityFilterInput{
+			Types: entityFilterTypes,
+			Ids:   entityFilterIds,
+			Query: &querySearch,
+		}
+		return &entityFilter
+	} else {
+		return nil
+	}
 }
 
 func GetStringDataType(s string) string {

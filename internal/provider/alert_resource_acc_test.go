@@ -486,3 +486,43 @@ resource "swo_alert" "test" {
 }
 `, name)
 }
+
+func testAccEntityAttributeAlertResourceConfig(name string) string {
+	return providerConfig() + fmt.Sprintf(`
+
+resource "swo_alert" "test" {
+ name        = %[1]q
+ description = "Mock alert description."
+ severity    = "INFO"
+ enabled     = false
+ conditions = [
+	{
+	  attribute_name = "healthScore.scoreV2"
+	  attribute_value = "100"
+	  attribute_operation = "=="
+	  target_entity_types = ["Website"]
+	},
+ ]
+}
+`, name)
+}
+
+//func testAccEntityAttributeAlertResourceConfig(name string) string {
+//	return providerConfig() + fmt.Sprintf(`
+//
+//resource "swo_alert" "test" {
+// name        = %[1]q
+// description = "Mock alert description."
+// severity    = "INFO"
+// enabled     = false
+// conditions = [
+//	{
+//	  attribute_name = "healthScore.scoreV2"
+//	  attribute_value = "100,0"
+//	  attribute_operation = "IN"
+//	  target_entity_types = ["Website"]
+//	},
+// ]
+//}
+//`, name)
+//}
