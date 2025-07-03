@@ -2,18 +2,47 @@ package provider
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
 	"fmt"
+	"time"
+
 	"github.com/cenkalti/backoff/v5"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
-	swoClient "github.com/solarwinds/swo-client-go/pkg/client"
-	swoClientTypes "github.com/solarwinds/swo-client-go/types"
-	"reflect"
+	"github.com/solarwinds/swo-sdk-go/swov1"
+	"github.com/solarwinds/swo-sdk-go/swov1/models/components"
+	"github.com/solarwinds/swo-sdk-go/swov1/models/operations"
+)
+
+const (
+	websiteExpBackoffMaxInterval = 30 * time.Second
+	websiteExpBackoffMaxElapsed  = 2 * time.Minute
+)
+
+var (
+	operatorMap = map[string]components.Operator{
+		string(components.OperatorContains):       components.OperatorContains,
+		string(components.OperatorDoesNotContain): components.OperatorDoesNotContain,
+	}
+
+	websiteProtocolMap = map[string]components.WebsiteProtocol{
+		string(components.WebsiteProtocolHTTP):  components.WebsiteProtocolHTTP,
+		string(components.WebsiteProtocolHTTPS): components.WebsiteProtocolHTTPS,
+	}
+
+	probePlatformMap = map[string]components.ProbePlatform{
+		string(components.ProbePlatformAws):         components.ProbePlatformAws,
+		string(components.ProbePlatformAzure):       components.ProbePlatformAzure,
+		string(components.ProbePlatformGoogleCloud): components.ProbePlatformGoogleCloud,
+	}
+
+	testFromTypeMap = map[string]components.Type{
+		string(components.TypeRegion):  components.TypeRegion,
+		string(components.TypeCountry): components.TypeCountry,
+		string(components.TypeCity):    components.TypeCity,
+	}
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
@@ -29,7 +58,7 @@ func NewWebsiteResource() resource.Resource {
 
 // Defines the resource implementation.
 type websiteResource struct {
-	client *swoClient.Client
+	client *swov1.Swo
 }
 
 func (r *websiteResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -38,7 +67,7 @@ func (r *websiteResource) Metadata(ctx context.Context, req resource.MetadataReq
 
 func (r *websiteResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	client, _ := req.ProviderData.(providerClients)
-	r.client = client.SwoClient
+	r.client = client.SwoV1Client
 }
 
 func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -48,9 +77,9 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
-	createInput := swoClient.CreateWebsiteInput{
+	createInput := components.Website{
 		Name: tfPlan.Name.ValueString(),
-		Url:  tfPlan.Url.ValueString(),
+		URL:  tfPlan.Url.ValueString(),
 	}
 
 	var tfMonitoring websiteMonitoring
@@ -60,6 +89,7 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
+	// Map Availability Monitoring
 	if !tfMonitoring.Availability.IsNull() {
 		var tfAvailability availabilityMonitoring
 		d = tfMonitoring.Availability.As(ctx, &tfAvailability, basetypes.ObjectAsOptions{})
@@ -68,99 +98,13 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 			return
 		}
 
-		var checkForString *swoClient.CheckForStringInput
-		if !tfAvailability.CheckForString.IsNull() {
-			var tfCheckForString checkForStringType
-			d = tfAvailability.CheckForString.As(ctx, &tfCheckForString, basetypes.ObjectAsOptions{})
-			resp.Diagnostics.Append(d...)
-			if resp.Diagnostics.HasError() {
-				return
-			}
-
-			checkForString = &swoClient.CheckForStringInput{
-				Operator: swoClient.CheckStringOperator(tfCheckForString.Operator.ValueString()),
-				Value:    tfCheckForString.Value.ValueString(),
-			}
-		}
-
-		var ssl *swoClient.SslMonitoringInput
-		if !tfAvailability.SSL.IsNull() {
-			var tfSslMonitoring sslMonitoring
-			d = tfAvailability.SSL.As(ctx, &tfSslMonitoring, basetypes.ObjectAsOptions{})
-			resp.Diagnostics.Append(d...)
-			if resp.Diagnostics.HasError() {
-				return
-			}
-			if tfSslMonitoring.Enabled.ValueBool() {
-				ssl = &swoClient.SslMonitoringInput{
-					Enabled:                        tfSslMonitoring.Enabled.ValueBoolPointer(),
-					DaysPriorToExpiration:          swoClient.Ptr(int(tfSslMonitoring.DaysPriorToExpiration.ValueInt64())),
-					IgnoreIntermediateCertificates: tfSslMonitoring.IgnoreIntermediateCertificates.ValueBoolPointer(),
-				}
-			}
-		}
-
-		var tfCustomHeaders []customHeader
-		//monitoring.custom_headers is deprecated. Both custom_headers fields cannot be set at the same time.
-		if !tfAvailability.CustomHeaders.IsNull() {
-			d := tfAvailability.CustomHeaders.ElementsAs(ctx, &tfCustomHeaders, false)
-			resp.Diagnostics.Append(d...)
-			if resp.Diagnostics.HasError() {
-				return
-			}
-		} else {
-			d := tfMonitoring.CustomHeaders.ElementsAs(ctx, &tfCustomHeaders, false)
-			resp.Diagnostics.Append(d...)
-			if resp.Diagnostics.HasError() {
-				return
-			}
-		}
-
-		var customHeaders []swoClient.CustomHeaderInput
-		if len(tfCustomHeaders) > 0 {
-			customHeaders = convertArray(tfCustomHeaders, func(h customHeader) swoClient.CustomHeaderInput {
-				return swoClient.CustomHeaderInput{
-					Name:  h.Name.ValueString(),
-					Value: h.Value.ValueString(),
-				}
-			})
-		}
-
-		var tfLocationOptions []probeLocation
-		d := tfAvailability.LocationOptions.ElementsAs(ctx, &tfLocationOptions, false)
-		resp.Diagnostics.Append(d...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-		var tfPlatformOpts platformOptions
-		d = tfAvailability.PlatformOptions.As(ctx, &tfPlatformOpts, basetypes.ObjectAsOptions{})
-		resp.Diagnostics.Append(d...)
-		if resp.Diagnostics.HasError() {
+		availabilitySettings, err := mapAvailabilitySettings(ctx, tfAvailability, tfMonitoring)
+		if err != nil {
+			resp.Diagnostics.AddError("Invalid Availability Configuration", err.Error())
 			return
 		}
 
-		createInput.AvailabilityCheckSettings = &swoClient.AvailabilityCheckSettingsInput{
-			CheckForString:        checkForString,
-			TestIntervalInSeconds: swoClientTypes.TestIntervalInSeconds(int(tfAvailability.TestIntervalInSeconds.ValueInt64())),
-			Protocols: convertArray(tfAvailability.Protocols.Elements(), func(s attr.Value) swoClient.WebsiteProtocol {
-				return swoClient.WebsiteProtocol(attrValueToString(s))
-			}),
-			PlatformOptions: &swoClient.ProbePlatformOptionsInput{
-				TestFromAll: tfPlatformOpts.TestFromAll.ValueBoolPointer(),
-				ProbePlatforms: convertArray(tfPlatformOpts.Platforms.Elements(),
-					func(s attr.Value) swoClient.ProbePlatform { return swoClient.ProbePlatform(attrValueToString(s)) }),
-			},
-			TestFrom: swoClient.ProbeLocationInput{
-				Type: swoClient.ProbeLocationType(tfAvailability.TestFromLocation.ValueString()),
-				Values: convertArray(tfLocationOptions, func(p probeLocation) string {
-					return p.Value.ValueString()
-				}),
-			},
-			Ssl:           ssl,
-			CustomHeaders: customHeaders,
-		}
-	} else {
-		createInput.AvailabilityCheckSettings = nil
+		createInput.AvailabilityCheckSettings = availabilitySettings
 	}
 
 	if !tfMonitoring.Rum.IsNull() {
@@ -171,33 +115,45 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 			return
 		}
 
-		createInput.Rum = &swoClient.RumMonitoringInput{
-			ApdexTimeInSeconds: swoClient.Ptr(int(tfRum.ApdexTimeInSeconds.ValueInt64())),
-			Spa:                tfRum.Spa.ValueBoolPointer(),
-		}
-	} else {
-		createInput.Rum = nil
+		createInput.Rum = mapRumSettings(ctx, tfRum)
 	}
 
-	// Create the Website...
-	result, err := r.client.WebsiteService().Create(ctx, createInput)
+	// Create the Website in SWO
+	result, err := r.client.Dem.CreateWebsite(ctx, createInput)
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error",
 			fmt.Sprintf("error creating website '%s' - error: %s", tfPlan.Name, err))
 		return
 	}
 
-	website, err := ReadRetry(ctx, result.Id, r.client.WebsiteService().Read)
-
-	if err != nil {
-		resp.Diagnostics.AddWarning("Client Error",
-			fmt.Sprintf("error reading website after create '%s' - error: %s", tfPlan.Name, err))
+	if result.EntityID == nil {
+		resp.Diagnostics.AddError("Client Error",
+			fmt.Sprintf("error creating website '%s' - no entity ID returned", tfPlan.Name))
 		return
 	}
 
-	// Get the latest Website state from the server so we can get the 'snippet' field. Ideally, we need to update
-	// the API to return the 'snippet' field in the create response.
-	// Only set the snippet field if the user has RUM enabled.
+	// Set the ID from creation result
+	tfPlan.Id = types.StringValue(result.EntityID.GetID())
+
+	// Set monitoring options based on what the user configured
+	userMonitoringOptions := monitoringOptions{
+		IsAvailabilityActive: types.BoolValue(!tfMonitoring.Availability.IsNull()),
+		IsRumActive:          types.BoolValue(!tfMonitoring.Rum.IsNull()),
+	}
+
+	userOptions, dOpts := types.ObjectValueFrom(ctx, MonitoringOptionsAttributeTypes(), userMonitoringOptions)
+	resp.Diagnostics.Append(dOpts...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	tfMonitoring.Options = userOptions
+
+	// Read back the created website to get the complete state including RUM snippet
+	websiteResp, err := r.client.Dem.GetWebsite(ctx, operations.GetWebsiteRequest{
+		EntityID: tfPlan.Id.ValueString(),
+	})
+
+	// Always set the snippet field if RUM is enabled, regardless of read success
 	if !tfMonitoring.Rum.IsNull() {
 		var rum rumMonitoring
 		d = tfMonitoring.Rum.As(ctx, &rum, basetypes.ObjectAsOptions{})
@@ -206,7 +162,12 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 			return
 		}
 
-		rum.Snippet = types.StringValue(*website.Monitoring.Rum.Snippet)
+		// Set snippet from server response if available, otherwise empty string
+		if err == nil && websiteResp.GetWebsiteResponse != nil && websiteResp.GetWebsiteResponse.Rum != nil && websiteResp.GetWebsiteResponse.Rum.Snippet != nil {
+			rum.Snippet = types.StringValue(*websiteResp.GetWebsiteResponse.Rum.Snippet)
+		} else {
+			rum.Snippet = types.StringValue("")
+		}
 
 		rumObject, dRum := types.ObjectValueFrom(ctx, RumMonitoringAttributeTypes(), rum)
 		resp.Diagnostics.Append(dRum...)
@@ -214,16 +175,21 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 			return
 		}
 		tfMonitoring.Rum = rumObject
-
-		monitoringObject, dMonitor := types.ObjectValueFrom(ctx, WebsiteMonitoringAttributeTypes(), tfMonitoring)
-		resp.Diagnostics.Append(dMonitor...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-		tfPlan.Monitoring = monitoringObject
 	}
 
-	tfPlan.Id = types.StringValue(result.Id)
+	// Update the final monitoring object
+	monitoringObject, dMonitor := types.ObjectValueFrom(ctx, WebsiteMonitoringAttributeTypes(), tfMonitoring)
+	resp.Diagnostics.Append(dMonitor...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	tfPlan.Monitoring = monitoringObject
+
+	if err != nil {
+		resp.Diagnostics.AddWarning("Client Error",
+			fmt.Sprintf("error reading website after create '%s' - error: %s", tfPlan.Name, err))
+	}
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, tfPlan)...)
 }
 
@@ -235,7 +201,24 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
-	website, err := ReadRetry(ctx, tfState.Id.ValueString(), r.client.WebsiteService().Read)
+	// ReadRetry wrapper
+	readOperation := func(ctx context.Context, id string) (*components.GetWebsiteResponse, error) {
+		websiteResp, err := r.client.Dem.GetWebsite(ctx, operations.GetWebsiteRequest{
+			EntityID: id,
+		})
+
+		if err != nil {
+			return nil, err
+		}
+
+		if websiteResp.GetWebsiteResponse == nil {
+			return nil, fmt.Errorf("no website data returned")
+		}
+
+		return websiteResp.GetWebsiteResponse, nil
+	}
+
+	website, err := websiteReadRetry(ctx, tfState.Id.ValueString(), readOperation)
 
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error",
@@ -244,21 +227,52 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 	}
 
 	// Update the Terraform state with the latest values from the server.
-	tfState.Url = types.StringValue(website.Url)
-	tfState.Name = types.StringPointerValue(website.Name)
-	tfState.Monitoring = types.ObjectNull(WebsiteMonitoringAttributeTypes())
+	tfState.Url = types.StringValue(website.URL)
+	tfState.Name = types.StringValue(website.Name)
 
-	if website.Monitoring != nil {
-		monitoring := website.Monitoring
+	if website != nil {
+		// First, extract the existing monitoring configuration from the current state
+		var existingMonitoring websiteMonitoring
+
+		// Check if monitoring is not null before trying to extract it
+		if !tfState.Monitoring.IsNull() {
+			d := tfState.Monitoring.As(ctx, &existingMonitoring, basetypes.ObjectAsOptions{})
+			resp.Diagnostics.Append(d...)
+			if resp.Diagnostics.HasError() {
+				return
+			}
+		} else {
+			existingMonitoring = websiteMonitoring{
+				Options:       types.ObjectNull(MonitoringOptionsAttributeTypes()),
+				Availability:  types.ObjectNull(AvailabilityMonitoringAttributeTypes()),
+				Rum:           types.ObjectNull(RumMonitoringAttributeTypes()),
+				CustomHeaders: types.SetNull(types.ObjectType{AttrTypes: CustomHeaderAttributeTypes()}),
+			}
+		}
+
+		// Create monitoring options from server response (computed fields)
+		monitoringOpts := website.MonitoringOptions
+		serverMonitoringOptions := monitoringOptions{
+			IsAvailabilityActive: types.BoolValue(monitoringOpts.IsAvailabilityActive),
+			IsRumActive:          types.BoolValue(monitoringOpts.IsRumActive),
+		}
+
+		serverOptions, d := types.ObjectValueFrom(ctx, MonitoringOptionsAttributeTypes(), serverMonitoringOptions)
+		resp.Diagnostics.Append(d...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
 		tfStateMonitoring := websiteMonitoring{
-			Options:       types.ObjectNull(MonitoringOptionsAttributeTypes()),
+			Options:       serverOptions, // Use computed monitoring options from server
 			Availability:  types.ObjectNull(AvailabilityMonitoringAttributeTypes()),
 			Rum:           types.ObjectNull(RumMonitoringAttributeTypes()),
 			CustomHeaders: types.SetNull(types.ObjectType{AttrTypes: CustomHeaderAttributeTypes()}),
 		}
 
-		availability := monitoring.Availability
-		if availability != nil && website.Monitoring.Options.IsAvailabilityActive {
+		// Handle availability monitoring - only include if server says it's active
+		if website.AvailabilityCheckSettings != nil && serverMonitoringOptions.IsAvailabilityActive.ValueBool() {
+			availability := website.AvailabilityCheckSettings
 			tfStateAvailability := availabilityMonitoring{
 				CheckForString:        types.ObjectNull(CheckForStringTypeAttributeTypes()),
 				SSL:                   types.ObjectNull(SslMonitoringAttributeTypes()),
@@ -283,28 +297,38 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 				tfStateAvailability.CheckForString = checkForString
 			}
 
-			if availability.TestIntervalInSeconds != nil {
-				tfStateAvailability.TestIntervalInSeconds = types.Int64Value(int64(*availability.TestIntervalInSeconds))
+			if availability.TestIntervalInSeconds != 0 {
+				tfStateAvailability.TestIntervalInSeconds = types.Int64Value(int64(availability.TestIntervalInSeconds))
 			}
 
 			if len(availability.Protocols) > 0 {
-				tfStateAvailability.Protocols = sliceToStringList(availability.Protocols, func(s swoClient.WebsiteProtocol) string {
+				tfStateAvailability.Protocols = sliceToStringList(availability.Protocols, func(s components.WebsiteProtocol) string {
 					return string(s)
 				})
 			}
 
 			if availability.PlatformOptions != nil {
-				platforms := convertArray(availability.PlatformOptions.Platforms, func(p string) types.String {
-					return types.StringValue(p)
-				})
+				// Note: The response structure may have different field names
+				// For now, we'll use what's available and handle missing fields gracefully
+				var platforms []types.String
+				if availability.PlatformOptions.ProbePlatforms != nil {
+					for _, p := range availability.PlatformOptions.ProbePlatforms {
+						platforms = append(platforms, types.StringValue(string(p)))
+					}
+				}
 				platformValue, d := types.SetValueFrom(ctx, types.StringType, platforms)
 				resp.Diagnostics.Append(d...)
 				if resp.Diagnostics.HasError() {
 					return
 				}
 
+				testFromAll := false
+				if availability.PlatformOptions.TestFromAll != nil {
+					testFromAll = *availability.PlatformOptions.TestFromAll
+				}
+
 				platformOptionsValue := platformOptions{
-					TestFromAll: types.BoolValue(availability.PlatformOptions.TestFromAll),
+					TestFromAll: types.BoolValue(testFromAll),
 					Platforms:   platformValue,
 				}
 				tfPlatformOptions, d := types.ObjectValueFrom(ctx, PlatformOptionsAttributeTypes(), platformOptionsValue)
@@ -315,42 +339,44 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 				tfStateAvailability.PlatformOptions = tfPlatformOptions
 			}
 
-			if availability.TestFromLocation != nil {
-				tfStateAvailability.TestFromLocation = types.StringValue(string(*availability.TestFromLocation))
-			}
+			// Handle TestFrom - check if it has valid data
+			if availability.TestFrom.Type != "" {
+				tfStateAvailability.TestFromLocation = types.StringValue(string(availability.TestFrom.Type))
 
-			var locOpts []attr.Value
-			if len(availability.LocationOptions) > 0 {
-				for _, p := range availability.LocationOptions {
-					objectValue, d := types.ObjectValueFrom(
-						ctx,
-						ProbeLocationAttributeTypes(),
-						probeLocation{
-							Type:  types.StringValue(string(p.Type)),
-							Value: types.StringValue(p.Value),
-						},
-					)
+				// Handle location options
+				var locOpts []attr.Value
+				if len(availability.TestFrom.Values) > 0 {
+					for _, value := range availability.TestFrom.Values {
+						objectValue, d := types.ObjectValueFrom(
+							ctx,
+							ProbeLocationAttributeTypes(),
+							probeLocation{
+								Type:  types.StringValue(string(components.TypeRegion)), // Use SDK constant
+								Value: types.StringValue(value),
+							},
+						)
 
+						resp.Diagnostics.Append(d...)
+						if resp.Diagnostics.HasError() {
+							return
+						}
+						locOpts = append(locOpts, objectValue)
+					}
+
+					tfLocationOptions, d := types.SetValueFrom(ctx, types.ObjectType{AttrTypes: ProbeLocationAttributeTypes()}, locOpts)
 					resp.Diagnostics.Append(d...)
 					if resp.Diagnostics.HasError() {
 						return
 					}
-					locOpts = append(locOpts, objectValue)
+					tfStateAvailability.LocationOptions = tfLocationOptions
 				}
-
-				tfLocationOptions, d := types.SetValueFrom(ctx, types.ObjectType{AttrTypes: ProbeLocationAttributeTypes()}, locOpts)
-				resp.Diagnostics.Append(d...)
-				if resp.Diagnostics.HasError() {
-					return
-				}
-				tfStateAvailability.LocationOptions = tfLocationOptions
 			}
 
 			sslTypes := SslMonitoringAttributeTypes()
-			if availability.Ssl != nil && availability.Ssl.Enabled {
+			if availability.Ssl != nil && availability.Ssl.Enabled != nil && *availability.Ssl.Enabled {
 				sslValues := sslMonitoring{
-					Enabled:                        types.BoolValue(availability.Ssl.Enabled),
-					IgnoreIntermediateCertificates: types.BoolValue(availability.Ssl.IgnoreIntermediateCertificates),
+					Enabled:                        types.BoolValue(*availability.Ssl.Enabled),
+					IgnoreIntermediateCertificates: types.BoolValue(availability.Ssl.IgnoreIntermediateCertificates != nil && *availability.Ssl.IgnoreIntermediateCertificates),
 					DaysPriorToExpiration:          types.Int64Null(),
 				}
 				if availability.Ssl.DaysPriorToExpiration != nil {
@@ -377,9 +403,10 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 
 		customHeaderElementTypes := CustomHeaderAttributeTypes()
 		nullCustomHeader := types.SetNull(types.ObjectType{AttrTypes: customHeaderElementTypes})
-		if len(monitoring.CustomHeaders) > 0 {
+
+		if website.AvailabilityCheckSettings != nil && len(website.AvailabilityCheckSettings.CustomHeaders) > 0 {
 			var elements []attr.Value
-			for _, h := range monitoring.CustomHeaders {
+			for _, h := range website.AvailabilityCheckSettings.CustomHeaders {
 				objectValue, d := types.ObjectValueFrom(
 					ctx,
 					customHeaderElementTypes,
@@ -430,21 +457,21 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 				tfStateMonitoring.Availability = availabilityValue
 			}
 		}
-
-		if monitoring.Options.IsRumActive && monitoring.Rum != nil {
+		// RUM monitoring - only include if server says it's active
+		if website.Rum != nil && serverMonitoringOptions.IsRumActive.ValueBool() {
 			rumAttributeTypes := RumMonitoringAttributeTypes()
 			rumValue := rumMonitoring{
-				Spa:                types.BoolValue(monitoring.Rum.Spa),
+				Spa:                types.BoolValue(website.Rum.Spa),
 				ApdexTimeInSeconds: types.Int64Null(),
 				Snippet:            types.StringNull(),
 			}
 
-			if monitoring.Rum.ApdexTimeInSeconds != nil {
-				rumValue.ApdexTimeInSeconds = types.Int64Value(int64(*monitoring.Rum.ApdexTimeInSeconds))
+			if website.Rum.ApdexTimeInSeconds != nil {
+				rumValue.ApdexTimeInSeconds = types.Int64Value(int64(*website.Rum.ApdexTimeInSeconds))
 			}
 
-			if monitoring.Rum.Snippet != nil {
-				rumValue.Snippet = types.StringValue(*monitoring.Rum.Snippet)
+			if website.Rum.Snippet != nil {
+				rumValue.Snippet = types.StringValue(*website.Rum.Snippet)
 			}
 
 			rum, d := types.ObjectValueFrom(ctx, rumAttributeTypes, rumValue)
@@ -477,10 +504,9 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
-	updateInput := swoClient.UpdateWebsiteInput{
-		Id:   tfState.Id.ValueString(),
+	updateInput := components.Website{
 		Name: tfPlan.Name.ValueString(),
-		Url:  tfPlan.Url.ValueString(),
+		URL:  tfPlan.Url.ValueString(),
 	}
 
 	var tfMonitoring websiteMonitoring
@@ -490,6 +516,7 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
+	// Map Availability Monitoring using the helper function
 	if !tfMonitoring.Availability.IsNull() {
 		var tfAvailability availabilityMonitoring
 		d = tfMonitoring.Availability.As(ctx, &tfAvailability, basetypes.ObjectAsOptions{})
@@ -498,101 +525,16 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 			return
 		}
 
-		var checkForString *swoClient.CheckForStringInput
-		if !tfAvailability.CheckForString.IsNull() {
-			var tfCheckForString checkForStringType
-			d = tfAvailability.CheckForString.As(ctx, &tfCheckForString, basetypes.ObjectAsOptions{})
-			resp.Diagnostics.Append(d...)
-			if resp.Diagnostics.HasError() {
-				return
-			}
-
-			checkForString = &swoClient.CheckForStringInput{
-				Operator: swoClient.CheckStringOperator(tfCheckForString.Operator.ValueString()),
-				Value:    tfCheckForString.Value.ValueString(),
-			}
-		}
-		var ssl *swoClient.SslMonitoringInput
-		if !tfAvailability.SSL.IsNull() {
-			var tfSslMonitoring sslMonitoring
-			d = tfAvailability.SSL.As(ctx, &tfSslMonitoring, basetypes.ObjectAsOptions{})
-			resp.Diagnostics.Append(d...)
-			if resp.Diagnostics.HasError() {
-				return
-			}
-
-			if tfSslMonitoring.Enabled.ValueBool() {
-				ssl = &swoClient.SslMonitoringInput{
-					Enabled:                        tfSslMonitoring.Enabled.ValueBoolPointer(),
-					DaysPriorToExpiration:          swoClient.Ptr(int(tfSslMonitoring.DaysPriorToExpiration.ValueInt64())),
-					IgnoreIntermediateCertificates: tfSslMonitoring.IgnoreIntermediateCertificates.ValueBoolPointer(),
-				}
-			}
-		}
-
-		var tfCustomHeaders []customHeader
-		//monitoring.custom_headers is deprecated. Both custom_headers fields cannot be set at the same time.
-		if !tfAvailability.CustomHeaders.IsNull() {
-			d := tfAvailability.CustomHeaders.ElementsAs(ctx, &tfCustomHeaders, false)
-			resp.Diagnostics.Append(d...)
-			if resp.Diagnostics.HasError() {
-				return
-			}
-		} else {
-			d := tfMonitoring.CustomHeaders.ElementsAs(ctx, &tfCustomHeaders, false)
-			resp.Diagnostics.Append(d...)
-			if resp.Diagnostics.HasError() {
-				return
-			}
-		}
-
-		var customHeaders []swoClient.CustomHeaderInput
-		if len(tfCustomHeaders) > 0 {
-			customHeaders = convertArray(tfCustomHeaders, func(h customHeader) swoClient.CustomHeaderInput {
-				return swoClient.CustomHeaderInput{
-					Name:  h.Name.ValueString(),
-					Value: h.Value.ValueString(),
-				}
-			})
-		}
-
-		var tfLocationOptions []probeLocation
-		d := tfAvailability.LocationOptions.ElementsAs(ctx, &tfLocationOptions, false)
-		resp.Diagnostics.Append(d...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-		var tfPlatformOpts platformOptions
-		d = tfAvailability.PlatformOptions.As(ctx, &tfPlatformOpts, basetypes.ObjectAsOptions{})
-		resp.Diagnostics.Append(d...)
-		if resp.Diagnostics.HasError() {
+		availabilitySettings, err := mapAvailabilitySettings(ctx, tfAvailability, tfMonitoring)
+		if err != nil {
+			resp.Diagnostics.AddError("Invalid Availability Configuration", err.Error())
 			return
 		}
 
-		updateInput.AvailabilityCheckSettings = &swoClient.AvailabilityCheckSettingsInput{
-			CheckForString:        checkForString,
-			TestIntervalInSeconds: swoClientTypes.TestIntervalInSeconds(int(tfAvailability.TestIntervalInSeconds.ValueInt64())),
-			Protocols: convertArray(tfAvailability.Protocols.Elements(), func(s attr.Value) swoClient.WebsiteProtocol {
-				return swoClient.WebsiteProtocol(attrValueToString(s))
-			}),
-			PlatformOptions: &swoClient.ProbePlatformOptionsInput{
-				TestFromAll: tfPlatformOpts.TestFromAll.ValueBoolPointer(),
-				ProbePlatforms: convertArray(tfPlatformOpts.Platforms.Elements(),
-					func(s attr.Value) swoClient.ProbePlatform { return swoClient.ProbePlatform(attrValueToString(s)) }),
-			},
-			TestFrom: swoClient.ProbeLocationInput{
-				Type: swoClient.ProbeLocationType(tfAvailability.TestFromLocation.ValueString()),
-				Values: convertArray(tfLocationOptions, func(p probeLocation) string {
-					return p.Value.ValueString()
-				}),
-			},
-			Ssl:           ssl,
-			CustomHeaders: customHeaders,
-		}
-	} else {
-		updateInput.AvailabilityCheckSettings = nil
+		updateInput.AvailabilityCheckSettings = availabilitySettings
 	}
 
+	// Map RUM Monitoring using the helper function
 	if !tfMonitoring.Rum.IsNull() {
 		var tfRum rumMonitoring
 		d = tfMonitoring.Rum.As(ctx, &tfRum, basetypes.ObjectAsOptions{})
@@ -601,128 +543,72 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 			return
 		}
 
-		updateInput.Rum = &swoClient.RumMonitoringInput{
-			ApdexTimeInSeconds: swoClient.Ptr(int(tfRum.ApdexTimeInSeconds.ValueInt64())),
-			Spa:                tfRum.Spa.ValueBoolPointer(),
-		}
-	} else {
-		updateInput.Rum = nil
+		updateInput.Rum = mapRumSettings(ctx, tfRum)
 	}
 
-	websiteMonitoring := map[string]interface{}{}
-	if updateInput.AvailabilityCheckSettings != nil {
-		websiteMonitoring["customHeaders"] = updateInput.AvailabilityCheckSettings.CustomHeaders
-		websiteMonitoring["availability"] = map[string]interface{}{
-			"protocols":             updateInput.AvailabilityCheckSettings.Protocols,
-			"testIntervalInSeconds": updateInput.AvailabilityCheckSettings.TestIntervalInSeconds,
-			"testFromLocation":      updateInput.AvailabilityCheckSettings.TestFrom.Type,
-			"platformOptions": map[string]interface{}{
-				"testFromAll": updateInput.AvailabilityCheckSettings.PlatformOptions.TestFromAll,
-				"platforms":   updateInput.AvailabilityCheckSettings.PlatformOptions.ProbePlatforms,
-			},
-			"ssl": updateInput.AvailabilityCheckSettings.Ssl,
-		}
-	}
-
-	bWebsiteToMatch, err := json.Marshal(map[string]interface{}{
-		"id":   updateInput.Id,
-		"name": updateInput.Name,
-		"url":  updateInput.Url,
-
-		"monitoring": websiteMonitoring,
-		"rum":        updateInput.Rum,
+	// Update the Website using swov1 SDK
+	_, err := r.client.Dem.UpdateWebsite(ctx, operations.UpdateWebsiteRequest{
+		EntityID: tfState.Id.ValueString(),
+		Website:  updateInput,
 	})
 
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error",
-			fmt.Sprintf("error marshaling website result to match %s - %s", tfState.Id, err))
+			fmt.Sprintf("error updating website %s. err: %s", tfState.Id.ValueString(), err))
 		return
 	}
 
-	var websiteToMatch swoClient.ReadWebsiteResult
-
-	err = json.Unmarshal(bWebsiteToMatch, &websiteToMatch)
-	if err != nil {
-		resp.Diagnostics.AddError("Client Error",
-			fmt.Sprintf("error unmarshaling uri result to match %s - %s", tfState.Id, err))
-		return
-	}
-
-	// Update the Website...
-	err = r.client.WebsiteService().Update(ctx, updateInput)
-
-	if err != nil {
-		resp.Diagnostics.AddError("Client Error",
-			fmt.Sprintf("error updating website %s. err: %s", tfState.Id, err))
-		return
-	}
-
-	// Updates are eventually consistent. Retry until the Website we read and the Website we are updating match.
-	website, err := BackoffRetry(func() (*swoClient.ReadWebsiteResult, error) {
-		// Read the Uri...
-		website, err := r.client.WebsiteService().Read(ctx, tfState.Id.ValueString())
+	// Read back the updated website to get the complete state including RUM snippet
+	// Use ReadRetry to handle eventual consistency, but also validate the name was updated
+	readOperation := func(ctx context.Context, id string) (*components.GetWebsiteResponse, error) {
+		websiteResp, err := r.client.Dem.GetWebsite(ctx, operations.GetWebsiteRequest{
+			EntityID: id,
+		})
 
 		if err != nil {
-			if errors.Is(err, swoClient.ErrEntityIdNil) {
-				return website, swoClient.ErrEntityIdNil
-			} else {
-				return nil, backoff.Permanent(err)
-			}
+			return nil, err
 		}
 
-		websiteToMatch.Typename = website.Typename
-		websiteToMatch.Monitoring.Options = website.Monitoring.Options
-
-		if websiteToMatch.Monitoring.Availability != nil {
-			websiteToMatch.Monitoring.Availability.LocationOptions = website.Monitoring.Availability.LocationOptions
-			websiteToMatch.Monitoring.Availability.CheckForString = website.Monitoring.Availability.CheckForString
+		if websiteResp.GetWebsiteResponse == nil {
+			return nil, fmt.Errorf("no website data returned")
 		}
 
-		if websiteToMatch.Monitoring.Rum == nil {
-			websiteToMatch.Monitoring.Rum = website.Monitoring.Rum
-		} else {
-			websiteToMatch.Monitoring.Rum.Snippet = website.Monitoring.Rum.Snippet
+		// Check if the name has been updated to match what we expect
+		expectedName := tfPlan.Name.ValueString()
+		if websiteResp.GetWebsiteResponse.Name != expectedName {
+			return nil, fmt.Errorf("website name not yet updated, expected '%s' but got '%s'", expectedName, websiteResp.GetWebsiteResponse.Name)
 		}
 
-		// default values for availability are returned if availability is not set
-		if tfMonitoring.Availability.IsNull() {
-			websiteToMatch.Monitoring.Availability = website.Monitoring.Availability
-		}
+		return websiteResp.GetWebsiteResponse, nil
+	}
 
-		// default values for ssl are returned if ssl is not set
-		if !tfMonitoring.Availability.IsNull() {
-			var tfAvailability availabilityMonitoring
-			d = tfMonitoring.Availability.As(ctx, &tfAvailability, basetypes.ObjectAsOptions{})
-			if d.HasError() {
-				return nil, ErrMarshal
-			}
-
-			if tfAvailability.SSL.IsNull() {
-				websiteToMatch.Monitoring.Availability.Ssl = website.Monitoring.Availability.Ssl
-			}
-		}
-
-		if websiteToMatch.Monitoring.CustomHeaders == nil && len(website.Monitoring.CustomHeaders) == 0 {
-			websiteToMatch.Monitoring.CustomHeaders = website.Monitoring.CustomHeaders
-		}
-
-		match := reflect.DeepEqual(&websiteToMatch, website)
-
-		// Updated entity properties don't match, retry
-		if !match {
-			return nil, ErrNonMatchingEntities
-		}
-
-		return website, nil
-	})
+	website, err := websiteReadRetry(ctx, tfState.Id.ValueString(), readOperation)
 
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error",
-			fmt.Sprintf("error updating website %s. err: %s", tfState.Id, err))
+			fmt.Sprintf("error reading website after update %s. error: %s", tfState.Id.ValueString(), err))
 		return
 	}
 
-	if !tfMonitoring.Rum.IsNull() && website.Monitoring.Options.IsRumActive {
+	// Update basic fields from server response
+	tfPlan.Name = types.StringValue(website.Name)
+	tfPlan.Url = types.StringValue(website.URL)
+
+	// Set monitoring options based on what the user configured
+	userMonitoringOptions := monitoringOptions{
+		IsAvailabilityActive: types.BoolValue(!tfMonitoring.Availability.IsNull()),
+		IsRumActive:          types.BoolValue(!tfMonitoring.Rum.IsNull()),
+	}
+
+	userOptions, dOpts := types.ObjectValueFrom(ctx, MonitoringOptionsAttributeTypes(), userMonitoringOptions)
+	resp.Diagnostics.Append(dOpts...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	tfMonitoring.Options = userOptions
+
+	// Update RUM snippet if needed
+	if !tfMonitoring.Rum.IsNull() && website.Rum != nil {
 		var tfRum rumMonitoring
 		d = tfMonitoring.Rum.As(ctx, &tfRum, basetypes.ObjectAsOptions{})
 		resp.Diagnostics.Append(d...)
@@ -730,7 +616,9 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 			return
 		}
 
-		tfRum.Snippet = types.StringValue(*website.Monitoring.Rum.Snippet)
+		if website.Rum.Snippet != nil {
+			tfRum.Snippet = types.StringValue(*website.Rum.Snippet)
+		}
 
 		rumValue, d := types.ObjectValueFrom(ctx, RumMonitoringAttributeTypes(), tfRum)
 		resp.Diagnostics.Append(d...)
@@ -738,14 +626,15 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 			return
 		}
 		tfMonitoring.Rum = rumValue
-
-		monitoringValue, d := types.ObjectValueFrom(ctx, WebsiteMonitoringAttributeTypes(), tfMonitoring)
-		resp.Diagnostics.Append(d...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-		tfPlan.Monitoring = monitoringValue
 	}
+
+	// Always update the monitoring object with all changes
+	monitoringValue, d := types.ObjectValueFrom(ctx, WebsiteMonitoringAttributeTypes(), tfMonitoring)
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	tfPlan.Monitoring = monitoringValue
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &tfPlan)...)
 }
@@ -757,14 +646,231 @@ func (r *websiteResource) Delete(ctx context.Context, req resource.DeleteRequest
 		return
 	}
 
-	// Delete the Website...
-	if err := r.client.WebsiteService().
-		Delete(ctx, tfState.Id.ValueString()); err != nil {
+	_, err := r.client.Dem.DeleteWebsite(ctx, operations.DeleteWebsiteRequest{
+		EntityID: tfState.Id.ValueString(),
+	})
+
+	if err != nil {
+		// For other errors, report them
 		resp.Diagnostics.AddError("Client Error",
-			fmt.Sprintf("error deleting website %s - %s", tfState.Id, err))
+			fmt.Sprintf("error deleting website %s - %s", tfState.Id.ValueString(), err))
 	}
 }
 
 func (r *websiteResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
+func stringToOperator(operatorStr string) (components.Operator, error) {
+	if operator, exists := operatorMap[operatorStr]; exists {
+		return operator, nil
+	}
+	return "", fmt.Errorf("unsupported operator '%s', valid values: %v", operatorStr, getMapKeys(operatorMap))
+}
+
+func stringToWebsiteProtocol(protocolStr string) (components.WebsiteProtocol, error) {
+	if protocol, exists := websiteProtocolMap[protocolStr]; exists {
+		return protocol, nil
+	}
+	return "", fmt.Errorf("unsupported protocol '%s', valid values: %v", protocolStr, getMapKeys(websiteProtocolMap))
+}
+
+func stringToProbePlatform(platformStr string) (components.ProbePlatform, error) {
+	if platform, exists := probePlatformMap[platformStr]; exists {
+		return platform, nil
+	}
+	return "", fmt.Errorf("unsupported platform '%s', valid values: %v", platformStr, getMapKeys(probePlatformMap))
+}
+
+func stringToTestFromType(typeStr string) (components.Type, error) {
+	if testFromType, exists := testFromTypeMap[typeStr]; exists {
+		return testFromType, nil
+	}
+	return "", fmt.Errorf("unsupported test from type '%s', valid values: %v", typeStr, getMapKeys(testFromTypeMap))
+}
+
+// websiteReadRetry handles retries for swov1 website operations with proper error handling
+func websiteReadRetry(ctx context.Context, id string, operation func(context.Context, string) (*components.GetWebsiteResponse, error)) (*components.GetWebsiteResponse, error) {
+	var website *components.GetWebsiteResponse
+
+	expBackoff := backoff.NewExponentialBackOff()
+	expBackoff.MaxInterval = websiteExpBackoffMaxInterval
+
+	website, err := backoff.Retry(ctx, func() (*components.GetWebsiteResponse, error) {
+		result, err := operation(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+
+		if result == nil {
+			return nil, fmt.Errorf("no website entity returned for id %s", id)
+		}
+
+		if result.ID == "" {
+			// Entity exists but has no data - likely still being created/updated, retry
+			return nil, fmt.Errorf("website entity %s exists but has no data", id)
+		}
+
+		return result, nil
+	}, backoff.WithBackOff(expBackoff), backoff.WithMaxElapsedTime(websiteExpBackoffMaxElapsed))
+
+	return website, err
+}
+
+// Helper function to extract keys from a map for better error messages
+func getMapKeys[K comparable, V any](m map[K]V) []K {
+	keys := make([]K, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
+// mapProtocolsFromTerraform converts Terraform elements to swov1 protocols
+func mapProtocolsFromTerraform(tfProtocols types.List) ([]components.WebsiteProtocol, error) {
+	var protocols []components.WebsiteProtocol
+	for _, p := range tfProtocols.Elements() {
+		protocolStr := p.String()
+		// Remove quotes from the string value
+		protocolStr = protocolStr[1 : len(protocolStr)-1]
+		protocol, err := stringToWebsiteProtocol(protocolStr)
+		if err != nil {
+			return nil, err
+		}
+		protocols = append(protocols, protocol)
+	}
+	return protocols, nil
+}
+
+// mapPlatformsFromTerraform converts Terraform platform elements to swov1 platforms
+func mapPlatformsFromTerraform(tfPlatforms types.Set) ([]components.ProbePlatform, error) {
+	var probePlatforms []components.ProbePlatform
+	for _, p := range tfPlatforms.Elements() {
+		platformStr := p.String()
+		// Remove quotes from the string
+		platformStr = platformStr[1 : len(platformStr)-1]
+		platform, err := stringToProbePlatform(platformStr)
+		if err != nil {
+			return nil, err
+		}
+		probePlatforms = append(probePlatforms, platform)
+	}
+	return probePlatforms, nil
+}
+
+// map availability settings from Terraform to swov1 components
+func mapAvailabilitySettings(ctx context.Context, tfAvailability availabilityMonitoring, tfMonitoring websiteMonitoring) (*components.AvailabilityCheckSettings, error) {
+	availabilitySettings := &components.AvailabilityCheckSettings{
+		TestIntervalInSeconds: float64(tfAvailability.TestIntervalInSeconds.ValueInt64()),
+	}
+
+	// Map CheckForString
+	if !tfAvailability.CheckForString.IsNull() {
+		var tfCheckForString checkForStringType
+		if err := tfAvailability.CheckForString.As(ctx, &tfCheckForString, basetypes.ObjectAsOptions{}); err != nil {
+			return nil, fmt.Errorf("failed to parse check_for_string: %s", err)
+		}
+
+		operator, err := stringToOperator(tfCheckForString.Operator.ValueString())
+		if err != nil {
+			return nil, err
+		}
+
+		availabilitySettings.CheckForString = &components.CheckForString{
+			Operator: operator,
+			Value:    tfCheckForString.Value.ValueString(),
+		}
+	}
+
+	// Map SSL
+	if !tfAvailability.SSL.IsNull() {
+		var tfSslMonitoring sslMonitoring
+		if err := tfAvailability.SSL.As(ctx, &tfSslMonitoring, basetypes.ObjectAsOptions{}); err != nil {
+			return nil, fmt.Errorf("failed to parse SSL settings: %s", err)
+		}
+		if tfSslMonitoring.Enabled.ValueBool() {
+			availabilitySettings.Ssl = &components.Ssl{
+				Enabled:                        swov1.Bool(true),
+				DaysPriorToExpiration:          swov1.Int(int(tfSslMonitoring.DaysPriorToExpiration.ValueInt64())),
+				IgnoreIntermediateCertificates: swov1.Bool(tfSslMonitoring.IgnoreIntermediateCertificates.ValueBool()),
+			}
+		}
+	}
+
+	// Map Protocols
+	protocols, err := mapProtocolsFromTerraform(tfAvailability.Protocols)
+	if err != nil {
+		return nil, err
+	}
+	availabilitySettings.Protocols = protocols
+
+	// Map TestFrom and LocationOptions
+	testFromType, err := stringToTestFromType(tfAvailability.TestFromLocation.ValueString())
+	if err != nil {
+		return nil, err
+	}
+	availabilitySettings.TestFrom = components.TestFrom{
+		Type: testFromType,
+	}
+
+	var tfLocationOptions []probeLocation
+	if err := tfAvailability.LocationOptions.ElementsAs(ctx, &tfLocationOptions, false); err != nil {
+		return nil, fmt.Errorf("failed to parse location options: %s", err)
+	}
+
+	var locationValues []string
+	for _, loc := range tfLocationOptions {
+		locationValues = append(locationValues, loc.Value.ValueString())
+	}
+	availabilitySettings.TestFrom.Values = locationValues
+
+	// Map PlatformOptions
+	var tfPlatformOpts platformOptions
+	if err := tfAvailability.PlatformOptions.As(ctx, &tfPlatformOpts, basetypes.ObjectAsOptions{}); err != nil {
+		return nil, fmt.Errorf("failed to parse platform options: %s", err)
+	}
+
+	probePlatforms, err := mapPlatformsFromTerraform(tfPlatformOpts.Platforms)
+	if err != nil {
+		return nil, err
+	}
+
+	availabilitySettings.PlatformOptions = &components.WebsitePlatformOptions{
+		ProbePlatforms: probePlatforms,
+		TestFromAll:    swov1.Bool(tfPlatformOpts.TestFromAll.ValueBool()),
+	}
+
+	// Map CustomHeaders - handle both availability and monitoring
+	var tfCustomHeaders []customHeader
+	// monitoring.custom_headers is deprecated. Both custom_headers fields cannot be set at the same time.
+	if !tfAvailability.CustomHeaders.IsNull() {
+		if err := tfAvailability.CustomHeaders.ElementsAs(ctx, &tfCustomHeaders, false); err != nil {
+			return nil, fmt.Errorf("failed to parse availability custom headers: %s", err)
+		}
+	} else {
+		if err := tfMonitoring.CustomHeaders.ElementsAs(ctx, &tfCustomHeaders, false); err != nil {
+			return nil, fmt.Errorf("failed to parse monitoring custom headers: %s", err)
+		}
+	}
+
+	if len(tfCustomHeaders) > 0 {
+		var customHeaders []components.CustomHeaders
+		for _, h := range tfCustomHeaders {
+			customHeaders = append(customHeaders, components.CustomHeaders{
+				Name:  h.Name.ValueString(),
+				Value: h.Value.ValueString(),
+			})
+		}
+		availabilitySettings.CustomHeaders = customHeaders
+	}
+
+	return availabilitySettings, nil
+}
+
+// Helper function to map RUM settings from Terraform to swov1 components
+func mapRumSettings(ctx context.Context, tfRum rumMonitoring) *components.Rum {
+	return &components.Rum{
+		ApdexTimeInSeconds: swov1.Int(int(tfRum.ApdexTimeInSeconds.ValueInt64())),
+		Spa:                tfRum.Spa.ValueBool(),
+	}
 }
