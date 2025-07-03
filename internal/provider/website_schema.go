@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -27,7 +28,7 @@ type websiteResourceModel struct {
 }
 
 type websiteMonitoring struct {
-	Options       types.Object `tfsdk:"options"`        //monitoringOptions deprecated
+	Options       types.Object `tfsdk:"options"`        //monitoringOptions
 	Availability  types.Object `tfsdk:"availability"`   //availabilityMonitoring
 	Rum           types.Object `tfsdk:"rum"`            //rumMonitoring
 	CustomHeaders types.Set    `tfsdk:"custom_headers"` //deprecated
@@ -42,7 +43,6 @@ func WebsiteMonitoringAttributeTypes() map[string]attr.Type {
 	}
 }
 
-// Deprecated: Options are not used anymore
 type monitoringOptions struct {
 	IsAvailabilityActive types.Bool `tfsdk:"is_availability_active"`
 	IsRumActive          types.Bool `tfsdk:"is_rum_active"`
@@ -180,19 +180,15 @@ func (r *websiteResource) Schema(ctx context.Context, req resource.SchemaRequest
 				Attributes: map[string]schema.Attribute{
 					"options": schema.SingleNestedAttribute{
 						Description: "The Website monitoring options.",
-						Optional:    true,
-						DeprecationMessage: "Remove this attribute's configuration as it's no longer in use and the attribute " +
-							"will be removed in the next major version of the provider.",
+						Computed:    true,
 						Attributes: map[string]schema.Attribute{
 							"is_availability_active": schema.BoolAttribute{
-								Description:        "Is availability monitoring active?",
-								DeprecationMessage: "Remove this attribute's configuration as it's no longer in use and the attribute will be removed in the next major version of the provider.",
-								Required:           true,
+								Description: "Is availability monitoring active?",
+								Computed:    true,
 							},
 							"is_rum_active": schema.BoolAttribute{
-								Description:        "Is RUM monitoring active?",
-								DeprecationMessage: "Remove this attribute's configuration as it's no longer in use and the attribute will be removed in the next major version of the provider.",
-								Required:           true,
+								Description: "Is RUM monitoring active?",
+								Computed:    true,
 							},
 						},
 					},
@@ -328,6 +324,7 @@ func (r *websiteResource) Schema(ctx context.Context, req resource.SchemaRequest
 								PlanModifiers: []planmodifier.String{
 									stringplanmodifier.UseStateForUnknown(),
 								},
+								Optional: true,
 							},
 							"spa": schema.BoolAttribute{
 								Description: "Is SPA monitoring enabled?",

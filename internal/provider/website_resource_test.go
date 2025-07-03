@@ -56,7 +56,7 @@ func TestAccWebsiteResource(t *testing.T) {
 			// Update and Read testing
 			createTestStep(
 				testAccWebsiteResourceConfig,
-				"test-acc test two [UPDATE_TEST]",
+				"test-acc update without options [UPDATE_TEST]",
 				"https://example.com",
 				websiteMonitoringConfig,
 				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.check_for_string.operator", "CONTAINS"),
@@ -96,7 +96,7 @@ func TestAccWebsiteResourceWithoutAvailabilityOptionResources(t *testing.T) {
 			// Update and Read testing
 			createTestStep(
 				testAccWebsiteResourceConfig,
-				"test-acc test update without options [UPDATE_TEST]",
+				"test-acc update without options [UPDATE_TEST]",
 				"https://solarwinds.com",
 				websiteMonitoringConfigWithoutAvailabilityOptions,
 				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.protocols.0", "HTTP"),
@@ -133,7 +133,7 @@ func TestAccWebsiteResourceWithoutAvailabilityResource(t *testing.T) {
 			// Update and Read testing
 			createTestStep(
 				testAccWebsiteResourceConfig,
-				"test-acc test update without availability [UPDATE_TEST]",
+				"test-acc update without availability [UPDATE_TEST]",
 				"https://solarwinds.com",
 				websiteMonitoringConfigWithoutAvailability,
 				resource.TestCheckResourceAttr("swo_website.test", "monitoring.rum.apdex_time_in_seconds", "4"),
