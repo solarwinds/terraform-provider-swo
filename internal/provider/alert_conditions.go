@@ -30,10 +30,15 @@ var aggregationError = errors.New("aggregation operation not found")
 func (model alertConditionModel) toAlertConditionInputs(ctx context.Context, diags *diag.Diagnostics, rootNodeId int) []swoClient.AlertConditionNodeInput {
 
 	if !model.MetricName.IsNull() && !model.AttributeName.IsNull() {
-		//todo need to report this is wrong
+		diags.AddError("Bad input in terraform resource",
+			fmt.Sprintf("Alerting condition must be either metric or attribute. Cannot populate both metric_name and attribute_name."))
+		return []swoClient.AlertConditionNodeInput{}
 	}
+
 	if model.MetricName.IsNull() && model.AttributeName.IsNull() {
-		//todo need to report this is wrong
+		diags.AddError("Bad input in terraform resource",
+			fmt.Sprintf("Alerting condition must be either metric or attribute. Must populate either metric_name or attribute_name."))
+		return []swoClient.AlertConditionNodeInput{}
 	}
 
 	// metric condition node
@@ -88,17 +93,9 @@ func (model alertConditionModel) toAlertConditionInputs(ctx context.Context, dia
 	// for metric alerts ONLY
 	if !model.AttributeName.IsNull() {
 
-		operator := model.AttributeOperator.ValueString()
-		operatorType, err := swoClient.GetAlertConditionType(operator)
-		if err != nil {
-			diags.AddError("Bad input in terraform resource",
-				fmt.Sprintf("error parsing terraform resource: %s", err))
-			return []swoClient.AlertConditionNodeInput{}
-		}
-
 		binaryCondition := swoClient.AlertConditionNodeInput{
 			Type:       string(swoClient.AlertBinaryOperatorType),
-			Operator:   &operatorType,
+			Operator:   model.AttributeOperator.ValueStringPointer(),
 			OperandIds: []int{rootNodeId + 1, rootNodeId + 2},
 		}
 
@@ -110,13 +107,15 @@ func (model alertConditionModel) toAlertConditionInputs(ctx context.Context, dia
 			EntityFilter: entityFilter,
 		}
 
+		//todo i think we need to do something special for arrays of ints/floats?
 		dataType := GetStringDataType(model.AttributeValue.ValueString())
 		constantField := swoClient.AlertConditionNodeInput{
 			Id:       rootNodeId + 2,
 			Type:     string(swoClient.AlertConstantValueType),
 			DataType: &dataType,
 		}
-		if operatorType == "IN" {
+		operator := model.AttributeOperator.ValueString()
+		if operator == "IN" {
 			constantField.Values = []string{model.AttributeValue.ValueString()} //todo this isn't right, but good enough for testing?
 		} else {
 			constantField.Value = model.AttributeValue.ValueStringPointer()
@@ -335,11 +334,18 @@ func (model alertConditionModel) buildEntityFilter(ctx context.Context, diags *d
 }
 
 func GetStringDataType(s string) string {
-	dataType := "string"
 
 	if _, err := strconv.Atoi(s); err == nil {
-		dataType = "number"
+		return "number"
 	}
 
-	return dataType
+	if _, err := strconv.ParseFloat(s, 64); err == nil {
+		return "number"
+	}
+
+	if _, err := strconv.ParseBool(s); err == nil {
+		return "boolean"
+	}
+
+	return "string"
 }

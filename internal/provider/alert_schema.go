@@ -203,7 +203,7 @@ func (r *alertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 								"Required field when condition is for a attribute.",
 							Optional: true,
 						},
-						"attribute_operation": schema.StringAttribute{
+						"attribute_operator": schema.StringAttribute{
 							Description: "Select an operator, and then specify the values that trigger this alert." +
 								"Required field when condition is for a attribute.",
 							Optional: true,
