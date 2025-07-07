@@ -28,7 +28,7 @@ var aggregationError = errors.New("aggregation operation not found")
 //	Metric Field   10m
 //	    (id=2)    (duration, id=3)
 //
-// An example of a attribute condition tree:
+// An example of an attribute condition tree:
 //
 //	                  >=
 //	       (binary operator, id=0)
@@ -193,7 +193,7 @@ func (model alertConditionModel) toThresholdConditionInputs() (swoClient.AlertCo
 
 		regex = regexp.MustCompile("[0-9]+")
 		thresholdValue := regex.FindString(threshold)
-		//Parses threshold into numbers:(3000, 200, 10...).
+		//Parses the threshold into numbers:(3000, 200, 10...).
 
 		if thresholdValue != "" {
 			dataType := GetStringDataType(thresholdValue)
