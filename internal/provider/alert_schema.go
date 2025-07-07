@@ -38,6 +38,7 @@ type alertConditionModel struct {
 	AttributeName     types.String `tfsdk:"attribute_name"`
 	AttributeOperator types.String `tfsdk:"attribute_operator"`
 	AttributeValue    types.String `tfsdk:"attribute_value"`
+	AttributeValues   types.List   `tfsdk:"attribute_values"`
 
 	EntityIds         types.List   `tfsdk:"entity_ids"`
 	QuerySearch       types.String `tfsdk:"query_search"`
@@ -57,7 +58,8 @@ func AlertConditionAttributeTypes() map[string]attr.Type {
 
 		"attribute_names":    types.StringType,
 		"attribute_operator": types.StringType,
-		"attribute_values":   types.StringType,
+		"attribute_value":    types.StringType,
+		"attribute_values":   types.ListType{ElemType: types.StringType},
 
 		"entity_ids":          types.ListType{ElemType: types.StringType},
 		"query_search":        types.StringType,
@@ -197,6 +199,14 @@ func (r *alertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 								),
 							},
 						},
+						"not_reporting": schema.BoolAttribute{
+							Description: "True if the alert should trigger when the metric is not reporting. " +
+								"If true, threshold must be '' and aggregation_type must be 'COUNT'." +
+								"Applies only when condition is for a metric.",
+							Computed: true,
+							Optional: true,
+							Default:  booldefault.StaticBool(false),
+						},
 
 						"attribute_name": schema.StringAttribute{
 							Description: "The attribute name of the entity to be filtered on." +
@@ -220,9 +230,15 @@ func (r *alertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 							},
 						},
 						"attribute_value": schema.StringAttribute{
-							Description: "Select an operator, and then specify the values that trigger this alert." +
-								"Required field when condition is for a attribute.",
+							Description: "Specify the value that trigger this alert." +
+								"Required field when condition is for a attribute, and attribute_operator is not 'IN'.",
 							Optional: true,
+						},
+						"attribute_values": schema.ListAttribute{
+							Description: "Specify the set of values that trigger this alert." +
+								"Required field when condition is for a attribute, and attribute_operator is 'IN'.",
+							Optional:    true,
+							ElementType: types.StringType,
 						},
 
 						"entity_ids": schema.ListAttribute{
@@ -280,13 +296,6 @@ func (r *alertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 							Description: "Group alert data for selected attribute. Must match across all alert conditions.",
 							Optional:    true,
 							ElementType: types.StringType,
-						},
-						"not_reporting": schema.BoolAttribute{
-							Description: "True if the alert should trigger when the metric is not reporting. " +
-								"If true, threshold must be '' and aggregation_type must be 'COUNT'.",
-							Computed: true,
-							Optional: true,
-							Default:  booldefault.StaticBool(false),
 						},
 					},
 				},

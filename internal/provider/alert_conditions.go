@@ -15,9 +15,9 @@ var thresholdOperatorError = errors.New("threshold operation not found")
 var thresholdValueError = errors.New("threshold value not found")
 var aggregationError = errors.New("aggregation operation not found")
 
-// Builds a simple metric condition.
+// Builds a simple alert condition.
 //
-// An example of a simple metric condition tree:
+// An example of a metric condition tree:
 //
 //	                       >=
 //	            (threshold operator, id=0)
@@ -27,6 +27,14 @@ var aggregationError = errors.New("aggregation operation not found")
 //	         /    \
 //	Metric Field   10m
 //	    (id=2)    (duration, id=3)
+//
+// An example of a attribute condition tree:
+//
+//	                  >=
+//	       (binary operator, id=0)
+//	               /      \
+//	   attribute.name     42
+//	(attribute, id=1)     (constant, id=2)
 func (model alertConditionModel) toAlertConditionInputs(ctx context.Context, diags *diag.Diagnostics, rootNodeId int) []swoClient.AlertConditionNodeInput {
 
 	if !model.MetricName.IsNull() && !model.AttributeName.IsNull() {
@@ -94,6 +102,7 @@ func (model alertConditionModel) toAlertConditionInputs(ctx context.Context, dia
 	if !model.AttributeName.IsNull() {
 
 		binaryCondition := swoClient.AlertConditionNodeInput{
+			Id:         rootNodeId,
 			Type:       string(swoClient.AlertBinaryOperatorType),
 			Operator:   model.AttributeOperator.ValueStringPointer(),
 			OperandIds: []int{rootNodeId + 1, rootNodeId + 2},
@@ -107,17 +116,31 @@ func (model alertConditionModel) toAlertConditionInputs(ctx context.Context, dia
 			EntityFilter: entityFilter,
 		}
 
-		//todo i think we need to do something special for arrays of ints/floats?
-		dataType := GetStringDataType(model.AttributeValue.ValueString())
 		constantField := swoClient.AlertConditionNodeInput{
-			Id:       rootNodeId + 2,
-			Type:     string(swoClient.AlertConstantValueType),
-			DataType: &dataType,
+			Id:   rootNodeId + 2,
+			Type: string(swoClient.AlertConstantValueType),
 		}
 		operator := model.AttributeOperator.ValueString()
 		if operator == "IN" {
-			constantField.Values = []string{model.AttributeValue.ValueString()} //todo this isn't right, but good enough for testing?
+			var constantValues []string
+			d := model.AttributeValues.ElementsAs(ctx, &constantValues, false)
+			diags.Append(d...)
+			if diags.HasError() {
+				return []swoClient.AlertConditionNodeInput{}
+			}
+			// get the first value and determine its data type
+			if len(constantValues) == 0 {
+				diags.AddError("Bad input in terraform resource",
+					fmt.Sprintf("attribute_values is a required field when attribute_operator is 'IN'"))
+				return []swoClient.AlertConditionNodeInput{}
+			}
+			cv := constantValues[0]
+			dataType := GetStringDataType(cv)
+			constantField.DataType = &dataType
+			constantField.Values = constantValues
 		} else {
+			dataType := GetStringDataType(model.AttributeValue.ValueString())
+			constantField.DataType = &dataType
 			constantField.Value = model.AttributeValue.ValueStringPointer()
 		}
 
@@ -311,10 +334,10 @@ func (model alertConditionModel) buildEntityFilter(ctx context.Context, diags *d
 		var entityFilterTypes, entityFilterIds []string
 		d := model.TargetEntityTypes.ElementsAs(ctx, &entityFilterTypes, false)
 		diags.Append(d...)
-
 		if diags.HasError() {
 			return nil
 		}
+
 		d = model.EntityIds.ElementsAs(ctx, &entityFilterIds, false)
 		diags.Append(d...)
 		if diags.HasError() {
