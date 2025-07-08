@@ -1,5 +1,5 @@
-resource "swo_alert" "https_response_time" {
-  name        = "High HTTPS Response Time"
+resource "swo_alert" "alert_with_metric_condition" {
+  name        = "Alert with Metric Condition"
   description = "A high response time has been identified."
   severity    = "INFO"
   enabled     = true
@@ -35,6 +35,36 @@ resource "swo_alert" "https_response_time" {
       ],
       exclude_tags = []
     },
+  ]
+  trigger_reset_actions = true
+  runbook_link          = "https://www.runbook.com/highresponsetime"
+  trigger_delay_seconds = 300
+}
+
+resource "swo_alert" "alert_with_attribute_conditions" {
+  name        = "Alert with Attribute Conditions"
+  description = "Alert on conditions below."
+  severity    = "INFO"
+  enabled     = true
+  notification_actions = [
+    {
+      configuration_ids       = ["4661:email", "8112:webhook", "2456:newrelic"]
+      resend_interval_seconds = 600
+    },
+  ]
+  conditions = [
+    {
+      attribute_name      = "inMaintenance"
+      attribute_value     = "true"
+      attribute_operator  = "="
+      target_entity_types = ["Website"]
+    },
+    {
+      attribute_name      = "healthScore.scoreV2"
+      attribute_values    = "0"
+      attribute_operator  = "="
+      target_entity_types = ["Website"]
+    }
   ]
   trigger_reset_actions = true
   runbook_link          = "https://www.runbook.com/highresponsetime"
