@@ -26,7 +26,7 @@ func TestAccEntityAlertResource(t *testing.T) {
 					resource.TestCheckResourceAttr("swo_alert.test", "notification_actions.0.configuration_ids.0", "333:email"),
 					resource.TestCheckResourceAttr("swo_alert.test", "notification_actions.0.configuration_ids.1", "444:msteams"),
 					resource.TestCheckResourceAttr("swo_alert.test", "notification_actions.0.resend_interval_seconds", "600"),
-					// Verify number of conditions.
+					// Verify the number of conditions.
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.#", "1"),
 					// Verify the conditions.
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.target_entity_types.0", "Website"),
@@ -88,7 +88,7 @@ func TestAccMetricGroupAlertResource(t *testing.T) {
 					resource.TestCheckResourceAttr("swo_alert.test", "notification_actions.0.configuration_ids.0", "333:email"),
 					resource.TestCheckResourceAttr("swo_alert.test", "notification_actions.0.configuration_ids.1", "444:msteams"),
 					resource.TestCheckResourceAttr("swo_alert.test", "notification_actions.0.resend_interval_seconds", "600"),
-					// Verify number of conditions.
+					// Verify the number of conditions.
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.#", "1"),
 					// Verify the conditions.
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.metric_name", "synthetics.https.response.time"),
@@ -147,7 +147,7 @@ func TestAccAlertResourceNotReporting(t *testing.T) {
 					resource.TestCheckResourceAttr("swo_alert.test", "notification_actions.0.configuration_ids.0", "333:email"),
 					resource.TestCheckResourceAttr("swo_alert.test", "notification_actions.0.configuration_ids.1", "444:msteams"),
 					resource.TestCheckResourceAttr("swo_alert.test", "notification_actions.0.resend_interval_seconds", "600"),
-					// Verify number of conditions.
+					// Verify the number of conditions.
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.#", "1"),
 					// Verify the conditions.
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.target_entity_types.0", "Website"),
@@ -189,7 +189,7 @@ func TestAccAlertResourceNotReporting(t *testing.T) {
 	})
 }
 
-func TestMultiConditionAlertResource(t *testing.T) {
+func TestMultiMetricConditionAlertResource(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -208,7 +208,7 @@ func TestMultiConditionAlertResource(t *testing.T) {
 					resource.TestCheckResourceAttr("swo_alert.test", "notification_actions.0.configuration_ids.0", "333:email"),
 					resource.TestCheckResourceAttr("swo_alert.test", "notification_actions.0.configuration_ids.1", "444:msteams"),
 					resource.TestCheckResourceAttr("swo_alert.test", "notification_actions.0.resend_interval_seconds", "600"),
-					// Verify number of conditions.
+					// Verify the number of conditions.
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.#", "3"),
 					// Verify the conditions.
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.target_entity_types.0", "Website"),
@@ -252,6 +252,45 @@ func TestMultiConditionAlertResource(t *testing.T) {
 			// Update and Read testing
 			{
 				Config: testMultiConditionAlertResourceConfig("test-acc test_two"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("swo_alert.test", "name", "test-acc test_two"),
+				),
+			},
+			// Delete testing automatically occurs in TestCase
+		},
+	})
+}
+
+func TestAccMultiAttributeConditionAlertResource(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		IsUnitTest:               true,
+		Steps: []resource.TestStep{
+			// Create and Read testing
+			{
+				Config: testAccMultiAttributeAlertResourceConfig("test-acc Mock Entity Alert Name"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("swo_alert.test", "name", "test-acc Mock Entity Alert Name"),
+					resource.TestCheckResourceAttr("swo_alert.test", "description", "Mock alert description."),
+					resource.TestCheckResourceAttr("swo_alert.test", "severity", "INFO"),
+					// Verify the number of conditions.
+					resource.TestCheckResourceAttr("swo_alert.test", "conditions.#", "2"),
+					// Verify the conditions.
+					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.attribute_name", "healthScore.scoreV2"),
+					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.attribute_values.0", "0"),
+					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.attribute_values.1", "100"),
+					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.attribute_operator", "IN"),
+					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.target_entity_types.0", "Website"),
+					resource.TestCheckResourceAttr("swo_alert.test", "conditions.1.attribute_name", "inMaintenance"),
+					resource.TestCheckResourceAttr("swo_alert.test", "conditions.1.attribute_value", "true"),
+					resource.TestCheckResourceAttr("swo_alert.test", "conditions.1.attribute_operator", "="),
+					resource.TestCheckResourceAttr("swo_alert.test", "conditions.1.target_entity_types.0", "Website"),
+				),
+			},
+			// Update and Read testing
+			{
+				Config: testAccMultiAttributeAlertResourceConfig("test-acc test_two"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("swo_alert.test", "name", "test-acc test_two"),
 				),
@@ -483,6 +522,32 @@ resource "swo_alert" "test" {
  notifications = ["123", "456"]
  runbook_link = "https://www.runbooklink.com"
  trigger_delay_seconds = 300
+}
+`, name)
+}
+
+func testAccMultiAttributeAlertResourceConfig(name string) string {
+	return providerConfig() + fmt.Sprintf(`
+
+resource "swo_alert" "test" {
+ name        = %[1]q
+ description = "Mock alert description."
+ severity    = "INFO"
+ enabled     = false
+ conditions = [
+	{
+	  attribute_name = "inMaintenance"
+	  attribute_value = "true"
+	  attribute_operator = "="
+	  target_entity_types = ["Website"]
+	},
+	{
+	  attribute_name = "healthScore.scoreV2"
+	  attribute_values = ["0","100"]
+	  attribute_operator = "IN"
+	  target_entity_types = ["Website"]
+	}
+ ]
 }
 `, name)
 }
