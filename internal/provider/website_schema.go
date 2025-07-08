@@ -324,7 +324,6 @@ func (r *websiteResource) Schema(ctx context.Context, req resource.SchemaRequest
 								PlanModifiers: []planmodifier.String{
 									stringplanmodifier.UseStateForUnknown(),
 								},
-								Optional: true,
 							},
 							"spa": schema.BoolAttribute{
 								Description: "Is SPA monitoring enabled?",
