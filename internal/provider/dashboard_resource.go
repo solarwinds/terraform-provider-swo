@@ -253,7 +253,7 @@ func (r *dashboardResource) Create(ctx context.Context, req resource.CreateReque
 			IsPrivate:  tfPlan.IsPrivate.ValueBoolPointer(),
 			Widgets:    widgets,
 			Layout:     layouts,
-			Version:    nil,
+			Version:    nil, //todo need to set from resource
 		})
 
 	if err != nil {
@@ -289,6 +289,7 @@ func (r *dashboardResource) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 
+	//todo need to read the version from the client response
 	setDashboardValuesFromRead(ctx, dashboard, &tfState, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
@@ -322,7 +323,7 @@ func (r *dashboardResource) Update(ctx context.Context, req resource.UpdateReque
 			IsPrivate:  plan.IsPrivate.ValueBoolPointer(),
 			Widgets:    widgets,
 			Layout:     layouts,
-			Version:    nil,
+			Version:    nil, //todo need to get from the plan
 		})
 
 	if err != nil {

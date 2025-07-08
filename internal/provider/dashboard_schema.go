@@ -102,6 +102,11 @@ func (r *dashboardResource) Schema(ctx context.Context, req resource.SchemaReque
 					},
 				},
 			},
+			//todo need to document this somehow
+			"version": schema.StringAttribute{
+				Description: "Default value is nil. Setting the value to '2' will do the following...NEED TO FILL THIS OUT ",
+				Optional:    true,
+			},
 		},
 	}
 }

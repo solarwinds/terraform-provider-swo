@@ -39,8 +39,9 @@ func TestAccDashboardResource(t *testing.T) {
 			},
 			// ImportState testing
 			{
-				ResourceName:      "swo_dashboard.test",
-				ImportState:       true,
+				ResourceName: "swo_dashboard.test",
+				ImportState:  true,
+				//todo is there a way to test only a few field, like the version?
 				ImportStateVerify: false, // False because the server sends widget properties back in a different format.
 			},
 			// Update and Read testing
