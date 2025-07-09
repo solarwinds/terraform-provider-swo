@@ -101,6 +101,7 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 	createInput := components.Website{
 		Name: tfPlan.Name.ValueString(),
 		URL:  tfPlan.Url.ValueString(),
+		//Tags: tfPlan.Tags. //todo here
 	}
 
 	// Parse monitoring configuration
@@ -254,6 +255,7 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 	// Update basic website fields
 	tfState.Url = types.StringValue(website.URL)
 	tfState.Name = types.StringValue(website.Name)
+	//tfState.Tags //todo
 
 	// Build monitoring configuration from server response
 	monitoring, d := r.buildMonitoringFromServerResponse(ctx, website, tfState.Monitoring)
@@ -280,6 +282,7 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 	updateInput := components.Website{
 		Name: tfPlan.Name.ValueString(),
 		URL:  tfPlan.Url.ValueString(),
+		//Tags: //todo update
 	}
 
 	// Parse monitoring configuration from the plan
@@ -381,6 +384,7 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 	// Update plan with values from the server response
 	tfPlan.Name = types.StringValue(website.Name)
 	tfPlan.Url = types.StringValue(website.URL)
+	//tfPlan.Tags //todo
 
 	// Set computed monitoring options based on user's plan configuration
 	userMonitoringOptions := monitoringOptions{

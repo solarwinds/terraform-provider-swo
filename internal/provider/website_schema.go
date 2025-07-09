@@ -24,7 +24,20 @@ type websiteResourceModel struct {
 	Id         types.String `tfsdk:"id"`
 	Name       types.String `tfsdk:"name"`
 	Url        types.String `tfsdk:"url"`
+	Tags       types.Set    `tfsdk:"tags"`
 	Monitoring types.Object `tfsdk:"monitoring"` //websiteMonitoring
+}
+
+type websiteTags struct {
+	Key   types.String `tfsdk:"key"`
+	Value types.String `tfsdk:"value"`
+}
+
+func WebsiteTagsAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"key":   types.StringType,
+		"value": types.StringType,
+	}
 }
 
 type websiteMonitoring struct {
@@ -167,6 +180,20 @@ func (r *websiteResource) Schema(ctx context.Context, req resource.SchemaRequest
 			"url": schema.StringAttribute{
 				Description: "The Url to monitor.",
 				Required:    true,
+			},
+			"tags": schema.SetNestedAttribute{
+				Description: "Entity tags. Tag is a key-value pair, where there may be only single tag value for the same key.",
+				Optional:    true,
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"key": schema.StringAttribute{
+							Required: true,
+						},
+						"value": schema.StringAttribute{
+							Required: true,
+						},
+					},
+				},
 			},
 			"monitoring": schema.SingleNestedAttribute{
 				Description: "The Website monitoring settings.",
