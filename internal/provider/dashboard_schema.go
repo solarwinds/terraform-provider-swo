@@ -19,6 +19,7 @@ type dashboardResourceModel struct {
 	IsPrivate  types.Bool   `tfsdk:"is_private"`
 	CategoryId types.String `tfsdk:"category_id"`
 	Widgets    types.Set    `tfsdk:"widgets"`
+	Version    types.Int32  `tfsdk:"version"`
 }
 
 type dashboardWidgetModel struct {
@@ -102,10 +103,14 @@ func (r *dashboardResource) Schema(ctx context.Context, req resource.SchemaReque
 					},
 				},
 			},
-			//todo need to document this somehow
-			"version": schema.StringAttribute{
-				Description: "Default value is nil. Setting the value to '2' will do the following...NEED TO FILL THIS OUT ",
-				Optional:    true,
+			"version": schema.Int32Attribute{
+				Description: "Default value is nil. " +
+					"Version 2 triples the granularity of widget heights. " +
+					"If a pre-version-2 dashboard specifies height = 2 for a widget, " +
+					"the dashboard client will migrate the widgets " +
+					"to the new granularity by tripling the previous height value (height now equals 6).",
+				Optional: true,
+				Default:  nil,
 			},
 		},
 	}
