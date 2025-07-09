@@ -21,7 +21,7 @@ func TestAccDashboardResource(t *testing.T) {
 					resource.TestCheckResourceAttrSet("swo_dashboard.test", "id"),
 					resource.TestCheckResourceAttr("swo_dashboard.test", "name", "test-acc swo-terraform-provider [CREATE_TEST]"),
 					resource.TestCheckResourceAttr("swo_dashboard.test", "is_private", "true"),
-					resource.TestCheckResourceAttr("swo_dashboard.test", "version", "nil"),
+					resource.TestCheckNoResourceAttr("swo_dashboard.test", "version"),
 
 					resource.TestCheckResourceAttr("swo_dashboard.test", "widgets.#", "2"),
 
@@ -65,11 +65,11 @@ func TestAccDashboardVersionNilResource(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config:             testAccDashboardVersionNilResourceConfig("test-acc swo-terraform-provider [CREATE_TEST]"),
+				Config:             testAccDashboardVersionNilResourceConfig("test-acc version=null [CREATE_TEST]"),
 				ExpectNonEmptyPlan: true,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet("swo_dashboard.test", "id"),
-					resource.TestCheckResourceAttr("swo_dashboard.test", "name", "test-acc swo-terraform-provider [CREATE_TEST]"),
+					resource.TestCheckResourceAttr("swo_dashboard.test", "name", "test-acc version=null [CREATE_TEST]"),
 					resource.TestCheckResourceAttr("swo_dashboard.test", "is_private", "true"),
 					resource.TestCheckNoResourceAttr("swo_dashboard.test", "version"),
 
@@ -90,10 +90,10 @@ func TestAccDashboardVersionNilResource(t *testing.T) {
 			},
 			// Update and Read testing
 			{
-				Config:             testAccDashboardVersionNilResourceConfig("test-acc swo-terraform-provider [UPDATE_TEST]"),
+				Config:             testAccDashboardVersionNilResourceConfig("test-acc version=null [UPDATE_TEST]"),
 				ExpectNonEmptyPlan: true,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_dashboard.test", "name", "test-acc swo-terraform-provider [UPDATE_TEST]"),
+					resource.TestCheckResourceAttr("swo_dashboard.test", "name", "test-acc version=null [UPDATE_TEST]"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
@@ -109,11 +109,11 @@ func TestAccDashboardVersion2Resource(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config:             testAccDashboardVersion2ResourceConfig("test-acc swo-terraform-provider [CREATE_TEST]"),
+				Config:             testAccDashboardVersion2ResourceConfig("test-acc version=2 [CREATE_TEST]"),
 				ExpectNonEmptyPlan: true,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet("swo_dashboard.test", "id"),
-					resource.TestCheckResourceAttr("swo_dashboard.test", "name", "test-acc swo-terraform-provider [CREATE_TEST]"),
+					resource.TestCheckResourceAttr("swo_dashboard.test", "name", "test-acc version=2 [CREATE_TEST]"),
 					resource.TestCheckResourceAttr("swo_dashboard.test", "is_private", "true"),
 					resource.TestCheckResourceAttr("swo_dashboard.test", "version", "2"),
 
@@ -128,17 +128,16 @@ func TestAccDashboardVersion2Resource(t *testing.T) {
 			},
 			// ImportState testing
 			{
-				ResourceName: "swo_dashboard.test",
-				ImportState:  true,
-				//todo is there a way to test only a few field, like the version?
+				ResourceName:      "swo_dashboard.test",
+				ImportState:       true,
 				ImportStateVerify: false, // False because the server sends widget properties back in a different format.
 			},
 			// Update and Read testing
 			{
-				Config:             testAccDashboardVersion2ResourceConfig("test-acc swo-terraform-provider [UPDATE_TEST]"),
+				Config:             testAccDashboardVersion2ResourceConfig("test-acc version=2 [UPDATE_TEST]"),
 				ExpectNonEmptyPlan: true,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_dashboard.test", "name", "test-acc swo-terraform-provider [UPDATE_TEST]"),
+					resource.TestCheckResourceAttr("swo_dashboard.test", "name", "test-acc version=2 [UPDATE_TEST]"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
@@ -324,7 +323,7 @@ func testAccDashboardVersion2ResourceConfig(name string) string {
 	resource "swo_dashboard" "test" {
 		name = %[1]q
 		is_private = true
-		version = nil
+		version = 2
 		widgets = [
 			{
 				type = "Kpi"

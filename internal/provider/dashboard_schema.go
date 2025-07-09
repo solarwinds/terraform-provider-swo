@@ -104,11 +104,11 @@ func (r *dashboardResource) Schema(ctx context.Context, req resource.SchemaReque
 				},
 			},
 			"version": schema.Int32Attribute{
-				Description: "Default value is nil. " +
+				Description: "Default version is null. " +
 					"Version 2 triples the granularity of widget heights. " +
-					"If a pre-version-2 dashboard specifies height = 2 for a widget, " +
-					"the dashboard client will migrate the widgets " +
-					"to the new granularity by tripling the previous height value (height now equals 6).",
+					"For a pre-version-2 dashboard, the dashboard client will migrate a widget's height " +
+					"to the new granularity by tripling the previous height value." +
+					"Ex, a pre-version-2 dashboard widget of height = 2, will be migrated to a height = 6.",
 				Optional: true,
 				Default:  nil,
 			},
