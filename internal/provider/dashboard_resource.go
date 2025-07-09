@@ -102,10 +102,10 @@ func setDashboardValuesFromCreate(ctx context.Context, dashboard *swoClient.Crea
 
 	// the client may modify 'version' value
 	if dashboard.Version == nil {
-		plan.Version = types.Int32PointerValue(nil)
+		plan.Version = types.Int64PointerValue(nil)
 	} else {
-		dVersion := int32(*dashboard.Version)
-		plan.Version = types.Int32PointerValue(&dVersion)
+		dVersion := int64(*dashboard.Version)
+		plan.Version = types.Int64PointerValue(&dVersion)
 	}
 
 	var planWidgets []dashboardWidgetModel
@@ -163,10 +163,10 @@ func setDashboardValuesFromRead(ctx context.Context, dashboard *swoClient.ReadDa
 	}
 
 	if dashboard.Version == nil {
-		state.Version = types.Int32PointerValue(nil)
+		state.Version = types.Int64PointerValue(nil)
 	} else {
-		dVersion := int32(*dashboard.Version)
-		state.Version = types.Int32PointerValue(&dVersion)
+		dVersion := int64(*dashboard.Version)
+		state.Version = types.Int64PointerValue(&dVersion)
 	}
 
 	var stateWidgets []dashboardWidgetModel
@@ -254,7 +254,7 @@ func (r *dashboardResource) Create(ctx context.Context, req resource.CreateReque
 		return
 	}
 
-	tfVersion := tfPlan.Version.ValueInt32Pointer()
+	tfVersion := tfPlan.Version.ValueInt64Pointer()
 	var convertedTfVersion *int = nil
 	if tfVersion != nil {
 		temp := int(*tfVersion)
@@ -329,7 +329,7 @@ func (r *dashboardResource) Update(ctx context.Context, req resource.UpdateReque
 	// Computed value Id needs to be read from terraform state.
 	id := state.Id.ValueString()
 
-	tfVersion := plan.Version.ValueInt32Pointer()
+	tfVersion := plan.Version.ValueInt64Pointer()
 	var convertedTfVersion *int = nil
 	if tfVersion != nil {
 		temp := int(*tfVersion)
