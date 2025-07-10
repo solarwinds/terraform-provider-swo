@@ -100,6 +100,14 @@ func widgetsFromPlan(ctx context.Context, plan dashboardResourceModel, diags *di
 func setDashboardValuesFromCreate(ctx context.Context, dashboard *swoClient.CreateDashboardResult, plan *dashboardResourceModel, diags *diag.Diagnostics) {
 	plan.Id = types.StringValue(dashboard.Id)
 
+	// the client may modify 'version' value
+	if dashboard.Version == nil {
+		plan.Version = types.Int64PointerValue(nil)
+	} else {
+		dVersion := int64(*dashboard.Version)
+		plan.Version = types.Int64PointerValue(&dVersion)
+	}
+
 	var planWidgets []dashboardWidgetModel
 	d := plan.Widgets.ElementsAs(ctx, &planWidgets, false)
 	diags.Append(d...)
@@ -152,6 +160,13 @@ func setDashboardValuesFromRead(ctx context.Context, dashboard *swoClient.ReadDa
 	}
 	if dashboard.IsPrivate != nil {
 		state.IsPrivate = types.BoolValue(*dashboard.IsPrivate)
+	}
+
+	if dashboard.Version == nil {
+		state.Version = types.Int64PointerValue(nil)
+	} else {
+		dVersion := int64(*dashboard.Version)
+		state.Version = types.Int64PointerValue(&dVersion)
 	}
 
 	var stateWidgets []dashboardWidgetModel
@@ -239,6 +254,12 @@ func (r *dashboardResource) Create(ctx context.Context, req resource.CreateReque
 		return
 	}
 
+	tfVersion := tfPlan.Version.ValueInt64Pointer()
+	var convertedTfVersion *int = nil
+	if tfVersion != nil {
+		temp := int(*tfVersion)
+		convertedTfVersion = &temp
+	}
 	widgets, layouts := widgetsFromPlan(ctx, tfPlan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
@@ -253,7 +274,7 @@ func (r *dashboardResource) Create(ctx context.Context, req resource.CreateReque
 			IsPrivate:  tfPlan.IsPrivate.ValueBoolPointer(),
 			Widgets:    widgets,
 			Layout:     layouts,
-			Version:    nil,
+			Version:    convertedTfVersion,
 		})
 
 	if err != nil {
@@ -308,6 +329,12 @@ func (r *dashboardResource) Update(ctx context.Context, req resource.UpdateReque
 	// Computed value Id needs to be read from terraform state.
 	id := state.Id.ValueString()
 
+	tfVersion := plan.Version.ValueInt64Pointer()
+	var convertedTfVersion *int = nil
+	if tfVersion != nil {
+		temp := int(*tfVersion)
+		convertedTfVersion = &temp
+	}
 	widgets, layouts := widgetsFromPlan(ctx, plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
@@ -322,7 +349,7 @@ func (r *dashboardResource) Update(ctx context.Context, req resource.UpdateReque
 			IsPrivate:  plan.IsPrivate.ValueBoolPointer(),
 			Widgets:    widgets,
 			Layout:     layouts,
-			Version:    nil,
+			Version:    convertedTfVersion,
 		})
 
 	if err != nil {
