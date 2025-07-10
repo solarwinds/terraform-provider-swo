@@ -41,6 +41,7 @@ var (
 	ErrFailedParsePlatformOptions     = errors.New("failed to parse platform options")
 	ErrFailedParseAvailabilityHeaders = errors.New("failed to parse availability custom headers")
 	ErrFailedParseMonitoringHeaders   = errors.New("failed to parse monitoring custom headers")
+	ErrFailedParseOutageConfig        = errors.New("failed to parse outage configuration")
 )
 
 var (
@@ -98,15 +99,26 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 	}
 
 	// Build the website input
+	var tags []websiteTag
+	d := tfPlan.Tags.ElementsAs(ctx, &tags, false)
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	createInput := components.Website{
 		Name: tfPlan.Name.ValueString(),
 		URL:  tfPlan.Url.ValueString(),
-		//Tags: tfPlan.Tags. //todo here
+		Tags: convertArray(tags, func(e websiteTag) components.Tag {
+			return components.Tag{
+				Key:   e.Key.ValueString(),
+				Value: e.Value.ValueString(),
+			}
+		}),
 	}
 
 	// Parse monitoring configuration
 	var tfMonitoring websiteMonitoring
-	d := tfPlan.Monitoring.As(ctx, &tfMonitoring, basetypes.ObjectAsOptions{})
+	d = tfPlan.Monitoring.As(ctx, &tfMonitoring, basetypes.ObjectAsOptions{})
 	resp.Diagnostics.Append(d...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -203,7 +215,6 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 		tfMonitoring.Rum = rumObject
 	}
 
-	// Build final monitoring object
 	monitoringObject, dMonitor := types.ObjectValueFrom(ctx, WebsiteMonitoringAttributeTypes(), tfMonitoring)
 	resp.Diagnostics.Append(dMonitor...)
 	if resp.Diagnostics.HasError() {
@@ -255,10 +266,28 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 	// Update basic website fields
 	tfState.Url = types.StringValue(website.URL)
 	tfState.Name = types.StringValue(website.Name)
-	//tfState.Tags //todo
+	var tagElements []attr.Value
+	for _, x := range website.Tags {
+		objectValue, d := types.ObjectValueFrom(
+			ctx,
+			WebsiteTagAttributeTypes(),
+			websiteTag{
+				Key:   types.StringValue(x.Key),
+				Value: types.StringValue(x.Value),
+			},
+		)
+
+		resp.Diagnostics.Append(d...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		tagElements = append(tagElements, objectValue)
+	}
+	tags, d := types.SetValueFrom(ctx, types.ObjectType{AttrTypes: WebsiteTagAttributeTypes()}, tagElements)
+	tfState.Tags = tags
 
 	// Build monitoring configuration from server response
-	monitoring, d := r.buildMonitoringFromServerResponse(ctx, website, tfState.Monitoring)
+	monitoring, d := r.buildMonitoringFromServerResponse(ctx, website)
 	resp.Diagnostics.Append(d...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -279,15 +308,26 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 	}
 
 	// Build the update input
+	var tags []websiteTag
+	d := tfPlan.Tags.ElementsAs(ctx, &tags, false)
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	updateInput := components.Website{
 		Name: tfPlan.Name.ValueString(),
 		URL:  tfPlan.Url.ValueString(),
-		//Tags: //todo update
+		Tags: convertArray(tags, func(e websiteTag) components.Tag {
+			return components.Tag{
+				Key:   e.Key.ValueString(),
+				Value: e.Value.ValueString(),
+			}
+		}),
 	}
 
 	// Parse monitoring configuration from the plan
 	var tfMonitoring websiteMonitoring
-	d := tfPlan.Monitoring.As(ctx, &tfMonitoring, basetypes.ObjectAsOptions{})
+	d = tfPlan.Monitoring.As(ctx, &tfMonitoring, basetypes.ObjectAsOptions{})
 	resp.Diagnostics.Append(d...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -384,7 +424,25 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 	// Update plan with values from the server response
 	tfPlan.Name = types.StringValue(website.Name)
 	tfPlan.Url = types.StringValue(website.URL)
-	//tfPlan.Tags //todo
+	var tagElements []attr.Value
+	for _, x := range website.Tags {
+		objectValue, d := types.ObjectValueFrom(
+			ctx,
+			WebsiteTagAttributeTypes(),
+			websiteTag{
+				Key:   types.StringValue(x.Key),
+				Value: types.StringValue(x.Value),
+			},
+		)
+
+		resp.Diagnostics.Append(d...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		tagElements = append(tagElements, objectValue)
+	}
+	websiteTags, d := types.SetValueFrom(ctx, types.ObjectType{AttrTypes: WebsiteTagAttributeTypes()}, tagElements)
+	tfState.Tags = websiteTags
 
 	// Set computed monitoring options based on user's plan configuration
 	userMonitoringOptions := monitoringOptions{
@@ -421,7 +479,6 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 		tfMonitoring.Rum = rumValue
 	}
 
-	// Build final monitoring object for state
 	monitoringValue, d := types.ObjectValueFrom(ctx, WebsiteMonitoringAttributeTypes(), tfMonitoring)
 	resp.Diagnostics.Append(d...)
 	if resp.Diagnostics.HasError() {
@@ -573,6 +630,17 @@ func mapAvailabilitySettings(ctx context.Context, tfAvailability availabilityMon
 		}
 	}
 
+	if !tfAvailability.OutageConfig.IsNull() {
+		var tfOutageConfig outageConfig
+		if err := tfAvailability.OutageConfig.As(ctx, &tfOutageConfig, basetypes.ObjectAsOptions{}); err != nil {
+			return nil, ErrFailedParseOutageConfig
+		}
+		availabilitySettings.OutageConfiguration = &components.WebsiteOutageConfiguration{
+			FailingTestLocations: components.WebsiteFailingTestLocations(tfOutageConfig.FailingTestLocations.ValueString()),
+			ConsecutiveForDown:   int(tfOutageConfig.ConsecutiveForDown.ValueInt64()),
+		}
+	}
+
 	protocols, err := mapProtocolsFromTerraform(tfAvailability.Protocols)
 	if err != nil {
 		return nil, err
@@ -646,7 +714,7 @@ func mapRumSettings(tfRum rumMonitoring) *components.Rum {
 }
 
 // Builds the monitoring configuration from server response
-func (r *websiteResource) buildMonitoringFromServerResponse(ctx context.Context, website *components.GetWebsiteResponse, existingMonitoring types.Object) (types.Object, diag.Diagnostics) {
+func (r *websiteResource) buildMonitoringFromServerResponse(ctx context.Context, website *components.GetWebsiteResponse) (types.Object, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	monitoringOpts := website.MonitoringOptions
@@ -719,7 +787,6 @@ func (r *websiteResource) buildMonitoringFromServerResponse(ctx context.Context,
 		tfStateMonitoring.Rum = rumValue
 	}
 
-	// Build final monitoring object
 	monitoringValue, d := types.ObjectValueFrom(ctx, WebsiteMonitoringAttributeTypes(), tfStateMonitoring)
 	diags.Append(d...)
 	if diags.HasError() {
@@ -742,6 +809,20 @@ func (r *websiteResource) buildAvailabilityMonitoring(ctx context.Context, avail
 		LocationOptions:       types.SetUnknown(types.ObjectType{AttrTypes: ProbeLocationAttributeTypes()}),
 		PlatformOptions:       types.ObjectNull(PlatformOptionsAttributeTypes()),
 		CustomHeaders:         types.SetNull(types.ObjectType{AttrTypes: CustomHeaderAttributeTypes()}),
+		OutageConfig:          types.ObjectNull(OutageConfigAttributeTypes()),
+	}
+
+	if availability.OutageConfiguration != nil {
+		outageConfigValue := outageConfig{
+			FailingTestLocations: types.StringValue(string(availability.OutageConfiguration.FailingTestLocations)),
+			ConsecutiveForDown:   types.Int64Value(int64(availability.OutageConfiguration.ConsecutiveForDown)),
+		}
+		outageConfig, d := types.ObjectValueFrom(ctx, OutageConfigAttributeTypes(), outageConfigValue)
+		diags.Append(d...)
+		if diags.HasError() {
+			return types.ObjectNull(AvailabilityMonitoringAttributeTypes()), diags
+		}
+		tfAvailability.OutageConfig = outageConfig
 	}
 
 	// Map check for string configuration
@@ -802,7 +883,6 @@ func (r *websiteResource) buildAvailabilityMonitoring(ctx context.Context, avail
 	}
 	tfAvailability.SSL = sslValue
 
-	// Build final availability object
 	availabilityValue, d := types.ObjectValueFrom(ctx, AvailabilityMonitoringAttributeTypes(), tfAvailability)
 	diags.Append(d...)
 	if diags.HasError() {
