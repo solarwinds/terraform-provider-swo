@@ -18,7 +18,9 @@ func TestAccWebsiteResource(t *testing.T) {
 				testAccWebsiteResourceConfig,
 				"test-acc test two [CREATE_TEST]",
 				"https://example.com",
+				true,
 				websiteMonitoringConfig,
+
 				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.check_for_string.operator", "CONTAINS"),
 				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.check_for_string.value", "example-string"),
 
@@ -45,6 +47,9 @@ func TestAccWebsiteResource(t *testing.T) {
 				resource.TestCheckResourceAttr("swo_website.test", "monitoring.custom_headers.0.name", "Custom-Header-1-Deprecated"),
 				resource.TestCheckResourceAttr("swo_website.test", "monitoring.custom_headers.0.value", "Custom-Value-1-Deprecated"),
 
+				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.outage_configuration.failing_test_locations", "any"),
+				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.outage_configuration.consecutive_for_down", "5"),
+
 				resource.TestCheckNoResourceAttr("swo_website.test", "monitoring.rum"),
 			),
 			// ImportState testing
@@ -56,8 +61,9 @@ func TestAccWebsiteResource(t *testing.T) {
 			// Update and Read testing
 			createTestStep(
 				testAccWebsiteResourceConfig,
-				"test-acc update without options [UPDATE_TEST]",
+				"test-acc test two [UPDATE_TEST]",
 				"https://example.com",
+				true,
 				websiteMonitoringConfig,
 				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.check_for_string.operator", "CONTAINS"),
 				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.ssl.enabled", "true"),
@@ -80,12 +86,14 @@ func TestAccWebsiteResourceWithoutAvailabilityOptionResources(t *testing.T) {
 				testAccWebsiteResourceConfig,
 				"test-acc create without options [CREATE_TEST]",
 				"https://solarwinds.com",
+				false,
 				websiteMonitoringConfigWithoutAvailabilityOptions,
 				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.protocols.0", "HTTP"),
 				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.protocols.1", "HTTPS"),
 
 				resource.TestCheckNoResourceAttr("swo_website.test", "monitoring.availability.check_for_string"),
 				resource.TestCheckNoResourceAttr("swo_website.test", "monitoring.availability.ssl"),
+				resource.TestCheckNoResourceAttr("swo_website.test", "monitoring.availability.outage_configuration"),
 			),
 			// ImportState testing
 			{
@@ -98,6 +106,7 @@ func TestAccWebsiteResourceWithoutAvailabilityOptionResources(t *testing.T) {
 				testAccWebsiteResourceConfig,
 				"test-acc update without options [UPDATE_TEST]",
 				"https://solarwinds.com",
+				false,
 				websiteMonitoringConfigWithoutAvailabilityOptions,
 				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.protocols.0", "HTTP"),
 				resource.TestCheckResourceAttr("swo_website.test", "monitoring.availability.protocols.1", "HTTPS"),
@@ -118,6 +127,7 @@ func TestAccWebsiteResourceWithoutAvailabilityResource(t *testing.T) {
 				testAccWebsiteResourceConfig,
 				"test-acc create without availability [CREATE_TEST]",
 				"https://solarwinds.com",
+				false,
 				websiteMonitoringConfigWithoutAvailability,
 				resource.TestCheckResourceAttr("swo_website.test", "monitoring.rum.apdex_time_in_seconds", "4"),
 				resource.TestCheckResourceAttr("swo_website.test", "monitoring.rum.spa", "true"),
@@ -135,6 +145,7 @@ func TestAccWebsiteResourceWithoutAvailabilityResource(t *testing.T) {
 				testAccWebsiteResourceConfig,
 				"test-acc update without availability [UPDATE_TEST]",
 				"https://solarwinds.com",
+				false,
 				websiteMonitoringConfigWithoutAvailability,
 				resource.TestCheckResourceAttr("swo_website.test", "monitoring.rum.apdex_time_in_seconds", "4"),
 				resource.TestCheckResourceAttr("swo_website.test", "monitoring.rum.spa", "true"),
@@ -155,6 +166,7 @@ func TestAccWebsiteResourceMonitoringOptionsComputed(t *testing.T) {
 				testAccWebsiteResourceConfig,
 				"test-acc monitoring options computed [CREATE_TEST]",
 				"https://example.com",
+				false,
 				websiteMonitoringConfigBothTypes,
 				// Verify both monitoring types are active
 				resource.TestCheckResourceAttr("swo_website.test", "monitoring.options.is_availability_active", "true"),
@@ -183,6 +195,7 @@ func TestAccWebsiteResourceMonitoringOptionsComputed(t *testing.T) {
 				testAccWebsiteResourceConfig,
 				"test-acc monitoring options updated [UPDATE_TEST]",
 				"https://example.com",
+				false,
 				websiteMonitoringConfigAvailabilityOnly,
 				// Verify availability is still active, RUM is now inactive
 				resource.TestCheckResourceAttr("swo_website.test", "monitoring.options.is_availability_active", "true"),
@@ -198,6 +211,7 @@ func TestAccWebsiteResourceMonitoringOptionsComputed(t *testing.T) {
 				testAccWebsiteResourceConfig,
 				"test-acc monitoring options full cycle [UPDATE_TEST]",
 				"https://example.com",
+				false,
 				websiteMonitoringConfigBothTypes,
 				// Verify both are active again
 				resource.TestCheckResourceAttr("swo_website.test", "monitoring.options.is_availability_active", "true"),
@@ -210,34 +224,68 @@ func TestAccWebsiteResourceMonitoringOptionsComputed(t *testing.T) {
 }
 
 var (
-	websiteMonitoringConfig                           = monitoringConfig(availabilityConfig(true, true), "null", true)
+	websiteMonitoringConfig                           = monitoringConfig(availabilityConfig(true, true, true), "null", true)
 	websiteMonitoringConfigWithoutAvailability        = monitoringConfig("null", rumConfig(), false)
-	websiteMonitoringConfigWithoutAvailabilityOptions = monitoringConfig(availabilityConfig(false, false), rumConfig(), true)
+	websiteMonitoringConfigWithoutAvailabilityOptions = monitoringConfig(availabilityConfig(false, false, false), rumConfig(), true)
 	websiteMonitoringConfigBothTypes                  = monitoringConfigWithCustomHeaders(availabilityConfigForMonitoringOptionsTest(), rumConfigForMonitoringOptionsTest(), "X-Test-Header", "test-value")
 	websiteMonitoringConfigAvailabilityOnly           = monitoringConfigWithCustomHeaders(availabilityConfigSimpleForMonitoringOptionsTest(), "null", "X-Test-Header", "test-value")
 )
 
-func createTestStep(configFunc func(string, string, string) string, name, url string, monitoring string, additionalChecks ...resource.TestCheckFunc) resource.TestStep {
+func createTestStep(configFunc func(string, string, string, bool) string, name, url string, withTags bool, monitoring string, additionalChecks ...resource.TestCheckFunc) resource.TestStep {
+
+	resourceChecks := []resource.TestCheckFunc{
+		resource.TestCheckResourceAttrSet("swo_website.test", "id"),
+		resource.TestCheckResourceAttr("swo_website.test", "name", name),
+		resource.TestCheckResourceAttr("swo_website.test", "url", url),
+	}
+
+	if withTags {
+		resourceChecks = append(resourceChecks,
+			resource.TestCheckResourceAttr("swo_website.test", "tags.#", "2"),
+			//tag object order can be changed. Check for total number and nothing else.
+		)
+	} else {
+		resourceChecks = append(resourceChecks,
+			resource.TestCheckNoResourceAttr("swo_website.test", "tags"),
+		)
+	}
+
 	return resource.TestStep{
-		Config: configFunc(name, url, monitoring),
+		Config: configFunc(name, url, monitoring, withTags),
 		Check: resource.ComposeAggregateTestCheckFunc(
-			append([]resource.TestCheckFunc{
-				resource.TestCheckResourceAttrSet("swo_website.test", "id"),
-				resource.TestCheckResourceAttr("swo_website.test", "name", name),
-				resource.TestCheckResourceAttr("swo_website.test", "url", url),
-			}, additionalChecks...)...,
+			append(resourceChecks, additionalChecks...)...,
 		),
 	}
 }
 
-func testAccWebsiteResourceConfig(name string, url string, monitoring string) string {
-	return fmt.Sprintf(`
+func testAccWebsiteResourceConfig(name string, url string, monitoring string, includeTags bool) string {
+
+	resourceConfig := fmt.Sprintf(`
     %s
 	resource "swo_website" "test" {
     name = %[2]q
-    url  = %[3]q
-	monitoring = %s
-	}`, providerConfig(), name, url, monitoring)
+    url  = %[3]q `, providerConfig(), name, url)
+
+	if includeTags {
+		resourceConfig += `
+    		tags = [
+				{
+					key = "one-key"
+					value = "one-value"
+				},
+				{
+					key = "two-key"
+					value = "two-value"
+				}
+			]`
+	}
+
+	monitoringStr := fmt.Sprintf(`
+		monitoring = %s 
+	}`, monitoring)
+	resourceConfig += monitoringStr
+
+	return resourceConfig
 }
 
 func monitoringConfig(availability, rum string, useDeprecatedCustomHeaders bool) string {
@@ -294,7 +342,7 @@ func rumConfigForMonitoringOptionsTest() string {
     }`
 }
 
-func availabilityConfig(includeCheckForString bool, includeSSL bool) string {
+func availabilityConfig(includeCheckForString bool, includeSSL bool, includeOutage bool) string {
 	availabilityConfig := `{`
 
 	if includeCheckForString {
@@ -311,6 +359,14 @@ func availabilityConfig(includeCheckForString bool, includeSSL bool) string {
 				days_prior_to_expiration         = 30
 				enabled                          = true
 				ignore_intermediate_certificates = true
+			}`
+	}
+
+	if includeOutage {
+		availabilityConfig += `
+			outage_configuration = {
+				failing_test_locations = "any"
+				consecutive_for_down   = 5
 			}`
 	}
 
