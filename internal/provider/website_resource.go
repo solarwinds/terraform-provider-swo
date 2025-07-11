@@ -284,6 +284,10 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 		tagElements = append(tagElements, objectValue)
 	}
 	tags, d := types.SetValueFrom(ctx, types.ObjectType{AttrTypes: WebsiteTagAttributeTypes()}, tagElements)
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	tfState.Tags = tags
 
 	// Build monitoring configuration from server response
@@ -442,6 +446,10 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 		tagElements = append(tagElements, objectValue)
 	}
 	websiteTags, d := types.SetValueFrom(ctx, types.ObjectType{AttrTypes: WebsiteTagAttributeTypes()}, tagElements)
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	tfState.Tags = websiteTags
 
 	// Set computed monitoring options based on user's plan configuration
