@@ -16,6 +16,16 @@ A terraform resource for managing website uptime checks.
 resource "swo_website" "test_website" {
   name = "example-website"
   url  = "https://example.com"
+  tags = [
+    {
+      key   = "key-1"
+      value = "value-abc"
+    },
+    {
+      key   = "key-2"
+      value = "value-def"
+    }
+  ]
 
   monitoring = {
 
@@ -69,6 +79,11 @@ resource "swo_website" "test_website" {
           value = "Custom-Value-2"
         }
       ]
+
+      outage_configuration = {
+        failing_test_locations = "any"
+        consecutive_for_down   = 5
+      }
     }
 
     rum = {
@@ -87,6 +102,10 @@ resource "swo_website" "test_website" {
 - `monitoring` (Attributes) The Website monitoring settings. (see [below for nested schema](#nestedatt--monitoring))
 - `name` (String) Website name.
 - `url` (String) The Url to monitor.
+
+### Optional
+
+- `tags` (Attributes Set) Entity tags. Tag is a key-value pair, where there may be only single tag value for the same key. (see [below for nested schema](#nestedatt--tags))
 
 ### Read-Only
 
@@ -120,6 +139,7 @@ Optional:
 
 - `check_for_string` (Attributes) The Website availability monitoring check for string settings. (see [below for nested schema](#nestedatt--monitoring--availability--check_for_string))
 - `custom_headers` (Attributes Set) One or more custom headers to send with the uptime check. (see [below for nested schema](#nestedatt--monitoring--availability--custom_headers))
+- `outage_configuration` (Attributes) Default conditions when the entity is considered down. If omitted or set to null, organization configuration will be used for this entity. (see [below for nested schema](#nestedatt--monitoring--availability--outage_configuration))
 - `ssl` (Attributes) The Website availability monitoring SSL settings. (see [below for nested schema](#nestedatt--monitoring--availability--ssl))
 
 <a id="nestedatt--monitoring--availability--location_options"></a>
@@ -156,6 +176,15 @@ Required:
 
 - `name` (String) The Website custom header name.
 - `value` (String) The Website custom header value.
+
+
+<a id="nestedatt--monitoring--availability--outage_configuration"></a>
+### Nested Schema for `monitoring.availability.outage_configuration`
+
+Required:
+
+- `consecutive_for_down` (Number) Number of consecutive failing tests for an entity to be considered down. Minimum 1.
+- `failing_test_locations` (String) How many locations must report a failure for an entity to be considered down. Valid values are [all, any]. Valid values are [`all`|`any`].
 
 
 <a id="nestedatt--monitoring--availability--ssl"></a>
@@ -198,3 +227,13 @@ Read-Only:
 
 - `is_availability_active` (Boolean) Is availability monitoring active?
 - `is_rum_active` (Boolean) Is RUM monitoring active?
+
+
+
+<a id="nestedatt--tags"></a>
+### Nested Schema for `tags`
+
+Required:
+
+- `key` (String)
+- `value` (String)
