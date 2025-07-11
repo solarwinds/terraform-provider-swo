@@ -1,6 +1,16 @@
 resource "swo_website" "test_website" {
   name = "example-website"
   url  = "https://example.com"
+  tags = [
+    {
+      key   = "key-1"
+      value = "value-abc"
+    },
+    {
+      key   = "key-2"
+      value = "value-def"
+    }
+  ]
 
   monitoring = {
 
@@ -54,6 +64,11 @@ resource "swo_website" "test_website" {
           value = "Custom-Value-2"
         }
       ]
+
+      outage_configuration = {
+        failing_test_locations = "any"
+        consecutive_for_down   = 5
+      }
     }
 
     rum = {

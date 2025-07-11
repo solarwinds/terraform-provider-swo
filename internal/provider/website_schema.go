@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"github.com/solarwinds/swo-sdk-go/swov1/models/components"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
@@ -24,7 +25,20 @@ type websiteResourceModel struct {
 	Id         types.String `tfsdk:"id"`
 	Name       types.String `tfsdk:"name"`
 	Url        types.String `tfsdk:"url"`
+	Tags       types.Set    `tfsdk:"tags"`
 	Monitoring types.Object `tfsdk:"monitoring"` //websiteMonitoring
+}
+
+type websiteTag struct {
+	Key   types.String `tfsdk:"key"`
+	Value types.String `tfsdk:"value"`
+}
+
+func WebsiteTagAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"key":   types.StringType,
+		"value": types.StringType,
+	}
 }
 
 type websiteMonitoring struct {
@@ -64,6 +78,7 @@ type availabilityMonitoring struct {
 	LocationOptions       types.Set    `tfsdk:"location_options"`
 	PlatformOptions       types.Object `tfsdk:"platform_options"`
 	CustomHeaders         types.Set    `tfsdk:"custom_headers"`
+	OutageConfig          types.Object `tfsdk:"outage_configuration"`
 }
 
 func AvailabilityMonitoringAttributeTypes() map[string]attr.Type {
@@ -76,6 +91,7 @@ func AvailabilityMonitoringAttributeTypes() map[string]attr.Type {
 		"location_options":         types.SetType{ElemType: types.ObjectType{AttrTypes: ProbeLocationAttributeTypes()}},
 		"platform_options":         types.ObjectType{AttrTypes: PlatformOptionsAttributeTypes()},
 		"custom_headers":           types.SetType{ElemType: types.ObjectType{AttrTypes: CustomHeaderAttributeTypes()}},
+		"outage_configuration":     types.ObjectType{AttrTypes: OutageConfigAttributeTypes()},
 	}
 }
 
@@ -143,6 +159,18 @@ func CustomHeaderAttributeTypes() map[string]attr.Type {
 	}
 }
 
+type outageConfig struct {
+	FailingTestLocations types.String `tfsdk:"failing_test_locations"`
+	ConsecutiveForDown   types.Int64  `tfsdk:"consecutive_for_down"`
+}
+
+func OutageConfigAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"failing_test_locations": types.StringType,
+		"consecutive_for_down":   types.Int64Type,
+	}
+}
+
 type checkForStringType struct {
 	Operator types.String `tfsdk:"operator"`
 	Value    types.String `tfsdk:"value"`
@@ -167,6 +195,20 @@ func (r *websiteResource) Schema(ctx context.Context, req resource.SchemaRequest
 			"url": schema.StringAttribute{
 				Description: "The Url to monitor.",
 				Required:    true,
+			},
+			"tags": schema.SetNestedAttribute{
+				Description: "Entity tags. Tag is a key-value pair, where there may be only single tag value for the same key.",
+				Optional:    true,
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"key": schema.StringAttribute{
+							Required: true,
+						},
+						"value": schema.StringAttribute{
+							Required: true,
+						},
+					},
+				},
 			},
 			"monitoring": schema.SingleNestedAttribute{
 				Description: "The Website monitoring settings.",
@@ -305,6 +347,27 @@ func (r *websiteResource) Schema(ctx context.Context, req resource.SchemaRequest
 											Description: "The Website custom header value.",
 											Required:    true,
 										},
+									},
+								},
+							},
+							"outage_configuration": schema.SingleNestedAttribute{
+								Description: "Default conditions when the entity is considered down. " +
+									"If omitted or set to null, organization configuration will be used for this entity.",
+								Optional: true,
+								Attributes: map[string]schema.Attribute{
+									"failing_test_locations": schema.StringAttribute{
+										Description: "How many locations must report a failure for an entity to be considered down. Valid values are [all, any].",
+										Required:    true,
+										Validators: []validator.String{
+											validators.SingleOption(
+												components.WebsiteFailingTestLocationsAll,
+												components.WebsiteFailingTestLocationsAny,
+											),
+										},
+									},
+									"consecutive_for_down": schema.Int64Attribute{
+										Description: "Number of consecutive failing tests for an entity to be considered down. Minimum 1.",
+										Required:    true,
 									},
 								},
 							},
