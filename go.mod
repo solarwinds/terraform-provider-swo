@@ -5,7 +5,7 @@ go 1.23.7
 toolchain go1.24.1
 
 require (
-	github.com/cenkalti/backoff/v5 v5.0.2
+	github.com/cenkalti/backoff/v5 v5.0.3
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/terraform-plugin-docs v0.22.0
@@ -15,7 +15,7 @@ require (
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.37.0
 	github.com/joho/godotenv v1.5.1
 	github.com/solarwinds/swo-client-go v0.0.18
-	github.com/solarwinds/swo-sdk-go/swov1 v0.3.0
+	github.com/solarwinds/swo-sdk-go/swov1 v0.4.0
 	golang.org/x/exp v0.0.0-20250620022241-b7579e27df2b
 )
 
