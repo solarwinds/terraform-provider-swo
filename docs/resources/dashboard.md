@@ -15,6 +15,7 @@ A terraform resource for managing dashboards.
 ```terraform
 resource "swo_dashboard" "metrics_dashboard" {
   name        = "My metrics dashboard"
+  version     = 2
   is_private  = true
   category_id = APM
   widgets = [
@@ -187,6 +188,7 @@ resource "swo_dashboard" "metrics_dashboard" {
 
 - `category_id` (String) The category that this dashboard is assigned to.
 - `is_private` (Boolean) True if the dashboard is restricted to the owner
+- `version` (Number) Default version is null. Version 2 triples the granularity of widget heights. For a pre-version-2 dashboard, the dashboard client will migrate a widget's height to the new granularity by tripling the previous height value.Ex, a pre-version-2 dashboard widget of height = 2, will be migrated to a height = 6.
 - `widgets` (Attributes Set) The widgets that are placed on the dashboard. (see [below for nested schema](#nestedatt--widgets))
 
 ### Read-Only
