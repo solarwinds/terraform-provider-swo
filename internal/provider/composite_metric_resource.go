@@ -56,7 +56,7 @@ func (r *compositeMetricResource) Create(ctx context.Context, req resource.Creat
 		return
 	}
 
-	input := &components.CompositeMetric{
+	input := &components.MetricsCompositeMetric{
 		Name:        tfPlan.Name.ValueString(),
 		DisplayName: tfPlan.DisplayName.ValueStringPointer(),
 		Description: tfPlan.Description.ValueStringPointer(),
@@ -72,13 +72,13 @@ func (r *compositeMetricResource) Create(ctx context.Context, req resource.Creat
 		return
 	}
 
-	if res.CompositeMetric == nil {
+	if res.MetricsCompositeMetric == nil {
 		resp.Diagnostics.AddError("Empty Response",
 			fmt.Sprintf("create composite metric response was empty '%s'", tfPlan.Name))
 		return
 	}
 
-	tfPlan = r.updatePlanMetricInfo(tfPlan, res.CompositeMetric)
+	tfPlan = r.updatePlanMetricInfo(tfPlan, res.MetricsCompositeMetric)
 	resp.Diagnostics.Append(resp.State.Set(ctx, tfPlan)...)
 }
 
@@ -115,7 +115,7 @@ func (r *compositeMetricResource) Update(ctx context.Context, req resource.Updat
 
 	input := operations.UpdateCompositeMetricRequest{
 		Name: tfPlan.Name.ValueString(),
-		UpdateCompositeMetric: components.UpdateCompositeMetric{
+		MetricsUpdateCompositeMetricRequest: components.MetricsUpdateCompositeMetricRequest{
 			DisplayName: tfPlan.DisplayName.ValueStringPointer(),
 			Description: tfPlan.Description.ValueStringPointer(),
 			Formula:     tfPlan.Formula.ValueString(),
@@ -137,7 +137,7 @@ func (r *compositeMetricResource) Update(ctx context.Context, req resource.Updat
 		return
 	}
 
-	tfPlan = r.updatePlanMetricInfo(tfPlan, res.CompositeMetric)
+	tfPlan = r.updatePlanMetricInfo(tfPlan, res.MetricsCompositeMetric)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &tfPlan)...)
 }
 
@@ -174,7 +174,7 @@ func (r *compositeMetricResource) updatePlanFromMetric(tfPlan compositeMetricRes
 	return tfPlan
 }
 
-func (r *compositeMetricResource) updatePlanMetricInfo(tfPlan compositeMetricResourceModel, compositeMetric *components.CompositeMetric) compositeMetricResourceModel {
+func (r *compositeMetricResource) updatePlanMetricInfo(tfPlan compositeMetricResourceModel, compositeMetric *components.MetricsCompositeMetric) compositeMetricResourceModel {
 	formula := compositeMetric.Formula
 	return r.updatePlanFromMetric(tfPlan, compositeMetric.Name, compositeMetric.DisplayName, compositeMetric.Description, &formula, compositeMetric.Units)
 }

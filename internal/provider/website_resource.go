@@ -50,15 +50,15 @@ var (
 		string(components.OperatorDoesNotContain): components.OperatorDoesNotContain,
 	}
 
-	websiteProtocolMap = map[string]components.WebsiteProtocol{
-		string(components.WebsiteProtocolHTTP):  components.WebsiteProtocolHTTP,
-		string(components.WebsiteProtocolHTTPS): components.WebsiteProtocolHTTPS,
+	websiteProtocolMap = map[string]components.DemWebsiteProtocol{
+		string(components.DemWebsiteProtocolHTTP):  components.DemWebsiteProtocolHTTP,
+		string(components.DemWebsiteProtocolHTTPS): components.DemWebsiteProtocolHTTPS,
 	}
 
-	probePlatformMap = map[string]components.ProbePlatform{
-		string(components.ProbePlatformAws):         components.ProbePlatformAws,
-		string(components.ProbePlatformAzure):       components.ProbePlatformAzure,
-		string(components.ProbePlatformGoogleCloud): components.ProbePlatformGoogleCloud,
+	probePlatformMap = map[string]components.DemProbePlatform{
+		string(components.DemProbePlatformAws):         components.DemProbePlatformAws,
+		string(components.DemProbePlatformAzure):       components.DemProbePlatformAzure,
+		string(components.DemProbePlatformGoogleCloud): components.DemProbePlatformGoogleCloud,
 	}
 
 	testFromTypeMap = map[string]components.Type{
@@ -105,11 +105,11 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	createInput := components.Website{
+	createInput := components.DemWebsite{
 		Name: tfPlan.Name.ValueString(),
 		URL:  tfPlan.Url.ValueString(),
-		Tags: convertArray(tags, func(e websiteTag) components.Tag {
-			return components.Tag{
+		Tags: convertArray(tags, func(e websiteTag) components.CommonTag {
+			return components.CommonTag{
 				Key:   e.Key.ValueString(),
 				Value: e.Value.ValueString(),
 			}
@@ -162,14 +162,14 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
-	if res.EntityID == nil {
+	if res.CommonEntityID == nil {
 		resp.Diagnostics.AddError("Client Error",
 			fmt.Sprintf("error creating website '%s' - no entity ID returned", tfPlan.Name.ValueString()))
 		return
 	}
 
 	// Set the ID from the creation response
-	tfPlan.Id = types.StringValue(res.EntityID.GetID())
+	tfPlan.Id = types.StringValue(res.CommonEntityID.GetID())
 
 	// Set computed monitoring options based on what was configured
 	userMonitoringOptions := monitoringOptions{
@@ -199,10 +199,10 @@ func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest
 		}
 
 		// Set RUM snippet from server response if available
-		if err == nil && websiteResp.GetWebsiteResponse != nil &&
-			websiteResp.GetWebsiteResponse.Rum != nil &&
-			websiteResp.GetWebsiteResponse.Rum.Snippet != nil {
-			rum.Snippet = types.StringValue(*websiteResp.GetWebsiteResponse.Rum.Snippet)
+		if err == nil && websiteResp.DemGetWebsiteResponse != nil &&
+			websiteResp.DemGetWebsiteResponse.Rum != nil &&
+			websiteResp.DemGetWebsiteResponse.Rum.Snippet != nil {
+			rum.Snippet = types.StringValue(*websiteResp.DemGetWebsiteResponse.Rum.Snippet)
 		} else {
 			rum.Snippet = types.StringValue("")
 		}
@@ -239,7 +239,7 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 	}
 
 	// Read operation for retry logic
-	readOperation := func(ctx context.Context, id string) (*components.GetWebsiteResponse, error) {
+	readOperation := func(ctx context.Context, id string) (*components.DemGetWebsiteResponse, error) {
 		websiteResp, err := r.client.Dem.GetWebsite(ctx, operations.GetWebsiteRequest{
 			EntityID: id,
 		})
@@ -248,11 +248,11 @@ func (r *websiteResource) Read(ctx context.Context, req resource.ReadRequest, re
 			return nil, err
 		}
 
-		if websiteResp.GetWebsiteResponse == nil {
+		if websiteResp.DemGetWebsiteResponse == nil {
 			return nil, ErrNoWebsiteDataReturned
 		}
 
-		return websiteResp.GetWebsiteResponse, nil
+		return websiteResp.DemGetWebsiteResponse, nil
 	}
 
 	// GET website data with retry
@@ -318,11 +318,11 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	updateInput := components.Website{
+	updateInput := components.DemWebsite{
 		Name: tfPlan.Name.ValueString(),
 		URL:  tfPlan.Url.ValueString(),
-		Tags: convertArray(tags, func(e websiteTag) components.Tag {
-			return components.Tag{
+		Tags: convertArray(tags, func(e websiteTag) components.CommonTag {
+			return components.CommonTag{
 				Key:   e.Key.ValueString(),
 				Value: e.Value.ValueString(),
 			}
@@ -369,8 +369,8 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 
 	// POST the update
 	_, err := r.client.Dem.UpdateWebsite(ctx, operations.UpdateWebsiteRequest{
-		EntityID: tfState.Id.ValueString(),
-		Website:  updateInput,
+		EntityID:   tfState.Id.ValueString(),
+		DemWebsite: updateInput,
 	})
 
 	if err != nil {
@@ -380,7 +380,7 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 	}
 
 	// Read operation with eventual consistency website validation
-	readOperation := func(ctx context.Context, id string) (*components.GetWebsiteResponse, error) {
+	readOperation := func(ctx context.Context, id string) (*components.DemGetWebsiteResponse, error) {
 		websiteResp, err := r.client.Dem.GetWebsite(ctx, operations.GetWebsiteRequest{
 			EntityID: id,
 		})
@@ -389,11 +389,11 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 			return nil, err
 		}
 
-		if websiteResp.GetWebsiteResponse == nil {
+		if websiteResp.DemGetWebsiteResponse == nil {
 			return nil, ErrNoWebsiteDataReturned
 		}
 
-		website := websiteResp.GetWebsiteResponse
+		website := websiteResp.DemGetWebsiteResponse
 
 		// Validate that the basic fields have been updated
 		expectedName := tfPlan.Name.ValueString()
@@ -525,14 +525,14 @@ func stringToOperator(operatorStr string) (components.Operator, error) {
 	return "", ErrUnsupportedOperator
 }
 
-func stringToWebsiteProtocol(protocolStr string) (components.WebsiteProtocol, error) {
+func stringToWebsiteProtocol(protocolStr string) (components.DemWebsiteProtocol, error) {
 	if protocol, exists := websiteProtocolMap[protocolStr]; exists {
 		return protocol, nil
 	}
 	return "", ErrUnsupportedProtocol
 }
 
-func stringToProbePlatform(platformStr string) (components.ProbePlatform, error) {
+func stringToProbePlatform(platformStr string) (components.DemProbePlatform, error) {
 	if platform, exists := probePlatformMap[platformStr]; exists {
 		return platform, nil
 	}
@@ -546,13 +546,13 @@ func stringToTestFromType(typeStr string) (components.Type, error) {
 	return "", ErrUnsupportedTestFromType
 }
 
-func websiteReadRetry(ctx context.Context, id string, operation func(context.Context, string) (*components.GetWebsiteResponse, error)) (*components.GetWebsiteResponse, error) {
-	var website *components.GetWebsiteResponse
+func websiteReadRetry(ctx context.Context, id string, operation func(context.Context, string) (*components.DemGetWebsiteResponse, error)) (*components.DemGetWebsiteResponse, error) {
+	var website *components.DemGetWebsiteResponse
 
 	expBackoff := backoff.NewExponentialBackOff()
 	expBackoff.MaxInterval = websiteExpBackoffMaxInterval
 
-	website, err := backoff.Retry(ctx, func() (*components.GetWebsiteResponse, error) {
+	website, err := backoff.Retry(ctx, func() (*components.DemGetWebsiteResponse, error) {
 		result, err := operation(ctx, id)
 		if err != nil {
 			return nil, err
@@ -572,8 +572,8 @@ func websiteReadRetry(ctx context.Context, id string, operation func(context.Con
 	return website, err
 }
 
-func mapProtocolsFromTerraform(tfProtocols types.List) ([]components.WebsiteProtocol, error) {
-	var protocols []components.WebsiteProtocol
+func mapProtocolsFromTerraform(tfProtocols types.List) ([]components.DemWebsiteProtocol, error) {
+	var protocols []components.DemWebsiteProtocol
 	for _, p := range tfProtocols.Elements() {
 		protocolStr := p.String()
 		// Remove quotes from the string
@@ -587,8 +587,8 @@ func mapProtocolsFromTerraform(tfProtocols types.List) ([]components.WebsiteProt
 	return protocols, nil
 }
 
-func mapPlatformsFromTerraform(tfPlatforms types.Set) ([]components.ProbePlatform, error) {
-	var probePlatforms []components.ProbePlatform
+func mapPlatformsFromTerraform(tfPlatforms types.Set) ([]components.DemProbePlatform, error) {
+	var probePlatforms []components.DemProbePlatform
 	for _, p := range tfPlatforms.Elements() {
 		platformStr := p.String()
 		// Remove quotes from the string
@@ -643,8 +643,8 @@ func mapAvailabilitySettings(ctx context.Context, tfAvailability availabilityMon
 		if err := tfAvailability.OutageConfig.As(ctx, &tfOutageConfig, basetypes.ObjectAsOptions{}); err != nil {
 			return nil, ErrFailedParseOutageConfig
 		}
-		availabilitySettings.OutageConfiguration = &components.WebsiteOutageConfiguration{
-			FailingTestLocations: components.WebsiteFailingTestLocations(tfOutageConfig.FailingTestLocations.ValueString()),
+		availabilitySettings.OutageConfiguration = &components.DemWebsiteOutageConfiguration{
+			FailingTestLocations: components.DemWebsiteFailingTestLocations(tfOutageConfig.FailingTestLocations.ValueString()),
 			ConsecutiveForDown:   int(tfOutageConfig.ConsecutiveForDown.ValueInt64()),
 		}
 	}
@@ -659,7 +659,7 @@ func mapAvailabilitySettings(ctx context.Context, tfAvailability availabilityMon
 	if err != nil {
 		return nil, err
 	}
-	availabilitySettings.TestFrom = components.TestFrom{
+	availabilitySettings.TestFrom = components.DemTestFrom{
 		Type: testFromType,
 	}
 
@@ -684,7 +684,7 @@ func mapAvailabilitySettings(ctx context.Context, tfAvailability availabilityMon
 		return nil, err
 	}
 
-	availabilitySettings.PlatformOptions = &components.WebsitePlatformOptions{
+	availabilitySettings.PlatformOptions = &components.DemWebsitePlatformOptions{
 		ProbePlatforms: probePlatforms,
 		TestFromAll:    swov1.Bool(tfPlatformOpts.TestFromAll.ValueBool()),
 	}
@@ -701,9 +701,9 @@ func mapAvailabilitySettings(ctx context.Context, tfAvailability availabilityMon
 	}
 
 	if len(tfCustomHeaders) > 0 {
-		var customHeaders []components.CustomHeaders
+		var customHeaders []components.DemCustomHeaders
 		for _, h := range tfCustomHeaders {
-			customHeaders = append(customHeaders, components.CustomHeaders{
+			customHeaders = append(customHeaders, components.DemCustomHeaders{
 				Name:  h.Name.ValueString(),
 				Value: h.Value.ValueString(),
 			})
@@ -722,7 +722,7 @@ func mapRumSettings(tfRum rumMonitoring) *components.Rum {
 }
 
 // Builds the monitoring configuration from server response
-func (r *websiteResource) buildMonitoringFromServerResponse(ctx context.Context, website *components.GetWebsiteResponse) (types.Object, diag.Diagnostics) {
+func (r *websiteResource) buildMonitoringFromServerResponse(ctx context.Context, website *components.DemGetWebsiteResponse) (types.Object, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	monitoringOpts := website.MonitoringOptions
@@ -805,7 +805,7 @@ func (r *websiteResource) buildMonitoringFromServerResponse(ctx context.Context,
 }
 
 // Build availability monitoring configuration from server response
-func (r *websiteResource) buildAvailabilityMonitoring(ctx context.Context, availability *components.GetWebsiteResponseAvailabilityCheckSettings) (types.Object, diag.Diagnostics) {
+func (r *websiteResource) buildAvailabilityMonitoring(ctx context.Context, availability *components.DemGetWebsiteResponseAvailabilityCheckSettings) (types.Object, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	tfAvailability := availabilityMonitoring{
@@ -854,7 +854,7 @@ func (r *websiteResource) buildAvailabilityMonitoring(ctx context.Context, avail
 
 	// Map protocols
 	if len(availability.Protocols) > 0 {
-		tfAvailability.Protocols = sliceToStringList(availability.Protocols, func(s components.WebsiteProtocol) string {
+		tfAvailability.Protocols = sliceToStringList(availability.Protocols, func(s components.DemWebsiteProtocol) string {
 			return string(s)
 		})
 	}
@@ -901,7 +901,7 @@ func (r *websiteResource) buildAvailabilityMonitoring(ctx context.Context, avail
 }
 
 // Builds platform options from server response
-func (r *websiteResource) buildPlatformOptions(ctx context.Context, platformOpts *components.GetWebsiteResponsePlatformOptions) (types.Object, diag.Diagnostics) {
+func (r *websiteResource) buildPlatformOptions(ctx context.Context, platformOpts *components.DemGetWebsiteResponsePlatformOptions) (types.Object, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	var platforms []types.String
@@ -968,7 +968,7 @@ func (r *websiteResource) buildLocationOptions(ctx context.Context, values []str
 }
 
 // Builds SSL monitoring configuration from server response
-func (r *websiteResource) buildSSLMonitoring(ctx context.Context, ssl *components.GetWebsiteResponseSsl) (types.Object, diag.Diagnostics) {
+func (r *websiteResource) buildSSLMonitoring(ctx context.Context, ssl *components.DemGetWebsiteResponseSsl) (types.Object, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	sslTypes := SslMonitoringAttributeTypes()
 
@@ -995,7 +995,7 @@ func (r *websiteResource) buildSSLMonitoring(ctx context.Context, ssl *component
 }
 
 // Build custom headers from server response
-func (r *websiteResource) buildCustomHeaders(ctx context.Context, headers []components.CustomHeaders) (types.Set, diag.Diagnostics) {
+func (r *websiteResource) buildCustomHeaders(ctx context.Context, headers []components.DemCustomHeaders) (types.Set, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	customHeaderElementTypes := CustomHeaderAttributeTypes()
 
@@ -1031,7 +1031,7 @@ func (r *websiteResource) buildCustomHeaders(ctx context.Context, headers []comp
 }
 
 // Build RUM monitoring configuration from server response
-func (r *websiteResource) buildRumMonitoring(ctx context.Context, rum *components.GetWebsiteResponseRum) (types.Object, diag.Diagnostics) {
+func (r *websiteResource) buildRumMonitoring(ctx context.Context, rum *components.DemGetWebsiteResponseRum) (types.Object, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	rumValue := rumMonitoring{
