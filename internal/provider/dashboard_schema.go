@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -107,7 +108,7 @@ func (r *dashboardResource) Schema(ctx context.Context, req resource.SchemaReque
 				Description: "Default version is null. " +
 					"Version 2 triples the granularity of widget heights. " +
 					"For a pre-version-2 dashboard, the dashboard client will migrate a widget's height " +
-					"to the new granularity by tripling the previous height value." +
+					"to the new granularity by tripling the previous height value. " +
 					"Ex, a pre-version-2 dashboard widget of height = 2, will be migrated to a height = 6.",
 				Optional: true,
 				Default:  nil,
