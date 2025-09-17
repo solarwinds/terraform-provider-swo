@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+
 	"github.com/solarwinds/swo-sdk-go/swov1/models/components"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
@@ -360,8 +361,8 @@ func (r *websiteResource) Schema(ctx context.Context, req resource.SchemaRequest
 										Required:    true,
 										Validators: []validator.String{
 											validators.SingleOption(
-												components.WebsiteFailingTestLocationsAll,
-												components.WebsiteFailingTestLocationsAny,
+												components.DemWebsiteFailingTestLocationsAll,
+												components.DemWebsiteFailingTestLocationsAny,
 											),
 										},
 									},
