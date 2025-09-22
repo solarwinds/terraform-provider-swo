@@ -31,7 +31,7 @@ func TestAccEntityAlertResource(t *testing.T) {
 					// Verify the conditions.
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.target_entity_types.0", "Website"),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.metric_name", "synthetics.https.response.time"),
-					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.threshold", ">=3000ms"),
+					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.threshold", ">=12.3"),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.not_reporting", "false"),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.duration", "5m"),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.aggregation_type", "AVG"),
@@ -92,7 +92,7 @@ func TestAccMetricGroupAlertResource(t *testing.T) {
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.#", "1"),
 					// Verify the conditions.
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.metric_name", "synthetics.https.response.time"),
-					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.threshold", ">=3000ms"),
+					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.threshold", ">=10.5ms"),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.not_reporting", "false"),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.duration", "5m"),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.aggregation_type", "AVG"),
@@ -317,7 +317,7 @@ resource "swo_alert" "test" {
  conditions = [
 	{
 	  metric_name      = "synthetics.https.response.time"
-	  threshold        = ">=3000ms"
+	  threshold        = ">=12.3"
 	  duration         = "5m"
 	  not_reporting    = false
 	  aggregation_type = "AVG"
@@ -494,7 +494,7 @@ resource "swo_alert" "test" {
  conditions = [
 	{
 	  metric_name      = "synthetics.https.response.time"
-	  threshold        = ">=3000ms"
+	  threshold        = ">=10.5ms"
 	  duration         = "5m"
 	  not_reporting    = false
 	  aggregation_type = "AVG"

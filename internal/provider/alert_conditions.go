@@ -4,13 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"regexp"
 	"strconv"
+
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 
 	swoClient "github.com/solarwinds/swo-client-go/pkg/client"
 )
 
+var thresholdParseError = errors.New("cannot parse threshold")
 var thresholdOperatorError = errors.New("threshold operation not found")
 var thresholdValueError = errors.New("threshold value not found")
 var aggregationError = errors.New("aggregation operation not found")
@@ -159,7 +161,7 @@ func (model alertConditionModel) toAlertConditionInputs(ctx context.Context, dia
 // Creates the threshold operation and threshold data nodes by either:
 //  1. If model.not_reporting=true, operator is set to '=' and value to '0'
 //  2. Else, parse the model.threshold string into operator and value
-//     Ex:">=3000" -> operator '>=' and value '3000'
+//     Ex:">=3000.123ms" -> operator '>=' and value '3000.123'
 func (model alertConditionModel) toThresholdConditionInputs() (swoClient.AlertConditionNodeInput, swoClient.AlertConditionNodeInput, error) {
 	threshold := model.Threshold.ValueString()
 	thresholdOperatorConditions := swoClient.AlertConditionNodeInput{}
@@ -180,10 +182,19 @@ func (model alertConditionModel) toThresholdConditionInputs() (swoClient.AlertCo
 
 	} else {
 
-		regex := regexp.MustCompile(`\W+`)
-		operator := regex.FindString(threshold)
-		//Parses threshold into an operator:(>, <, = ...).
+		regex := regexp.MustCompile(`^(?P<operator>[^\w.]+)(?P<threshold>\d*(?:\.\d+)?)$`)
+		match := regex.FindStringSubmatch(threshold)
+		if match == nil {
+			return thresholdOperatorConditions, thresholdDataConditions, thresholdParseError
+		}
+		result := make(map[string]string)
+		for i, name := range regex.SubexpNames() {
+			if i != 0 && name != "" {
+				result[name] = match[i]
+			}
+		}
 
+		operator := result["operator"]
 		operatorType, err := swoClient.GetAlertConditionType(operator)
 		if err != nil {
 			return thresholdOperatorConditions, thresholdDataConditions, thresholdOperatorError
@@ -191,10 +202,7 @@ func (model alertConditionModel) toThresholdConditionInputs() (swoClient.AlertCo
 		thresholdOperatorConditions.Type = operatorType
 		thresholdOperatorConditions.Operator = &operator
 
-		regex = regexp.MustCompile("[0-9]+")
-		thresholdValue := regex.FindString(threshold)
-		//Parses the threshold into numbers:(3000, 200, 10...).
-
+		thresholdValue := result["threshold"]
 		if thresholdValue != "" {
 			dataType := GetStringDataType(thresholdValue)
 
