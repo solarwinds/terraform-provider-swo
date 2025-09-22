@@ -158,7 +158,6 @@ func TestAccAlertResourceNotReporting(t *testing.T) {
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.aggregation_type", "COUNT"),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.entity_ids.0", "e-1521946194448543744"),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.entity_ids.1", "e-1521947552186691584"),
-					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.group_by_metric_tag.0", "host.name"),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.include_tags.0.name", "probe.city"),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.include_tags.0.values.0", "Tokyo"),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.include_tags.0.values.1", "Sao Paulo"),
@@ -220,7 +219,6 @@ func TestMultiMetricConditionAlertResource(t *testing.T) {
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.entity_ids.0", "e-1521946194448543744"),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.entity_ids.1", "e-1521947552186691584"),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.query_search", "healthScore.categoryV2:bad"),
-					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.group_by_metric_tag.0", "host.name"),
 
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.1.target_entity_types.0", "Website"),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.1.metric_name", "synthetics.https.response.time"),
@@ -241,7 +239,6 @@ func TestMultiMetricConditionAlertResource(t *testing.T) {
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.2.entity_ids.0", "e-1521946194448543744"),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.2.entity_ids.1", "e-1521947552186691584"),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.2.query_search", "healthScore.categoryV2:bad"),
-					resource.TestCheckResourceAttr("swo_alert.test", "conditions.2.group_by_metric_tag.0", "host.name"),
 
 					resource.TestCheckResourceAttr("swo_alert.test", "notifications.0", "123"),
 					resource.TestCheckResourceAttr("swo_alert.test", "notifications.1", "456"),
@@ -381,9 +378,6 @@ resource "swo_alert" "test" {
 		"e-1521947552186691584"
 	  ]
       query_search = "healthScore.categoryV2:bad"
-	  group_by_metric_tag = [
-		"host.name"
-	  ]
 	},
 	{
 	  metric_name      = "sw.metrics.healthscore"
@@ -397,9 +391,6 @@ resource "swo_alert" "test" {
 		"e-1521947552186691584"
 	  ]
       query_search = "healthScore.categoryV2:bad"
-	  group_by_metric_tag = [
-		"host.name"
-	  ]
 	},
 	{
 	  metric_name      = "synthetics.status"
@@ -413,9 +404,6 @@ resource "swo_alert" "test" {
 		"e-1521947552186691584"
 	  ]
       query_search = "healthScore.categoryV2:bad"
-	  group_by_metric_tag = [
-		"host.name"
-	  ]
 	},
  ]
  notifications = ["123", "456"]
@@ -450,9 +438,6 @@ resource "swo_alert" "test" {
 	  entity_ids = [
 		"e-1521946194448543744",
 		"e-1521947552186691584"
-	  ]
-	  group_by_metric_tag = [
-		"host.name"
 	  ]
 	  include_tags = [
 		{
