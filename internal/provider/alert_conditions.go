@@ -12,6 +12,7 @@ import (
 	swoClient "github.com/solarwinds/swo-client-go/pkg/client"
 )
 
+var thresholdParseError = errors.New("cannot parse threshold")
 var thresholdOperatorError = errors.New("threshold operation not found")
 var thresholdValueError = errors.New("threshold value not found")
 var aggregationError = errors.New("aggregation operation not found")
@@ -181,10 +182,19 @@ func (model alertConditionModel) toThresholdConditionInputs() (swoClient.AlertCo
 
 	} else {
 
-		regex := regexp.MustCompile(`[^\w.]+`)
-		operator := regex.FindString(threshold)
-		//Parses threshold into an operator:(>, <, = ...).
+		regex := regexp.MustCompile(`^(?P<operator>[^\w.]+)(?P<threshold>\d*(?:\.\d+)?)$`)
+		match := regex.FindStringSubmatch(threshold)
+		if match == nil {
+			return thresholdOperatorConditions, thresholdDataConditions, thresholdParseError
+		}
+		result := make(map[string]string)
+		for i, name := range regex.SubexpNames() {
+			if i != 0 && name != "" {
+				result[name] = match[i]
+			}
+		}
 
+		operator := result["operator"]
 		operatorType, err := swoClient.GetAlertConditionType(operator)
 		if err != nil {
 			return thresholdOperatorConditions, thresholdDataConditions, thresholdOperatorError
@@ -192,10 +202,7 @@ func (model alertConditionModel) toThresholdConditionInputs() (swoClient.AlertCo
 		thresholdOperatorConditions.Type = operatorType
 		thresholdOperatorConditions.Operator = &operator
 
-		regex = regexp.MustCompile("\\d+\\.?\\d*")
-		thresholdValue := regex.FindString(threshold)
-		//Parses threshold into integer or float.
-
+		thresholdValue := result["threshold"]
 		if thresholdValue != "" {
 			dataType := GetStringDataType(thresholdValue)
 
