@@ -2,13 +2,17 @@ package provider
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
-
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	swoClient "github.com/solarwinds/swo-client-go/pkg/client"
@@ -29,6 +33,7 @@ type alertResourceModel struct {
 	RunbookLink         types.String `tfsdk:"runbook_link"`
 	TriggerDelaySeconds types.Int64  `tfsdk:"trigger_delay_seconds"`
 	NoDataResetSeconds  types.Int64  `tfsdk:"no_data_reset_seconds"`
+	ForceUpdate         types.Bool   `tfsdk:"force_update"`
 }
 
 type alertConditionModel struct {
@@ -58,7 +63,7 @@ func AlertConditionAttributeTypes() map[string]attr.Type {
 		"duration":         types.StringType,
 		"aggregation_type": types.StringType,
 
-		"attribute_names":    types.StringType,
+		"attribute_name":     types.StringType,
 		"attribute_operator": types.StringType,
 		"attribute_value":    types.StringType,
 		"attribute_values":   types.ListType{ElemType: types.StringType},
@@ -80,8 +85,8 @@ type alertTagsModel struct {
 
 func AlertTagAttributeTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"name":  types.StringType,
-		"value": types.ListType{ElemType: types.StringType},
+		"name":   types.StringType,
+		"values": types.ListType{ElemType: types.StringType},
 	}
 }
 
@@ -90,22 +95,50 @@ type alertActionInputModel struct {
 	ResendIntervalSeconds types.Int64 `tfsdk:"resend_interval_seconds"`
 }
 
-var notificationActionTypes = []string{
-	"email",
-	"amazonsns",
-	"msTeams",
-	"newRelic",
-	"opsgenie",
-	"pagerduty",
-	"pushover",
-	"serviceNow",
-	"slack",
-	"webhook",
-	"zapier",
-	"swsd",
+func alertActionAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"configuration_ids":       types.ListType{ElemType: types.StringType},
+		"resend_interval_seconds": types.Int64Type,
+	}
 }
 
-func (r *alertResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+var (
+	notificationActionTypes = []string{
+		"email",
+		"amazonsns",
+		"msTeams",
+		"newRelic",
+		"opsgenie",
+		"pagerduty",
+		"pushover",
+		"serviceNow",
+		"slack",
+		"webhook",
+		"zapier",
+		"swsd",
+	}
+	canonicalNotificationActionTypes = map[string]string{}
+)
+
+func init() {
+	for _, actionType := range notificationActionTypes {
+		canonicalNotificationActionTypes[strings.ToLower(actionType)] = actionType
+	}
+}
+
+func canonicalNotificationActionType(actionType string) (string, diag.Diagnostics) {
+	if name := canonicalNotificationActionTypes[strings.ToLower(actionType)]; name != "" {
+		return name, nil
+	}
+
+	return "", diag.Diagnostics{
+		diag.NewErrorDiagnostic("Invalid Notification Action Type",
+			fmt.Sprintf("Invalid type '%s'. Check the field description for supported values.", actionType),
+		),
+	}
+}
+
+func (r *alertResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: "A Terraform resource for managing alerts.",
 		Attributes: map[string]schema.Attribute{
@@ -320,8 +353,34 @@ func (r *alertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 				Default:  int64default.StaticInt64(0),
 			},
 			"no_data_reset_seconds": schema.Int64Attribute{
-				Optional:    true,
 				Description: "Number of seconds after which the alert is reset if no metric data is received.",
+				Optional:    true,
+				Computed:    true,
+				Default:     int64default.StaticInt64(86400),
+			},
+			"force_update": schema.BoolAttribute{
+				Computed: true,
+				Optional: false,
+				Required: false,
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.RequiresReplaceIf(
+						func(ctx context.Context,
+							req planmodifier.BoolRequest, resp *boolplanmodifier.RequiresReplaceIfFuncResponse,
+						) {
+							var stateBool types.Bool
+							diags := req.State.GetAttribute(ctx, req.Path, &stateBool)
+							resp.Diagnostics.Append(diags...)
+							if diags.HasError() {
+								return
+							}
+							if !stateBool.IsNull() && stateBool.ValueBool() {
+								resp.RequiresReplace = true
+							}
+						},
+						"Triggers replacement when the alert includes unsupported configuration",
+						"",
+					),
+				},
 			},
 		},
 	}
