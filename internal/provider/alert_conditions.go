@@ -62,6 +62,7 @@ func (model alertConditionModel) toAlertConditionInputs(ctx context.Context, dia
 			return []swoClient.AlertConditionNodeInput{}
 		}
 		thresholdOperatorCondition.Id = rootNodeId
+		thresholdOperatorCondition.OperandIds = []int{rootNodeId + 1, rootNodeId + 4}
 
 		//aggregation operator
 		aggregationCondition, err := model.toAggregationConditionInput()
@@ -70,54 +71,32 @@ func (model alertConditionModel) toAlertConditionInputs(ctx context.Context, dia
 				fmt.Sprintf("error parsing terraform resource: %s", err))
 			return []swoClient.AlertConditionNodeInput{}
 		}
+		aggregationCondition.Id = rootNodeId + 1
+		aggregationCondition.OperandIds = []int{rootNodeId + 2, rootNodeId + 3}
 
 		//metric field node
 		metricFieldCondition := model.toMetricFieldConditionInput(ctx, diags)
 		if diags.HasError() {
 			return []swoClient.AlertConditionNodeInput{}
 		}
+		metricFieldCondition.Id = rootNodeId + 2
 
-		// Check if this is a Metric Group alert (no target_entity_types)
-		isMetricGroupAlert := model.TargetEntityTypes.IsNull()
+		//constant value/duration condition
+		durationCondition := model.toDurationConditionInput()
+		durationCondition.Id = rootNodeId + 3
 
-		if isMetricGroupAlert {
-			// For Metric Group alerts: aggregation only operates on metric field
-			thresholdOperatorCondition.OperandIds = []int{rootNodeId + 1, rootNodeId + 2}
-			aggregationCondition.Id = rootNodeId + 1
-			aggregationCondition.OperandIds = []int{rootNodeId + 3}
-			metricFieldCondition.Id = rootNodeId + 3
-			thresholdDataCondition.Id = rootNodeId + 2
+		//constant value/threshold condition
+		thresholdDataCondition.Id = rootNodeId + 4
 
-			conditions := []swoClient.AlertConditionNodeInput{
-				thresholdOperatorCondition,
-				aggregationCondition,
-				thresholdDataCondition,
-				metricFieldCondition,
-			}
-			return conditions
-		} else {
-			// For Entity alerts: keep the original structure with duration
-			thresholdOperatorCondition.OperandIds = []int{rootNodeId + 1, rootNodeId + 4}
-			aggregationCondition.Id = rootNodeId + 1
-			aggregationCondition.OperandIds = []int{rootNodeId + 2, rootNodeId + 3}
-			metricFieldCondition.Id = rootNodeId + 2
-
-			//constant value/duration condition
-			durationCondition := model.toDurationConditionInput()
-			durationCondition.Id = rootNodeId + 3
-
-			//constant value/threshold condition
-			thresholdDataCondition.Id = rootNodeId + 4
-
-			conditions := []swoClient.AlertConditionNodeInput{
-				thresholdOperatorCondition,
-				aggregationCondition,
-				metricFieldCondition,
-				durationCondition,
-				thresholdDataCondition,
-			}
-			return conditions
+		conditions := []swoClient.AlertConditionNodeInput{
+			thresholdOperatorCondition,
+			aggregationCondition,
+			metricFieldCondition,
+			durationCondition,
+			thresholdDataCondition,
 		}
+
+		return conditions
 	}
 
 	// attribute condition node
@@ -221,21 +200,12 @@ func (model alertConditionModel) toThresholdConditionInputs() (swoClient.AlertCo
 			return thresholdOperatorConditions, thresholdDataConditions, thresholdOperatorError
 		}
 
-		// For Metric Group alerts, check if we need to use a different type
-		// The issue might be that GetAlertConditionType returns the wrong type for Metric Group alerts
-		isMetricGroupAlert := model.TargetEntityTypes.IsNull()
-		if isMetricGroupAlert && operatorType == string(swoClient.AlertBinaryOperatorType) {
-			// Try using the type returned by GetAlertConditionType directly,
-			// but if it's binaryOperator for metric group alerts, this might be the issue
-			// For now, let's use what GetAlertConditionType returns and see
-		}
-
 		thresholdOperatorConditions.Type = operatorType
 		thresholdOperatorConditions.Operator = &operator
 
 		thresholdValue := result["threshold"]
 		unit := result["unit"]
-		// Combine threshold value with unit if present
+
 		if unit != "" {
 			thresholdValue = thresholdValue + unit
 		}
