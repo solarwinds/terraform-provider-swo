@@ -92,7 +92,7 @@ func TestAccMetricGroupAlertResource(t *testing.T) {
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.#", "1"),
 					// Verify the conditions.
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.metric_name", "synthetics.https.response.time"),
-					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.threshold", ">=10.5"),
+					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.threshold", ">=10.5ms"),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.not_reporting", "false"),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.duration", "5m"),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.aggregation_type", "AVG"),

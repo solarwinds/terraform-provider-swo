@@ -220,7 +220,6 @@ func (model alertConditionModel) toThresholdConditionInputs() (swoClient.AlertCo
 		if err != nil {
 			return thresholdOperatorConditions, thresholdDataConditions, thresholdOperatorError
 		}
-		// Use the type returned by GetAlertConditionType instead of hardcoding AlertBinaryOperatorType
 		thresholdOperatorConditions.Type = operatorType
 		thresholdOperatorConditions.Operator = &operator
 
