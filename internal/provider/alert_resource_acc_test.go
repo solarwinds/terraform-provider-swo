@@ -479,7 +479,7 @@ resource "swo_alert" "test" {
  conditions = [
 	{
 	  metric_name      = "synthetics.https.response.time"
-	  threshold        = ">=10.5"
+	  threshold        = ">=10.5ms"
 	  duration         = "5m"
 	  not_reporting    = false
 	  aggregation_type = "AVG"

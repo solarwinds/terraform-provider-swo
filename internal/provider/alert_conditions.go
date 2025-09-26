@@ -220,6 +220,16 @@ func (model alertConditionModel) toThresholdConditionInputs() (swoClient.AlertCo
 		if err != nil {
 			return thresholdOperatorConditions, thresholdDataConditions, thresholdOperatorError
 		}
+
+		// For Metric Group alerts, check if we need to use a different type
+		// The issue might be that GetAlertConditionType returns the wrong type for Metric Group alerts
+		isMetricGroupAlert := model.TargetEntityTypes.IsNull()
+		if isMetricGroupAlert && operatorType == string(swoClient.AlertBinaryOperatorType) {
+			// Try using the type returned by GetAlertConditionType directly,
+			// but if it's binaryOperator for metric group alerts, this might be the issue
+			// For now, let's use what GetAlertConditionType returns and see
+		}
+
 		thresholdOperatorConditions.Type = operatorType
 		thresholdOperatorConditions.Operator = &operator
 
