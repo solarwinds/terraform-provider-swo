@@ -182,7 +182,7 @@ func (model alertConditionModel) toThresholdConditionInputs() (swoClient.AlertCo
 
 	} else {
 
-		regex := regexp.MustCompile(`^(?P<operator>[^\w.]+)(?P<threshold>\d*(?:\.\d+)?)$`)
+		regex := regexp.MustCompile(`^(?P<operator>[^\w.]+)(?P<threshold>\d*(?:\.\d+)?)(?P<unit>[a-zA-Z]*)$`)
 		match := regex.FindStringSubmatch(threshold)
 		if match == nil {
 			return thresholdOperatorConditions, thresholdDataConditions, thresholdParseError
@@ -199,10 +199,17 @@ func (model alertConditionModel) toThresholdConditionInputs() (swoClient.AlertCo
 		if err != nil {
 			return thresholdOperatorConditions, thresholdDataConditions, thresholdOperatorError
 		}
+
 		thresholdOperatorConditions.Type = operatorType
 		thresholdOperatorConditions.Operator = &operator
 
 		thresholdValue := result["threshold"]
+		unit := result["unit"]
+
+		if unit != "" {
+			thresholdValue = thresholdValue + unit
+		}
+
 		if thresholdValue != "" {
 			dataType := GetStringDataType(thresholdValue)
 
