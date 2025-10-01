@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -27,6 +28,7 @@ type alertResourceModel struct {
 	TriggerResetActions types.Bool   `tfsdk:"trigger_reset_actions"`
 	RunbookLink         types.String `tfsdk:"runbook_link"`
 	TriggerDelaySeconds types.Int64  `tfsdk:"trigger_delay_seconds"`
+	NoDataResetSeconds  types.Int64  `tfsdk:"no_data_reset_seconds"`
 }
 
 type alertConditionModel struct {
@@ -316,6 +318,10 @@ func (r *alertResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 				Optional: true,
 				Computed: true,
 				Default:  int64default.StaticInt64(0),
+			},
+			"no_data_reset_seconds": schema.Int64Attribute{
+				Optional:    true,
+				Description: "Number of seconds after which the alert is reset if no metric data is received.",
 			},
 		},
 	}

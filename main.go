@@ -31,12 +31,14 @@ var (
 
 func main() {
 	var debug bool
+	var identity string
 
 	flag.BoolVar(&debug, "debug", false, "Set to true to run the provider with support for debuggers.")
+	flag.StringVar(&identity, "identity", "github.com/solarwinds/swo", "Provider identity to use.")
 	flag.Parse()
 
 	opts := providerserver.ServeOpts{
-		Address: "github.com/solarwinds/swo",
+		Address: identity,
 		Debug:   debug,
 	}
 

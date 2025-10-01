@@ -14,7 +14,7 @@ require (
 	github.com/hashicorp/terraform-plugin-go v0.28.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.37.0
 	github.com/joho/godotenv v1.5.1
-	github.com/solarwinds/swo-client-go v0.0.18
+	github.com/solarwinds/swo-client-go v0.0.19
 	github.com/solarwinds/swo-sdk-go/swov1 v0.9.0
 	golang.org/x/exp v0.0.0-20250620022241-b7579e27df2b
 )
