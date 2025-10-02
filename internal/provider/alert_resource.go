@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -202,6 +203,11 @@ func (model *alertResourceModel) toAlertDefinitionInput(ctx context.Context, dia
 	}
 
 	triggerDelay := int(model.TriggerDelaySeconds.ValueInt64())
+	var noDataResetSeconds *int
+	if p := model.NoDataResetSeconds.ValueInt64Pointer(); p != nil {
+		value := int(*p)
+		noDataResetSeconds = &value
+	}
 	actions := model.toAlertActionInput(ctx, diags)
 	if diags.HasError() {
 		return swoClient.AlertDefinitionInput{}
@@ -216,6 +222,7 @@ func (model *alertResourceModel) toAlertDefinitionInput(ctx context.Context, dia
 		Condition:           conditions,
 		RunbookLink:         model.RunbookLink.ValueStringPointer(),
 		TriggerDelaySeconds: &triggerDelay,
+		NoDataResetSeconds:  noDataResetSeconds,
 	}
 }
 
