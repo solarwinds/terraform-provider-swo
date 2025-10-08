@@ -208,6 +208,15 @@ func (model *alertResourceModel) toAlertDefinitionInput(ctx context.Context, dia
 		value := int(*p)
 		noDataResetSeconds = &value
 	}
+
+	// The API forces a match between NoDataResetSeconds and TimeRangeSeconds in EntityFilter.
+	for _, condition := range conditions {
+		if condition.Type != string(swoClient.AlertAttributeType) || condition.EntityFilter == nil {
+			continue
+		}
+		condition.EntityFilter.TimeRangeSeconds = noDataResetSeconds
+	}
+
 	actions := model.toAlertActionInput(ctx, diags)
 	if diags.HasError() {
 		return swoClient.AlertDefinitionInput{}
