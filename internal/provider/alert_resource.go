@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -69,10 +70,12 @@ func (r *alertResource) Read(ctx context.Context, req resource.ReadRequest, resp
 	alertId := tfState.Id.ValueString()
 	_, err := r.client.AlertsService().Read(ctx, alertId)
 
-	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("error getting alert %s. error: %s",
-			alertId,
-			err))
+	if errors.Is(err, swoClient.ErrNotFound) {
+		resp.State.RemoveResource(ctx)
+		return
+	} else if err != nil {
+		resp.Diagnostics.AddError("Client Error",
+			fmt.Sprintf("error getting alert %s. error: %s", alertId, err))
 		return
 	}
 
@@ -98,7 +101,10 @@ func (r *alertResource) Update(ctx context.Context, req resource.UpdateRequest, 
 	// Update the alert definition...
 	_, err := r.client.AlertsService().Update(ctx, alertId, input)
 
-	if err != nil {
+	if errors.Is(err, swoClient.ErrNotFound) {
+		resp.State.RemoveResource(ctx)
+		return
+	} else if err != nil {
 		resp.Diagnostics.AddError("Client Error",
 			fmt.Sprintf("error updating alert definition %s. error: %s", alertId, err))
 		return
@@ -120,7 +126,7 @@ func (r *alertResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 	// Delete the alert definition...
 	err := r.client.AlertsService().Delete(ctx, alertDefId)
 
-	if err != nil {
+	if err != nil && !errors.Is(err, swoClient.ErrNotFound) {
 		resp.Diagnostics.AddError("Client Error",
 			fmt.Sprintf("error deleting alert definition %s. error: %s", alertDefId, err))
 	}
