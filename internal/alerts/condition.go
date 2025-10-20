@@ -1,7 +1,13 @@
 package alerts
 
 import (
+	"errors"
+
 	"github.com/solarwinds/terraform-provider-swo/internal/typex"
+)
+
+var (
+	ErrBadCondition = errors.New("error in condition")
 )
 
 type BaseCondition interface {

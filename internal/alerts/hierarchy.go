@@ -49,14 +49,15 @@ func fromFlatNodeStep[T, U any, V comparable](
 	operands, err := typex.MapWithError(currentNode.GetOperands(), func(operandID V) (U, error) {
 		if usedIDs[operandID] {
 			// Cycle detected. This operand had already been used.
-			return typex.Zero[U](), fmt.Errorf("cycle in alert condition for operand ID: %v", operandID)
+			return typex.Zero[U](),
+				fmt.Errorf("%w: cycle in alert condition for operand ID: %v", ErrBadCondition, operandID)
 		}
 		usedIDs[operandID] = true
 
 		operandNode, ok := flatNodesByID[operandID]
 		if !ok {
-			// Missing reference. There is no lo operand by this ID.
-			return typex.Zero[U](), fmt.Errorf("unknown alert condition operand ID: %v", operandID)
+			// Missing reference. There is no operand by this ID.
+			return typex.Zero[U](), fmt.Errorf("%w: unknown alert condition operand ID: %v", ErrBadCondition, operandID)
 		}
 		return fromFlatNodeStep[T, U, V](operandNode, flatNodesByID, createNode, usedIDs)
 	})

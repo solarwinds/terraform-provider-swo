@@ -128,7 +128,8 @@ func TestMapWithError(t *testing.T) {
 
 	// Test custom error
 	t.Run("custom error function", func(t *testing.T) {
-		customErr := errors.New("custom error")
+		// Suppressing linter rule because it's okay to use dynamic errors here.
+		customErr := errors.New("custom error") //nolint:err113
 		failFunc := func(s string) (int, error) {
 			if s == "fail" {
 				return 0, customErr
@@ -138,8 +139,8 @@ func TestMapWithError(t *testing.T) {
 
 		result, err := MapWithError([]string{"hello", "fail", "world"}, failFunc)
 
-		// We want to check for the exact error here, so we don't use errors.Is on purpose.
-		if err != customErr {
+		// Suppressing linter rule because we want to check for the exact error.
+		if err != customErr { //nolint:err113
 			t.Errorf("Expected custom error, got %v", err)
 		}
 		if result != nil {
@@ -326,8 +327,9 @@ func TestCastIntPtr(t *testing.T) {
 		if result == nil {
 			t.Fatal("Expected non-nil result")
 		}
-		if *result != int8(large) {
-			t.Errorf("Expected truncated value %v, got %v", int8(large), *result)
+		// Suppressing linter rule because there is expected overflow here.
+		if expected := int8(large); *result != expected { //nolint:gosec
+			t.Errorf("Expected truncated value %v, got %v", expected, *result)
 		}
 	})
 }

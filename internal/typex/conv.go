@@ -82,7 +82,8 @@ func StringSliceToList(input []string, diags *diag.Diagnostics) types.List {
 // Elements are expected to be non-nil; if a nil pointer is found, the method will add
 // an error to diagnostics and return a null list.
 func StringPtrSliceToList(input []*string, diags *diag.Diagnostics) types.List {
-	errNilValue := errors.New("unexpected nil pointer")
+	// Linting is disabled here. The error is internal; it's never returned to the caller.
+	errNilValue := errors.New("unexpected nil pointer") //nolint:err113
 	inputStr, err := MapWithError(input, func(s *string) (string, error) {
 		if s == nil {
 			return "", errNilValue

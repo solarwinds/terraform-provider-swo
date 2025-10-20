@@ -34,7 +34,7 @@ func ConditionsFromResult(result []swoClient.ReadAlertConditionResult) (Conditio
 			linkedValueNode[*swoClient.ReadAlertConditionValueResult, string], error,
 		) {
 			if node.Value == nil {
-				return nil, fmt.Errorf("no value provided for alert condition node with ID: %v", node.Id)
+				return nil, fmt.Errorf("%w: no value for alert condition node ID: %v", ErrBadCondition, node.Id)
 			}
 			var operands []string
 			for _, link := range node.Links {
@@ -126,7 +126,7 @@ func getResultMetricFilter(node *swoClient.ReadAlertConditionValueResult) (Metri
 	// We cannot do this with typex.Map because the base type is not exported by genqlient.
 	for _, filterNode := range node.MetricFilter {
 		if filterNode.Value == nil {
-			return nil, fmt.Errorf("no value provided for filter node with ID: %v", filterNode.Id)
+			return nil, fmt.Errorf("%w: no value for filter node with ID: %v", ErrBadCondition, filterNode.Id)
 		}
 		var operands []string
 		for _, link := range filterNode.Links {
