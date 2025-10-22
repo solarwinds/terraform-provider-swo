@@ -156,7 +156,7 @@ func (*alertResource) updateState(ctx context.Context,
 	if !actionsInResponse.equals(actionsInState) {
 		// Drift detected. We use the response for the new state. We decide which attribute
 		// to update based on whether notificationActions is known (was set).
-		if !notificationActions.IsNull() {
+		if !notificationActions.IsNull() || deprecatedNotifications.IsNull() {
 			notificationActions = actionsInResponse.toModelActions()
 		} else {
 			var d diag.Diagnostics

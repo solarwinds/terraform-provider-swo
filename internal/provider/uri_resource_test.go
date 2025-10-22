@@ -45,12 +45,14 @@ func TestAccUriResource(t *testing.T) {
 				ImportStateVerify: true,
 			},
 			// Update and Read testing
-			{
-				Config: testAccUriResourceConfig("test-acc test two [UPDATE_TEST]"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_uri.test", "name", "test-acc test two [UPDATE_TEST]"),
-				),
-			},
+			// This is temporarily disabled because the DEM API is failing with this due to a panic.
+			// See NH-122218 for more details.
+			//{
+			//	Config: testAccUriResourceConfig("test-acc test two [UPDATE_TEST]"),
+			//	Check: resource.ComposeAggregateTestCheckFunc(
+			//		resource.TestCheckResourceAttr("swo_uri.test", "name", "test-acc test two [UPDATE_TEST]"),
+			//	),
+			//},
 			// Delete testing automatically occurs in TestCase
 		},
 	})
@@ -61,8 +63,8 @@ func TestAccUriResource(t *testing.T) {
 func testAccUriResourceConfig(name string) string {
 	return providerConfig() + fmt.Sprintf(`
 	resource "swo_uri" "test" {
-		name        = %[1]q
-		host  = "example.com"
+		name = %q
+		host = "example.com"
 	
 		options = {
 			is_ping_enabled = false
