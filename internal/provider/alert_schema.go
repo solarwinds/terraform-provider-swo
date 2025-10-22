@@ -279,13 +279,14 @@ func (r *alertResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 						"entity_ids": schema.ListAttribute{
 							Description: "A list of Entity IDs that will be used to filter on the alert. " +
 								"The alert will only trigger if the alert matches one or more of the entity IDs. " +
-								"Must match across all alert conditions.",
+								"Must match across all alert conditions. Ignored unless target_entity_types is set too.",
 							Optional:    true,
 							ElementType: types.StringType,
 						},
 						"query_search": schema.StringAttribute{
 							Description: "Case-sensitive. System will automatically match existing and newly added " +
-								"entities matching the following query string.",
+								"entities matching the following query string. " +
+								"Ignored unless target_entity_types is set too.",
 							Optional: true,
 						},
 						"target_entity_types": schema.ListAttribute{

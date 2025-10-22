@@ -92,10 +92,11 @@ func TestAccMetricGroupAlertResource(t *testing.T) {
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.#", "1"),
 					// Verify the conditions.
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.metric_name", "synthetics.https.response.time"),
-					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.threshold", ">=10.5ms"),
+					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.threshold", ">=10.5"),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.not_reporting", "false"),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.duration", "5m"),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.aggregation_type", "AVG"),
+					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.target_entity_types.0", "Uri"),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.query_search", "healthScore.categoryV2:bad"),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.group_by_metric_tag.0", "host.name"),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.include_tags.0.name", "probe.city"),
@@ -104,18 +105,17 @@ func TestAccMetricGroupAlertResource(t *testing.T) {
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.exclude_tags.0.name", "service.name"),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.exclude_tags.0.values.0", "test-service"),
 
-					resource.TestCheckResourceAttr("swo_alert.test", "notifications.0", "123"),
-					resource.TestCheckResourceAttr("swo_alert.test", "notifications.1", "456"),
 					resource.TestCheckResourceAttr("swo_alert.test", "runbook_link", "https://www.runbooklink.com"),
 					resource.TestCheckResourceAttr("swo_alert.test", "trigger_delay_seconds", "300"),
 				),
 			},
 			// ImportState testing
-			/*{
-				ResourceName:      "swo_alert.test",
-				ImportState:       true,
-				ImportStateVerify: true,
-			}*/
+			{
+				ResourceName:            "swo_alert.test",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"notification_actions"},
+			},
 			// Update and Read testing
 			{
 				Config: testAccMetricGroupAlertResourceConfig("test-acc Mock Metric Group Alert 2"),
@@ -222,7 +222,7 @@ func TestMultiMetricConditionAlertResource(t *testing.T) {
 
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.1.target_entity_types.0", "Website"),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.1.metric_name", "synthetics.https.response.time"),
-					resource.TestCheckResourceAttr("swo_alert.test", "conditions.1.threshold", ">=3000ms"),
+					resource.TestCheckResourceAttr("swo_alert.test", "conditions.1.threshold", ">=3000"),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.1.not_reporting", "false"),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.1.duration", "5m"),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.1.aggregation_type", "AVG"),
@@ -368,7 +368,7 @@ resource "swo_alert" "test" {
  conditions = [
 	{
 	  metric_name      = "synthetics.https.response.time"
-	  threshold        = ">=3000ms"
+	  threshold        = ">=3000"
 	  duration         = "5m"
 	  not_reporting    = false
 	  aggregation_type = "AVG"
@@ -466,7 +466,7 @@ func testAccMetricGroupAlertResourceConfig(name string) string {
 	return providerConfig() + fmt.Sprintf(`
 
 resource "swo_alert" "test" {
- name        = %[1]q
+ name        = %q
  description = "Mock alert description."
  severity    = "CRITICAL"
  enabled     = true
@@ -479,11 +479,12 @@ resource "swo_alert" "test" {
  conditions = [
 	{
 	  metric_name      = "synthetics.https.response.time"
-	  threshold        = ">=10.5ms"
+	  threshold        = ">=10.5"
 	  duration         = "5m"
 	  not_reporting    = false
 	  aggregation_type = "AVG"
       query_search = "healthScore.categoryV2:bad"
+      target_entity_types = ["Uri"]
 	  group_by_metric_tag = [
 		"host.name"
 	  ]
@@ -504,7 +505,6 @@ resource "swo_alert" "test" {
 		}]
 	},
  ]
- notifications = ["123", "456"]
  runbook_link = "https://www.runbooklink.com"
  trigger_delay_seconds = 300
 }

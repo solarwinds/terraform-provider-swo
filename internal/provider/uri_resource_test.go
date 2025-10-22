@@ -61,8 +61,8 @@ func TestAccUriResource(t *testing.T) {
 func testAccUriResourceConfig(name string) string {
 	return providerConfig() + fmt.Sprintf(`
 	resource "swo_uri" "test" {
-		name        = %[1]q
-		host  = "example.com"
+		name = %q
+		host = "example.com"
 	
 		options = {
 			is_ping_enabled = false
