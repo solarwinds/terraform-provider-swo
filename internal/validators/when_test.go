@@ -72,8 +72,6 @@ func TestWhenValidator_ValidateString(t *testing.T) {
 	condErrorMsg := "condition evaluation failed"
 	innerErrorMsg := "inner validation failed"
 
-	// Cases that do not define an expectedError will be assigned an empty string for it
-	// (the zero for the string type) and will thus be required to succeed.
 	tests := []struct {
 		name                string
 		value               types.String
