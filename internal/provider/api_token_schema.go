@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 
 	"github.com/solarwinds/terraform-provider-swo/internal/validators"
@@ -41,7 +42,7 @@ func TokenAttributeTypes() map[string]attr.Type {
 	}
 }
 
-func (r *apiTokenResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *apiTokenResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: "A terraform resource for managing API tokens.",
 		Attributes: map[string]schema.Attribute{
@@ -76,7 +77,7 @@ func (r *apiTokenResource) Schema(ctx context.Context, req resource.SchemaReques
 				Computed:    true,
 				Default:     stringdefault.StaticString(string(swoClient.TokenAccessLevelFull)),
 				Validators: []validator.String{
-					validators.SingleOption(
+					validators.OneOf(
 						swoClient.TokenAccessLevelFull,
 						swoClient.TokenAccessLevelRead,
 						swoClient.TokenAccessLevelRecord,

@@ -184,7 +184,7 @@ func CheckForStringTypeAttributeTypes() map[string]attr.Type {
 	}
 }
 
-func (r *websiteResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *websiteResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: "A terraform resource for managing website uptime checks.",
 		Attributes: map[string]schema.Attribute{
@@ -280,7 +280,7 @@ func (r *websiteResource) Schema(ctx context.Context, req resource.SchemaRequest
 								Description: "The Website availability monitoring test from location.",
 								Required:    true,
 								Validators: []validator.String{
-									validators.SingleOption(
+									validators.OneOf(
 										swoClient.ProbeLocationTypeRegion,
 										swoClient.ProbeLocationTypeCountry,
 										swoClient.ProbeLocationTypeCity),
@@ -302,7 +302,7 @@ func (r *websiteResource) Schema(ctx context.Context, req resource.SchemaRequest
 											Description: "The Website availability monitoring location option type.",
 											Required:    true,
 											Validators: []validator.String{
-												validators.SingleOption(
+												validators.OneOf(
 													swoClient.ProbeLocationTypeRegion,
 													swoClient.ProbeLocationTypeCountry,
 													swoClient.ProbeLocationTypeCity),
@@ -360,7 +360,7 @@ func (r *websiteResource) Schema(ctx context.Context, req resource.SchemaRequest
 										Description: "How many locations must report a failure for an entity to be considered down. Valid values are [all, any].",
 										Required:    true,
 										Validators: []validator.String{
-											validators.SingleOption(
+											validators.OneOf(
 												components.DemWebsiteFailingTestLocationsAll,
 												components.DemWebsiteFailingTestLocationsAny,
 											),

@@ -56,7 +56,7 @@ func ParseNotificationId(id types.String) (idValue string, notificationType stri
 	return idValue, notificationType, err
 }
 
-func (r *notificationResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *notificationResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: "A terraform resource for managing notifications.",
 		Attributes: map[string]schema.Attribute{
@@ -176,14 +176,14 @@ func (r *notificationResource) Schema(ctx context.Context, req resource.SchemaRe
 								Description: "HTTP Method for calling the webhook.",
 								Required:    true,
 								Validators: []validator.String{
-									validators.SingleOption("POST", "GET"),
+									validators.OneOf("POST", "GET"),
 								},
 							},
 							"auth_type": schema.StringAttribute{
 								Description: "Token or username/password auth.",
 								Optional:    true,
 								Validators: []validator.String{
-									validators.SingleOption("basic", "token"),
+									validators.OneOf("basic", "token"),
 								},
 							},
 							"auth_username": schema.StringAttribute{

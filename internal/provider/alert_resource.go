@@ -425,17 +425,17 @@ func metricConditionToModel(condition alerts.Condition, diags *diag.Diagnostics)
 	notReporting := types.BoolValue(false)
 	var expectedThresholdDataType *string
 	if op, v := condition.GetOperator(), threshold.GetValue(); op != nil && v != nil {
-		// In case we find a zero (without units), we set not_reporting to true. The forward
-		// translation is not entirely reversible, because the user could have set "=0" as the
-		// threshold and false for not_reporting, and we'd end up exactly in the same place.
-		// We assume this case to be set by a true not_reporting instead. Ideally, this should
-		// be handled differently, so that these semantically equivalent specs produce no plan
-		// differences. But this adds more complexity and I have to draw the line somewhere.
-		valueWithUnits := *op + *v
-		if valueWithUnits == "0" {
+		// If we find a count compared for equality to zero, then we set not_reporting to true
+		// and leave the threshold as null. This mimics what we do on the forward translation,
+		// where validation prevents users from using a count aggregation with `=0` threshold.
+		// That's what makes the transformation reversible.
+		thresholdValueStr := *op + *v
+		isCountAggregation := typex.LeftPtrEqual(aggregation.GetOperator(), string(swoClient.AlertOperatorCount))
+		if isCountAggregation && thresholdValueStr == "=0" {
 			notReporting = types.BoolValue(true)
+		} else {
+			thresholdValue = types.StringValue(thresholdValueStr)
 		}
-		thresholdValue = types.StringValue(*op + *v)
 		dataType := GetStringDataType(*v)
 		expectedThresholdDataType = &dataType
 	}

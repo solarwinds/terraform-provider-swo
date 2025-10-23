@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
@@ -89,7 +90,7 @@ func UriPlatformOptionsAttributeTypes() map[string]attr.Type {
 	}
 }
 
-func (r *uriResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *uriResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: "A terraform resource for managing Uri uptime checks.",
 		Attributes: map[string]schema.Attribute{
@@ -142,7 +143,7 @@ func (r *uriResource) Schema(ctx context.Context, req resource.SchemaRequest, re
 						Description: "The location type to test from.",
 						Required:    true,
 						Validators: []validator.String{
-							validators.SingleOption(
+							validators.OneOf(
 								swoClient.ProbeLocationTypeRegion,
 								swoClient.ProbeLocationTypeCountry,
 								swoClient.ProbeLocationTypeCity),
@@ -157,7 +158,7 @@ func (r *uriResource) Schema(ctx context.Context, req resource.SchemaRequest, re
 									Description: "The Website availability monitoring location option type.",
 									Required:    true,
 									Validators: []validator.String{
-										validators.SingleOption(
+										validators.OneOf(
 											swoClient.ProbeLocationTypeRegion,
 											swoClient.ProbeLocationTypeCountry,
 											swoClient.ProbeLocationTypeCity),
