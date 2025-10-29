@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 
 	swoClient "github.com/solarwinds/swo-client-go/pkg/client"
@@ -35,7 +36,7 @@ func ExpressionAttributeTypes() map[string]attr.Type {
 	}
 }
 
-func (r *logFilterResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *logFilterResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: "A terraform resource for managing log exclusion filters.",
 		Attributes: map[string]schema.Attribute{
@@ -61,7 +62,7 @@ func (r *logFilterResource) Schema(ctx context.Context, req resource.SchemaReque
 							Description: "The kind of the log exclusion filter.",
 							Required:    true,
 							Validators: []validator.String{
-								validators.SingleOption(
+								validators.OneOf(
 									swoClient.ExclusionFilterExpressionKindString,
 									swoClient.ExclusionFilterExpressionKindRegex),
 							},

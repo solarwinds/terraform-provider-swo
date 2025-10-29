@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 	"net/url"
 	"strings"
+
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func convertArray[A, B any](source []A, accumulator func(A) B) []B {
@@ -44,22 +45,6 @@ func stripURLToDomain(rawURL string) (string, error) {
 		return "", err
 	}
 	return fmt.Sprintf("%s://%s", parsedURL.Scheme, parsedURL.Host), nil
-}
-
-func findCaseInsensitiveMatch(slice []string, target string) string {
-	for _, str := range slice {
-		if strings.EqualFold(str, target) {
-			return str
-		}
-	}
-	return ""
-}
-
-func lowerCaseSlice(input []string) []string {
-	for i, v := range input {
-		input[i] = strings.ToLower(v)
-	}
-	return input
 }
 
 func sliceToStringList[T any](

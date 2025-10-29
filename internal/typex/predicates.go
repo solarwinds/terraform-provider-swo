@@ -51,6 +51,16 @@ func PtrEqual[T comparable](a, b *T) bool {
 	return *a == *b
 }
 
+// LeftPtrEqual returns true when, given a pointer to a value of a comparable
+// type T and a bare value of the same type, the former points to a value equal
+// to the latter. In particular, it returns false when the pointer is nil.
+func LeftPtrEqual[T comparable](a *T, b T) bool {
+	if a == nil {
+		return false
+	}
+	return *a == b
+}
+
 // PtrCompare returns true when pointers to values of any two types are either
 // both nil, or both non-nil and the given comparison applied to the dereferenced
 // values returns true. It works just like PtrEqual but with a generic comparison

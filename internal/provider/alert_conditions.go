@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"regexp"
 	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -13,7 +12,7 @@ import (
 )
 
 var thresholdParseError = errors.New("cannot parse threshold")
-var thresholdOperatorError = errors.New("threshold operation not found")
+var thresholdOperatorError = errors.New("threshold operator is not valid")
 var thresholdValueError = errors.New("threshold value not found")
 var aggregationError = errors.New("aggregation operation not found")
 
@@ -161,7 +160,7 @@ func (model alertConditionModel) toAlertConditionInputs(ctx context.Context, dia
 // Creates the threshold operation and threshold data nodes by either:
 //  1. If model.not_reporting=true, operator is set to '=' and value to '0'
 //  2. Else, parse the model.threshold string into operator and value
-//     Ex:">=3000.123ms" -> operator '>=' and value '3000.123'
+//     Ex:">=3000.123" -> operator '>=' and value '3000.123'
 func (model alertConditionModel) toThresholdConditionInputs() (swoClient.AlertConditionNodeInput, swoClient.AlertConditionNodeInput, error) {
 	threshold := model.Threshold.ValueString()
 	thresholdOperatorConditions := swoClient.AlertConditionNodeInput{}
@@ -181,35 +180,26 @@ func (model alertConditionModel) toThresholdConditionInputs() (swoClient.AlertCo
 		thresholdDataConditions.Value = &dataValue
 
 	} else {
-
-		regex := regexp.MustCompile(`^(?P<operator>[^\w.]+)(?P<threshold>\d*(?:\.\d+)?)(?P<unit>[a-zA-Z]*)$`)
-		match := regex.FindStringSubmatch(threshold)
+		match := alertThresholdRegex.FindStringSubmatch(threshold)
 		if match == nil {
 			return thresholdOperatorConditions, thresholdDataConditions, thresholdParseError
 		}
 		result := make(map[string]string)
-		for i, name := range regex.SubexpNames() {
+		for i, name := range alertThresholdRegex.SubexpNames() {
 			if i != 0 && name != "" {
 				result[name] = match[i]
 			}
 		}
 
 		operator := result["operator"]
-		operatorType, err := swoClient.GetAlertConditionType(operator)
-		if err != nil {
+		if !isValidThresholdOperator(operator) {
 			return thresholdOperatorConditions, thresholdDataConditions, thresholdOperatorError
 		}
 
-		thresholdOperatorConditions.Type = operatorType
+		thresholdOperatorConditions.Type = string(swoClient.AlertBinaryOperatorType)
 		thresholdOperatorConditions.Operator = &operator
 
 		thresholdValue := result["threshold"]
-		unit := result["unit"]
-
-		if unit != "" {
-			thresholdValue = thresholdValue + unit
-		}
-
 		if thresholdValue != "" {
 			dataType := GetStringDataType(thresholdValue)
 
@@ -222,6 +212,24 @@ func (model alertConditionModel) toThresholdConditionInputs() (swoClient.AlertCo
 	}
 
 	return thresholdOperatorConditions, thresholdDataConditions, nil
+}
+
+func isValidThresholdOperator(operator string) bool {
+	validOperators := []swoClient.AlertBinaryOperator{
+		swoClient.AlertOperatorEq,
+		swoClient.AlertOperatorNe,
+		swoClient.AlertOperatorLt,
+		swoClient.AlertOperatorGt,
+		swoClient.AlertOperatorLe,
+		swoClient.AlertOperatorGe,
+	}
+
+	for _, op := range validOperators {
+		if operator == string(op) {
+			return true
+		}
+	}
+	return false
 }
 
 func (model alertConditionModel) toDurationConditionInput() swoClient.AlertConditionNodeInput {

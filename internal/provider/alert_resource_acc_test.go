@@ -152,7 +152,6 @@ func TestAccAlertResourceNotReporting(t *testing.T) {
 					// Verify the conditions.
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.target_entity_types.0", "Website"),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.metric_name", "synthetics.https.response.time"),
-					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.threshold", ""),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.not_reporting", "true"),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.duration", "10m"),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.aggregation_type", "COUNT"),
@@ -232,7 +231,6 @@ func TestMultiMetricConditionAlertResource(t *testing.T) {
 
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.2.target_entity_types.0", "Website"),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.2.metric_name", "synthetics.status"),
-					resource.TestCheckResourceAttr("swo_alert.test", "conditions.2.threshold", ""),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.2.not_reporting", "true"),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.2.duration", "30m"),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.2.aggregation_type", "COUNT"),
@@ -394,7 +392,6 @@ resource "swo_alert" "test" {
 	},
 	{
 	  metric_name      = "synthetics.status"
-	  threshold        = ""
 	  not_reporting    = true
 	  duration         = "30m"
 	  aggregation_type = "COUNT"
@@ -430,7 +427,6 @@ resource "swo_alert" "test" {
   conditions = [
 	{
 	  metric_name      = "synthetics.https.response.time"
-	  threshold        = ""
       not_reporting    = true
 	  duration         = "10m"
 	  aggregation_type = "COUNT"

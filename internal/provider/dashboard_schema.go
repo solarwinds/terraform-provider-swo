@@ -45,7 +45,7 @@ func WidgetAttributeTypes() map[string]attr.Type {
 	}
 }
 
-func (r *dashboardResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *dashboardResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: "A terraform resource for managing dashboards.",
 		Attributes: map[string]schema.Attribute{
@@ -75,7 +75,7 @@ func (r *dashboardResource) Schema(ctx context.Context, req resource.SchemaReque
 							Description: "The type of the widget.",
 							Required:    true,
 							Validators: []validator.String{
-								validators.SingleOption("Kpi", "Proportional", "TimeSeries"),
+								validators.OneOf("Kpi", "Proportional", "TimeSeries"),
 							},
 						},
 						"x": schema.Int64Attribute{
