@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
+
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
-	"reflect"
 
 	"github.com/cenkalti/backoff/v5"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -371,7 +372,7 @@ func (r *uriResource) Update(ctx context.Context, req resource.UpdateRequest, re
 	}
 
 	// Updates are eventually consistent. Retry until the URI we read and the URI we are updating match.
-	_, err = BackoffRetry(func() (*swoClient.ReadUriResult, error) {
+	_, err = BackoffRetry(ctx, func() (*swoClient.ReadUriResult, error) {
 		// Read the Uri...
 		uri, err := r.client.UriService().Read(ctx, tfState.Id.ValueString())
 
