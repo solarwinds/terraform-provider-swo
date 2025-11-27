@@ -299,50 +299,23 @@ func (model alertConditionModel) toMetricFieldConditionInput(ctx context.Context
 	}
 
 	for _, tag := range includeTags {
-		var metricFilterPropertyValues []*string
-		dFilter := tag.Values.ElementsAs(ctx, &metricFilterPropertyValues, false)
-		diags.Append(dFilter...)
+		tagFilter := tagToFilter(ctx, tag, diags)
 		if diags.HasError() {
 			return swoClient.AlertConditionNodeInput{}
 		}
-		propertyName := tag.Name.ValueString()
-		metricFilter := swoClient.AlertFilterExpressionInput{
-			PropertyName:   &propertyName,
-			Operation:      swoClient.FilterOperationIn,
-			PropertyValues: metricFilterPropertyValues,
-		}
-
-		metricFieldCondition.MetricFilter.Children = append(
-			metricFieldCondition.MetricFilter.Children,
-			metricFilter,
-		)
+		metricFieldCondition.MetricFilter.Children = append(metricFieldCondition.MetricFilter.Children, tagFilter)
 	}
 
 	for _, tag := range excludeTags {
-		var propertyValues []*string
-		dValues := tag.Values.ElementsAs(ctx, &propertyValues, false)
-		diags.Append(dValues...)
+		tagFilter := tagToFilter(ctx, tag, diags)
 		if diags.HasError() {
 			return swoClient.AlertConditionNodeInput{}
 		}
-		propertyName := tag.Name.ValueString()
-
-		metricFilter := swoClient.AlertFilterExpressionInput{
-			PropertyName:   &propertyName,
-			Operation:      swoClient.FilterOperationIn,
-			PropertyValues: propertyValues,
-		}
-
-		metricFilterNotOp := swoClient.AlertFilterExpressionInput{
-			Operation: swoClient.FilterOperationNot,
-		}
-
-		metricFilterNotOp.Children = append(metricFilterNotOp.Children, metricFilter)
-
-		metricFieldCondition.MetricFilter.Children = append(
-			metricFieldCondition.MetricFilter.Children,
-			metricFilterNotOp,
-		)
+		metricFieldCondition.MetricFilter.Children =
+			append(metricFieldCondition.MetricFilter.Children, swoClient.AlertFilterExpressionInput{
+				Operation: swoClient.FilterOperationNot,
+				Children:  []swoClient.AlertFilterExpressionInput{tagFilter},
+			})
 	}
 
 	return metricFieldCondition
@@ -394,4 +367,41 @@ func GetStringDataType(s string) string {
 	}
 
 	return "string"
+}
+
+func tagToFilter(ctx context.Context, tag alertTagsModel, diags *diag.Diagnostics) swoClient.AlertFilterExpressionInput {
+	var propertyValues []*string
+	dFilter := tag.Values.ElementsAs(ctx, &propertyValues, false)
+	diags.Append(dFilter...)
+	if diags.HasError() {
+		return swoClient.AlertFilterExpressionInput{}
+	}
+
+	var operation = swoClient.FilterOperationIn
+	if !tag.Operation.IsNull() {
+		// Operation is guaranteed to be valid due to schema validation.
+		operation = swoClient.FilterOperation(tag.Operation.ValueString())
+	}
+	propertyName := tag.Name.ValueString()
+
+	if operation == swoClient.FilterOperationContains {
+		if len(propertyValues) != 1 {
+			diags.AddError("Invalid Tag Filter",
+				fmt.Sprintf("Exactly one value expected for 'CONTAINS'; found %d.", len(propertyValues)),
+			)
+			return swoClient.AlertFilterExpressionInput{}
+		}
+
+		return swoClient.AlertFilterExpressionInput{
+			PropertyName:  &propertyName,
+			Operation:     operation,
+			PropertyValue: propertyValues[0],
+		}
+	}
+
+	return swoClient.AlertFilterExpressionInput{
+		PropertyName:   &propertyName,
+		Operation:      operation,
+		PropertyValues: propertyValues,
+	}
 }

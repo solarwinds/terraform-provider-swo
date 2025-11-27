@@ -542,15 +542,17 @@ func unpackMetricFilter(filter alerts.MetricFilter, diags *diag.Diagnostics) (ty
 		propertyName := types.StringValue(*tagNode.GetPropertyName())
 
 		// When we build the API request in create/update, we always use the IN operator and the
-		// list of values, regardless of how many values there are. Here we try to be a bit more
-		// flexible and accept the EQ operator with a single value as well, that is translated
-		// to a single value list.
+		// list of values for non-wildcard checks, regardless of how many values there are. Here
+		// we try to be a bit more flexible and accept EQ with a single value as well, that is
+		// translated to a single value list.
 		var propertyValues types.List
 		switch tagNode.GetOperation() {
 		case swoClient.FilterOperationEq:
 			propertyValues = typex.StringPtrSliceToList([]*string{tagNode.GetPropertyValue()}, diags)
 		case swoClient.FilterOperationIn:
 			propertyValues = typex.StringPtrSliceToList(tagNode.GetPropertyValues(), diags)
+		case swoClient.FilterOperationContains:
+			propertyValues = typex.StringPtrSliceToList([]*string{tagNode.GetPropertyValue()}, diags)
 		default:
 			diags.AddWarning("Unexpected Metric Filter",
 				fmt.Sprintf("unexpected filter operation: %v", tagNode.GetOperation()))
@@ -558,8 +560,9 @@ func unpackMetricFilter(filter alerts.MetricFilter, diags *diag.Diagnostics) (ty
 		}
 
 		tagsObj := types.ObjectValueMust(AlertTagAttributeTypes(), map[string]attr.Value{
-			"name":   propertyName,
-			"values": propertyValues,
+			"name":      propertyName,
+			"values":    propertyValues,
+			"operation": types.StringValue(string(tagNode.GetOperation())),
 		})
 		if negated {
 			excludeTags = append(excludeTags, tagsObj)

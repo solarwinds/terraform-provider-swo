@@ -104,6 +104,7 @@ func TestAccMetricGroupAlertResource(t *testing.T) {
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.include_tags.0.values.1", "Sao Paulo"),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.exclude_tags.0.name", "service.name"),
 					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.exclude_tags.0.values.0", "test-service"),
+					resource.TestCheckResourceAttr("swo_alert.test", "conditions.0.exclude_tags.0.operation", "CONTAINS"),
 
 					resource.TestCheckResourceAttr("swo_alert.test", "runbook_link", "https://www.runbooklink.com"),
 					resource.TestCheckResourceAttr("swo_alert.test", "trigger_delay_seconds", "300"),
@@ -495,6 +496,7 @@ resource "swo_alert" "test" {
 	  ],
 	  exclude_tags = [{
 		  name = "service.name"
+		  operation = "CONTAINS"
 		  values : [
 			"test-service"
 		  ]
