@@ -16,6 +16,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	swoClient "github.com/solarwinds/swo-client-go/pkg/client"
@@ -83,14 +84,16 @@ func AlertConditionAttributeTypes() map[string]attr.Type {
 }
 
 type alertTagsModel struct {
-	Name   types.String `tfsdk:"name"`
-	Values types.List   `tfsdk:"values"`
+	Name      types.String `tfsdk:"name"`
+	Values    types.List   `tfsdk:"values"`
+	Operation types.String `tfsdk:"operation"`
 }
 
 func AlertTagAttributeTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"name":   types.StringType,
-		"values": types.ListType{ElemType: types.StringType},
+		"name":      types.StringType,
+		"values":    types.ListType{ElemType: types.StringType},
+		"operation": types.StringType,
 	}
 }
 
@@ -358,6 +361,20 @@ func (r *alertResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 										Optional:    true,
 										ElementType: types.StringType,
 									},
+									"operation": schema.StringAttribute{
+										Description: "Comparison to apply; either `IN` or `CONTAINS`. " +
+											"Defaults to `IN` if not specified. " +
+											"Only one value can be set in `values` when using `CONTAINS`.",
+										Optional: true,
+										Computed: true,
+										Default:  stringdefault.StaticString("IN"),
+										Validators: []validator.String{
+											validators.OneOf(
+												string(swoClient.FilterOperationIn),
+												string(swoClient.FilterOperationContains),
+											),
+										},
+									},
 								},
 							},
 						},
@@ -374,6 +391,20 @@ func (r *alertResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 										Description: "Values to match.",
 										Optional:    true,
 										ElementType: types.StringType,
+									},
+									"operation": schema.StringAttribute{
+										Description: "Comparison to apply; either `IN` or `CONTAINS`. " +
+											"Defaults to `IN` if not specified. " +
+											"Only one value can be set in `values` when using `CONTAINS`.",
+										Optional: true,
+										Computed: true,
+										Default:  stringdefault.StaticString("IN"),
+										Validators: []validator.String{
+											validators.OneOf(
+												string(swoClient.FilterOperationIn),
+												string(swoClient.FilterOperationContains),
+											),
+										},
 									},
 								},
 							},
