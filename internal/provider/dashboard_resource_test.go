@@ -20,7 +20,7 @@ func TestAccDashboardResource(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet("swo_dashboard.test", "id"),
 					resource.TestCheckResourceAttr("swo_dashboard.test", "name", "test-acc swo-terraform-provider [CREATE_TEST]"),
-					resource.TestCheckResourceAttr("swo_dashboard.test", "is_private", "true"),
+					resource.TestCheckResourceAttr("swo_dashboard.test", "is_private", "false"),
 					resource.TestCheckNoResourceAttr("swo_dashboard.test", "version"),
 
 					resource.TestCheckResourceAttr("swo_dashboard.test", "widgets.#", "2"),
@@ -70,7 +70,7 @@ func TestAccDashboardVersionNilResource(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet("swo_dashboard.test", "id"),
 					resource.TestCheckResourceAttr("swo_dashboard.test", "name", "test-acc version=null [CREATE_TEST]"),
-					resource.TestCheckResourceAttr("swo_dashboard.test", "is_private", "true"),
+					resource.TestCheckResourceAttr("swo_dashboard.test", "is_private", "false"),
 					resource.TestCheckNoResourceAttr("swo_dashboard.test", "version"),
 
 					resource.TestCheckResourceAttr("swo_dashboard.test", "widgets.#", "1"),
@@ -114,7 +114,7 @@ func TestAccDashboardVersion2Resource(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet("swo_dashboard.test", "id"),
 					resource.TestCheckResourceAttr("swo_dashboard.test", "name", "test-acc version=2 [CREATE_TEST]"),
-					resource.TestCheckResourceAttr("swo_dashboard.test", "is_private", "true"),
+					resource.TestCheckResourceAttr("swo_dashboard.test", "is_private", "false"),
 					resource.TestCheckResourceAttr("swo_dashboard.test", "version", "2"),
 
 					resource.TestCheckResourceAttr("swo_dashboard.test", "widgets.#", "1"),
@@ -149,7 +149,7 @@ func testAccDashboardResourceConfig(name string) string {
 	return providerConfig() + fmt.Sprintf(`
 	resource "swo_dashboard" "test" {
 		name = %[1]q
-		is_private = true
+		is_private = false
 		widgets = [
 			{
 				type = "Kpi"
@@ -270,7 +270,7 @@ func testAccDashboardVersionNilResourceConfig(name string) string {
 	return providerConfig() + fmt.Sprintf(`
 	resource "swo_dashboard" "test" {
 		name = %[1]q
-		is_private = true
+		is_private = false
 		version = null
 		widgets = [
 			{
@@ -322,7 +322,7 @@ func testAccDashboardVersion2ResourceConfig(name string) string {
 	return providerConfig() + fmt.Sprintf(`
 	resource "swo_dashboard" "test" {
 		name = %[1]q
-		is_private = true
+		is_private = false
 		version = 2
 		widgets = [
 			{

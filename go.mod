@@ -14,13 +14,12 @@ require (
 	github.com/hashicorp/terraform-plugin-go v0.28.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.37.0
 	github.com/joho/godotenv v1.5.1
-	github.com/solarwinds/swo-client-go v0.0.21
-	github.com/solarwinds/swo-sdk-go/swov1 v0.9.0
+	github.com/solarwinds/swo-client-go v0.0.23
+	github.com/solarwinds/swo-sdk-go/swov1 v0.12.1
 	golang.org/x/exp v0.0.0-20250620022241-b7579e27df2b
 )
 
 require (
-	github.com/ericlagergren/decimal v0.0.0-20240411145413-00de7ca16731 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.7 // indirect
 	github.com/spyzhov/ajson v0.9.6 // indirect
 	golang.org/x/sync v0.15.0 // indirect
@@ -28,7 +27,7 @@ require (
 
 require (
 	github.com/BurntSushi/toml v1.2.1 // indirect
-	github.com/Khan/genqlient v0.8.0 // indirect
+	github.com/Khan/genqlient v0.8.1 // indirect
 	github.com/Kunde21/markdownfmt/v3 v3.1.0 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver/v3 v3.2.0 // indirect

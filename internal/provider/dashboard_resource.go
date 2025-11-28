@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 
 	"github.com/google/go-cmp/cmp"
@@ -346,7 +347,6 @@ func (r *dashboardResource) Update(ctx context.Context, req resource.UpdateReque
 			Id:         id,
 			Name:       plan.Name.ValueString(),
 			CategoryId: plan.CategoryId.ValueStringPointer(),
-			IsPrivate:  plan.IsPrivate.ValueBoolPointer(),
 			Widgets:    widgets,
 			Layout:     layouts,
 			Version:    convertedTfVersion,
