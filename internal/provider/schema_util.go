@@ -7,7 +7,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/solarwinds/terraform-provider-swo/internal/planmodifier/stringmodifier"
 )
 
 func resourceIdAttribute() schema.StringAttribute {
@@ -15,7 +15,7 @@ func resourceIdAttribute() schema.StringAttribute {
 		Description: "The Id of the resource provided by the backend.",
 		Computed:    true,
 		PlanModifiers: []planmodifier.String{
-			stringplanmodifier.UseStateForUnknown(),
+			stringmodifier.UseNonNullStateForUnknown(),
 		},
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/solarwinds/swo-sdk-go/swov1/models/components"
+	"github.com/solarwinds/terraform-provider-swo/internal/planmodifier/stringmodifier"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
@@ -16,7 +17,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -386,7 +386,7 @@ func (r *websiteResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 								Description: "The Website RUM monitoring code snippet (provided by the server).",
 								Computed:    true,
 								PlanModifiers: []planmodifier.String{
-									stringplanmodifier.UseStateForUnknown(),
+									stringmodifier.UseNonNullStateForUnknown(),
 								},
 							},
 							"spa": schema.BoolAttribute{
