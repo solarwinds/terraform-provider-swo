@@ -9,6 +9,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/solarwinds/terraform-provider-swo/internal/planmodifier/stringmodifier"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -64,7 +65,7 @@ func (r *notificationResource) Schema(_ context.Context, _ resource.SchemaReques
 				Description: "The Id of the resource provided by the backend in the format of `{id}:{type}`.",
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
+					stringmodifier.UseNonNullStateForUnknown(),
 				},
 			},
 			"title": schema.StringAttribute{
