@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -338,8 +339,7 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 				return nil
 			}
 
-			var clientAddresses []clientEmailAddress
-			clientAddresses = convertArray(addresses, func(h notificationSettingsEmailAddress) clientEmailAddress {
+			var clientAddresses = convertArray(addresses, func(h notificationSettingsEmailAddress) clientEmailAddress {
 				return clientEmailAddress{
 					Id:    h.Id.ValueStringPointer(),
 					Email: h.Email.ValueString(),
