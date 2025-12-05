@@ -132,7 +132,7 @@ Required:
 - `location_options` (Attributes Set) The Website availability monitoring location options. (see [below for nested schema](#nestedatt--monitoring--availability--location_options))
 - `platform_options` (Attributes) The Website availability monitoring platform options. (see [below for nested schema](#nestedatt--monitoring--availability--platform_options))
 - `protocols` (List of String) The Website availability monitoring protocols.
-- `test_from_location` (String) The Website availability monitoring test from location. Valid values are [`REGION`|`COUNTRY`|`CITY`].
+- `test_from_location` (String) The Website availability monitoring test from location.
 - `test_interval_in_seconds` (Number) The Website availability monitoring test interval in seconds. Valid values are 60, 300, 600, 900, 1800, 3600, 7200, 14400
 
 Optional:
@@ -147,7 +147,7 @@ Optional:
 
 Required:
 
-- `type` (String) The Website availability monitoring location option type. Valid values are [`REGION`|`COUNTRY`|`CITY`].
+- `type` (String) The Website availability monitoring location option type.
 - `value` (String) The Website availability monitoring location option value.
 
 
@@ -184,7 +184,7 @@ Required:
 Required:
 
 - `consecutive_for_down` (Number) Number of consecutive failing tests for an entity to be considered down. Minimum 1.
-- `failing_test_locations` (String) How many locations must report a failure for an entity to be considered down. Valid values are [all, any]. Valid values are [`all`|`any`].
+- `failing_test_locations` (String) How many locations must report a failure for an entity to be considered down. Valid values are [all, any].
 
 
 <a id="nestedatt--monitoring--availability--ssl"></a>
