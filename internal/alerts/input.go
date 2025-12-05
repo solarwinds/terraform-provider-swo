@@ -15,7 +15,7 @@ type linkedInputNode struct {
 	*swoClient.AlertConditionNodeInput
 }
 
-func (n *linkedInputNode) GetOperands() []int { return n.AlertConditionNodeInput.GetOperandIds() }
+func (n *linkedInputNode) GetOperands() []int { return n.GetOperandIds() }
 
 func (n *linkedInputNode) GetValue() *swoClient.AlertConditionNodeInput {
 	return n.AlertConditionNodeInput

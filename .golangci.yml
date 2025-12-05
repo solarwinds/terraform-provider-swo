@@ -1,10 +1,9 @@
-#https://golangci-lint.run/usage/linters/
+version: 2
+
+# See https://golangci-lint.run/usage/linters/ for a list of linters.
 linters:
   disable-all: true
   enable:
-    # ireturn is going to fail because of provider.go requiring all resource constructors to
-    # return resource.Resource.
-    #- ireturn
     - err113
     - gosec
     - errcheck
