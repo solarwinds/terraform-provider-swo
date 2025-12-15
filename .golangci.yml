@@ -1,8 +1,8 @@
-version: 2
+version: "2"
 
 # See https://golangci-lint.run/usage/linters/ for a list of linters.
 linters:
-  disable-all: true
+  default: none
   enable:
     - err113
     - gosec
