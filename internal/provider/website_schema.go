@@ -277,8 +277,9 @@ func (r *websiteResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 								ElementType: types.StringType,
 							},
 							"test_from_location": schema.StringAttribute{
-								Description: "The Website availability monitoring test from location.",
-								Required:    true,
+								Description: "The Website availability monitoring test from location. " +
+									"Valid values are [`REGION`|`COUNTRY`|`CITY`].",
+								Required: true,
 								Validators: []validator.String{
 									validators.OneOf(
 										swoClient.ProbeLocationTypeRegion,
@@ -287,8 +288,9 @@ func (r *websiteResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 								},
 							},
 							"test_interval_in_seconds": schema.Int64Attribute{
-								Description: "The Website availability monitoring test interval in seconds. Valid values are 60, 300, 600, 900, 1800, 3600, 7200, 14400",
-								Required:    true,
+								Description: "The Website availability monitoring test interval in seconds. " +
+									"Valid values are 60, 300, 600, 900, 1800, 3600, 7200, 14400.",
+								Required: true,
 								Validators: []validator.Int64{
 									int64validator.OneOf(60, 300, 600, 900, 1800, 3600, 7200, 14400),
 								},
@@ -299,8 +301,9 @@ func (r *websiteResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 								NestedObject: schema.NestedAttributeObject{
 									Attributes: map[string]schema.Attribute{
 										"type": schema.StringAttribute{
-											Description: "The Website availability monitoring location option type.",
-											Required:    true,
+											Description: "The Website availability monitoring location option type. " +
+												"Valid values are [`REGION`|`COUNTRY`|`CITY`].",
+											Required: true,
 											Validators: []validator.String{
 												validators.OneOf(
 													swoClient.ProbeLocationTypeRegion,
@@ -324,7 +327,8 @@ func (r *websiteResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 										Required:    true,
 									},
 									"platforms": schema.SetAttribute{
-										Description: "The Website availability monitoring platform options. Valid values are [AWS, AZURE, GOOGLE_CLOUD].",
+										Description: "The Website availability monitoring platform options. " +
+											"Valid values are [`AWS`, `AZURE`, `GOOGLE_CLOUD`].",
 										Required:    true,
 										ElementType: types.StringType,
 									},
@@ -357,8 +361,9 @@ func (r *websiteResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 								Optional: true,
 								Attributes: map[string]schema.Attribute{
 									"failing_test_locations": schema.StringAttribute{
-										Description: "How many locations must report a failure for an entity to be considered down. Valid values are [all, any].",
-										Required:    true,
+										Description: "How many locations must report a failure for an entity to be considered down. " +
+											"Valid values are [`all`, `any`].",
+										Required: true,
 										Validators: []validator.String{
 											validators.OneOf(
 												components.DemWebsiteFailingTestLocationsAll,

@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   docs-verify:
-    name: Check that documentation is up to date
+    name: Check that docs are up to date
     runs-on: ubuntu-latest
 
     permissions:
@@ -27,6 +27,11 @@ jobs:
         with:
           go-version-file: 'go.mod'
           cache: true
+      - name: Install Terraform (for formatting)
+        uses: hashicorp/setup-terraform@v3
+        with:
+          # We can safely use latest; it's for formatting only
+          terraform_version: latest
       - name: Run go generate
         run: go generate ./...
       - name: Fail if generated artifacts differ

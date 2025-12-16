@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   golangci:
-    name: lint
+    name: Run golangci-lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -23,7 +23,32 @@ jobs:
         uses: golangci/golangci-lint-action@v9
         with:
           version: latest
+
+  docs-verify:
+    name: Check that docs are up to date
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+      - name: Install Terraform (for formatting)
+        uses: hashicorp/setup-terraform@v3
+        with:
+          # We can safely use latest; it's for formatting only
+          terraform_version: latest
+      - name: Run go generate
+        run: go generate ./...
+      - name: Fail if generated artifacts differ
+        run: git diff --quiet --exit-code
+
   build-and-test:
+    name: Build and test
     runs-on: ubuntu-latest
     env:
       TF_ACC: "1"

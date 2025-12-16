@@ -76,7 +76,7 @@ func (r *dashboardResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 							Computed:    true,
 						},
 						"type": schema.StringAttribute{
-							Description: "The type of the widget.",
+							Description: "The type of the widget. Valid values are [`Kpi`|`Proportional`|`TimeSeries`].",
 							Required:    true,
 							Validators: []validator.String{
 								validators.OneOf("Kpi", "Proportional", "TimeSeries"),
