@@ -140,7 +140,7 @@ func (r *uriResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *
 				Required:    true,
 				Attributes: map[string]schema.Attribute{
 					"test_from_location": schema.StringAttribute{
-						Description: "The location type to test from.",
+						Description: "The location type to test from. Valid values are [`REGION`|`COUNTRY`|`CITY`].",
 						Required:    true,
 						Validators: []validator.String{
 							validators.OneOf(
@@ -155,8 +155,9 @@ func (r *uriResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *
 						NestedObject: schema.NestedAttributeObject{
 							Attributes: map[string]schema.Attribute{
 								"type": schema.StringAttribute{
-									Description: "The Website availability monitoring location option type.",
-									Required:    true,
+									Description: "The Website availability monitoring location option type. " +
+										"Valid values are [`REGION`|`COUNTRY`|`CITY`].",
+									Required: true,
 									Validators: []validator.String{
 										validators.OneOf(
 											swoClient.ProbeLocationTypeRegion,

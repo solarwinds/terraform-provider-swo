@@ -217,7 +217,7 @@ func (r *alertResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 				Optional:    true,
 			},
 			"severity": schema.StringAttribute{
-				Description: "Alert severity.",
+				Description: "Alert severity. Valid values are [`INFO`|`WARNING`|`CRITICAL`].",
 				Required:    true,
 				Validators: []validator.String{
 					validators.OneOf(
@@ -272,7 +272,8 @@ func (r *alertResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 						},
 						"aggregation_type": schema.StringAttribute{
 							Description: "The aggregation function that will be applied to the metric. " +
-								"Required field when condition is for a metric.",
+								"Required field when condition is for a metric. " +
+								"Valid values are [`AVG`|`COUNT`|`LAST`|`MAX`|`MIN`|`SUM`].",
 							Optional: true,
 							Validators: []validator.String{
 								validators.OneOf(
@@ -303,7 +304,8 @@ func (r *alertResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 						},
 						"attribute_operator": schema.StringAttribute{
 							Description: "Select an operator, and then specify the values that trigger this alert. " +
-								"Required field when condition is for a attribute.",
+								"Required field when condition is for a attribute. " +
+								"Valid values are [`=`|`!=`|`>`|`<`|`>=`|`<=`|`IN`].",
 							Optional: true,
 							Validators: []validator.String{
 								validators.OneOf(

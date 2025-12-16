@@ -174,14 +174,14 @@ func (r *notificationResource) Schema(_ context.Context, _ resource.SchemaReques
 								},
 							},
 							"method": schema.StringAttribute{
-								Description: "HTTP Method for calling the webhook.",
+								Description: "HTTP Method for calling the webhook. Valid values are [`POST`|`GET`].",
 								Required:    true,
 								Validators: []validator.String{
 									validators.OneOf("POST", "GET"),
 								},
 							},
 							"auth_type": schema.StringAttribute{
-								Description: "Token or username/password auth.",
+								Description: "Token or username/password auth. Valid values are [`basic`|`token`].",
 								Optional:    true,
 								Validators: []validator.String{
 									validators.OneOf("basic", "token"),

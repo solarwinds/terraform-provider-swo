@@ -59,7 +59,7 @@ func (r *logFilterResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"kind": schema.StringAttribute{
-							Description: "The kind of the log exclusion filter.",
+							Description: "The kind of the log exclusion filter. Valid values are [`STRING`|`REGEX`].",
 							Required:    true,
 							Validators: []validator.String{
 								validators.OneOf(

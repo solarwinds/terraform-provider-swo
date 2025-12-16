@@ -94,7 +94,7 @@ resource "swo_alert" "alert_with_attribute_conditions" {
 
 - `conditions` (Attributes Set) One or more conditions that must be met to trigger the alert. These conditions are evaluated as a logical AND. (see [below for nested schema](#nestedatt--conditions))
 - `name` (String) Alert name.
-- `severity` (String) Alert severity.
+- `severity` (String) Alert severity. Valid values are [`INFO`|`WARNING`|`CRITICAL`].
 
 ### Optional
 
@@ -117,9 +117,9 @@ resource "swo_alert" "alert_with_attribute_conditions" {
 
 Optional:
 
-- `aggregation_type` (String) The aggregation function that will be applied to the metric. Required field when condition is for a metric.
+- `aggregation_type` (String) The aggregation function that will be applied to the metric. Required field when condition is for a metric. Valid values are [`AVG`|`COUNT`|`LAST`|`MAX`|`MIN`|`SUM`].
 - `attribute_name` (String) The attribute name of the entity to be filtered on. Required field when condition is for a attribute.
-- `attribute_operator` (String) Select an operator, and then specify the values that trigger this alert. Required field when condition is for a attribute.
+- `attribute_operator` (String) Select an operator, and then specify the values that trigger this alert. Required field when condition is for a attribute. Valid values are [`=`|`!=`|`>`|`<`|`>=`|`<=`|`IN`].
 - `attribute_value` (String) Specify the value that trigger this alert. Required field when condition is for a attribute, and attribute_operator is not 'IN'.
 - `attribute_values` (List of String) Specify the set of values that trigger this alert.Required field when condition is for a attribute, and attribute_operator is 'IN'.
 - `duration` (String) The duration window determines how frequently the alert is evaluated. Required field when condition is for a metric.
