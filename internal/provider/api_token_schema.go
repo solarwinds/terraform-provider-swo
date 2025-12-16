@@ -73,7 +73,7 @@ func (r *apiTokenResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 			},
 			"access_level": schema.StringAttribute{
 				Description: "The access level of the token. " +
-					"Valid values are [`FULL`|`READ`|`RECORD`|`API_FULL`]. Default is `FULL`.",
+					"Valid values are [`FULL`|`READ`|`RECORD`|`API_FULL`].",
 				Optional: true,
 				Computed: true,
 				Default:  stringdefault.StaticString(string(swoClient.TokenAccessLevelFull)),
