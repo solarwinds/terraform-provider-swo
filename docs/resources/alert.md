@@ -94,20 +94,22 @@ resource "swo_alert" "alert_with_attribute_conditions" {
 
 - `conditions` (Attributes Set) One or more conditions that must be met to trigger the alert. These conditions are evaluated as a logical AND. (see [below for nested schema](#nestedatt--conditions))
 - `name` (String) Alert name.
-- `severity` (String) Alert severity. Valid values are [`INFO`|`WARNING`|`CRITICAL`].
+- `severity` (String) Alert severity.
 
 ### Optional
 
 - `description` (String) Alert description.
-- `enabled` (Boolean) True if the Alert should be evaluated. Default is `true`.
+- `enabled` (Boolean) True if the alert should be evaluated. Default is `true`.
+- `no_data_reset_seconds` (Number) Number of seconds after which the alert is reset if no metric data is received. Default is `86400`.
 - `notification_actions` (Attributes Set) List of alert notifications that are sent when an alert triggers. (see [below for nested schema](#nestedatt--notification_actions))
 - `notifications` (List of String, Deprecated) A list of notifications that should be triggered for this alert.
 - `runbook_link` (String) A runbook is documentation of what steps to follow when something goes wrong.
-- `trigger_delay_seconds` (Number) Trigger the alert after the alert condition persists for a specific duration. This prevents false positives. Value must be between 60 and 86400 seconds, and value must be divisible by 60. Default is `0`.
-- `trigger_reset_actions` (Boolean) True if a notification should be sent when an active alert returns to normal. Default is false. Default is `false`.
+- `trigger_delay_seconds` (Number) Trigger the alert after the alert condition persists for a specific duration. This prevents false positives. Value must be between 60 and 86400 seconds, and be divisible by 60. Default is `0`.
+- `trigger_reset_actions` (Boolean) True if a notification should be sent when an active alert returns to normal. Default is `false`.
 
 ### Read-Only
 
+- `force_update` (Boolean)
 - `id` (String) The Id of the resource provided by the backend.
 
 <a id="nestedatt--conditions"></a>
@@ -115,21 +117,21 @@ resource "swo_alert" "alert_with_attribute_conditions" {
 
 Optional:
 
-- `aggregation_type` (String) The aggregation function that will be applied to the metric.Required field when condition is for a metric. Valid values are [`AVG`|`COUNT`|`LAST`|`MAX`|`MIN`|`SUM`].
-- `attribute_name` (String) The attribute name of the entity to be filtered on.Required field when condition is for a attribute.
-- `attribute_operator` (String) Select an operator, and then specify the values that trigger this alert.Required field when condition is for a attribute. Valid values are [`=`|`!=`|`>`|`<`|`>=`|`<=`|`IN`].
-- `attribute_value` (String) Specify the value that trigger this alert.Required field when condition is for a attribute, and attribute_operator is not 'IN'.
+- `aggregation_type` (String) The aggregation function that will be applied to the metric. Required field when condition is for a metric.
+- `attribute_name` (String) The attribute name of the entity to be filtered on. Required field when condition is for a attribute.
+- `attribute_operator` (String) Select an operator, and then specify the values that trigger this alert. Required field when condition is for a attribute.
+- `attribute_value` (String) Specify the value that trigger this alert. Required field when condition is for a attribute, and attribute_operator is not 'IN'.
 - `attribute_values` (List of String) Specify the set of values that trigger this alert.Required field when condition is for a attribute, and attribute_operator is 'IN'.
-- `duration` (String) The duration window determines how frequently the alert is evaluated.Required field when condition is for a metric.
-- `entity_ids` (List of String) A list of Entity IDs that will be used to filter on the alert. The alert will only trigger if the alert matches one or more of the entity IDs. Must match across all alert conditions.
+- `duration` (String) The duration window determines how frequently the alert is evaluated. Required field when condition is for a metric.
+- `entity_ids` (List of String) A list of Entity IDs that will be used to filter on the alert. The alert will only trigger if the alert matches one or more of the entity IDs. Must match across all alert conditions. Ignored unless target_entity_types is set too.
 - `exclude_tags` (Attributes Set) Tag key and values to match in order to not trigger an alert. (see [below for nested schema](#nestedatt--conditions--exclude_tags))
 - `group_by_metric_tag` (List of String) Group alert data for selected attribute. Must match across all alert conditions.
 - `include_tags` (Attributes Set) Tag key and values to match in order to trigger an alert. (see [below for nested schema](#nestedatt--conditions--include_tags))
-- `metric_name` (String) The field name of the metric to be filtered on.Required field when condition is for a metric.
-- `not_reporting` (Boolean) True if the alert should trigger when the metric is not reporting. If true, threshold must be '' and aggregation_type must be 'COUNT'.Applies only when condition is for a metric. Default is `false`.
-- `query_search` (String) Case-sensitive. System will automatically match existing and newly added entities matching the following query string.
+- `metric_name` (String) The field name of the metric to be filtered on. Required field when condition is for a metric.
+- `not_reporting` (Boolean) True if the alert should trigger when the metric is not reporting. If true, `threshold` must be null or unset, and `aggregation_type` must be `COUNT`. Applies only when condition is for a metric. Default is `false`.
+- `query_search` (String) Case-sensitive. System will automatically match existing and newly added entities matching the following query string. Ignored unless target_entity_types is set too.
 - `target_entity_types` (List of String) The entity types that the alert will be applied to. Must match across all alert conditions.
-- `threshold` (String) Operator and value that represent the threshold of an the alert. When the threshold is breached it triggers the alert. For Operator - binaryOperator:(=|!=|>|<|>=|<=) E.g. '>=10'Required field when condition is for a metric.
+- `threshold` (String) Operator and value that represent the threshold of the alert; e.g., `>=10`. The alert is triggered when this threshold is breached. Operator must be one of [`=`|`!=`|`>`|`<`|`>=`|`<=`]. Required field when condition is for a metric. It cannot be set to `=0` when using `COUNT` as the `aggregation_type` (use `not_reporting` instead).
 
 <a id="nestedatt--conditions--exclude_tags"></a>
 ### Nested Schema for `conditions.exclude_tags`
@@ -137,6 +139,7 @@ Optional:
 Optional:
 
 - `name` (String) Tag key to match.
+- `operation` (String) Comparison to apply; either `IN` or `CONTAINS`. Defaults to `IN` if not specified. Only one value can be set in `values` when using `CONTAINS`. Default is `IN`.
 - `values` (List of String) Values to match.
 
 
@@ -146,6 +149,7 @@ Optional:
 Optional:
 
 - `name` (String) Tag key to match.
+- `operation` (String) Comparison to apply; either `IN` or `CONTAINS`. Defaults to `IN` if not specified. Only one value can be set in `values` when using `CONTAINS`. Default is `IN`.
 - `values` (List of String) Values to match.
 
 
