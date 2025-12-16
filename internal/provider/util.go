@@ -51,7 +51,7 @@ func sliceToStringList[T any](
 	items []T,
 	mapFn func(T) string,
 ) types.List {
-	if items == nil || len(items) == 0 {
+	if len(items) == 0 {
 		return types.ListNull(types.StringType)
 	}
 

@@ -11,10 +11,12 @@ import (
 	swoClient "github.com/solarwinds/swo-client-go/pkg/client"
 )
 
-var thresholdParseError = errors.New("cannot parse threshold")
-var thresholdOperatorError = errors.New("threshold operator is not valid")
-var thresholdValueError = errors.New("threshold value not found")
-var aggregationError = errors.New("aggregation operation not found")
+var (
+	errThresholdParse    = errors.New("cannot parse threshold")
+	errThresholdOperator = errors.New("threshold operator is not valid")
+	errThresholdValue    = errors.New("threshold value not found")
+	errAggregation       = errors.New("aggregation operation not found")
+)
 
 // Builds a simple alert condition.
 //
@@ -40,13 +42,13 @@ func (model alertConditionModel) toAlertConditionInputs(ctx context.Context, dia
 
 	if !model.MetricName.IsNull() && !model.AttributeName.IsNull() {
 		diags.AddError("Bad input in terraform resource",
-			fmt.Sprintf("Alerting condition must be either metric or attribute. Cannot populate both metric_name and attribute_name."))
+			"Alerting condition must be either metric or attribute. Cannot populate both metric_name and attribute_name.")
 		return []swoClient.AlertConditionNodeInput{}
 	}
 
 	if model.MetricName.IsNull() && model.AttributeName.IsNull() {
 		diags.AddError("Bad input in terraform resource",
-			fmt.Sprintf("Alerting condition must be either metric or attribute. Must populate either metric_name or attribute_name."))
+			"Alerting condition must be either metric or attribute. Must populate either metric_name or attribute_name.")
 		return []swoClient.AlertConditionNodeInput{}
 	}
 
@@ -132,7 +134,7 @@ func (model alertConditionModel) toAlertConditionInputs(ctx context.Context, dia
 			// get the first value and determine its data type
 			if len(constantValues) == 0 {
 				diags.AddError("Bad input in terraform resource",
-					fmt.Sprintf("attribute_values is a required field when attribute_operator is 'IN'"))
+					"attribute_values is a required field when attribute_operator is 'IN'")
 				return []swoClient.AlertConditionNodeInput{}
 			}
 			cv := constantValues[0]
@@ -182,7 +184,7 @@ func (model alertConditionModel) toThresholdConditionInputs() (swoClient.AlertCo
 	} else {
 		match := alertThresholdRegex.FindStringSubmatch(threshold)
 		if match == nil {
-			return thresholdOperatorConditions, thresholdDataConditions, thresholdParseError
+			return thresholdOperatorConditions, thresholdDataConditions, errThresholdParse
 		}
 		result := make(map[string]string)
 		for i, name := range alertThresholdRegex.SubexpNames() {
@@ -193,7 +195,7 @@ func (model alertConditionModel) toThresholdConditionInputs() (swoClient.AlertCo
 
 		operator := result["operator"]
 		if !isValidThresholdOperator(operator) {
-			return thresholdOperatorConditions, thresholdDataConditions, thresholdOperatorError
+			return thresholdOperatorConditions, thresholdDataConditions, errThresholdOperator
 		}
 
 		thresholdOperatorConditions.Type = string(swoClient.AlertBinaryOperatorType)
@@ -207,7 +209,7 @@ func (model alertConditionModel) toThresholdConditionInputs() (swoClient.AlertCo
 			thresholdDataConditions.DataType = &dataType
 			thresholdDataConditions.Value = &thresholdValue
 		} else {
-			return thresholdOperatorConditions, thresholdDataConditions, thresholdValueError
+			return thresholdOperatorConditions, thresholdDataConditions, errThresholdValue
 		}
 	}
 
@@ -250,7 +252,7 @@ func (model alertConditionModel) toAggregationConditionInput() (swoClient.AlertC
 	operator := model.AggregationType.ValueString()
 	operatorType, err := swoClient.GetAlertConditionType(operator)
 	if err != nil {
-		return swoClient.AlertConditionNodeInput{}, aggregationError
+		return swoClient.AlertConditionNodeInput{}, errAggregation
 	}
 
 	aggregationCondition := swoClient.AlertConditionNodeInput{
