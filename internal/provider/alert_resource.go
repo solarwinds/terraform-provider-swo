@@ -142,6 +142,85 @@ func (r *alertResource) ImportState(ctx context.Context,
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
+// ModifyPlan is used to set default values for tag operations. Although this seems overkill
+// and a duplication of what the regular Default attribute in the schema could do, that is
+// unfortunately not true. The Default in the schema does not play well with sets of objects,
+// producing unexpected drifts and attribute flip-flopping when more than one condition is in
+// use. Check https://tinyurl.com/unstable-plans for more details. (SWI: See SP-15953.)
+func (r *alertResource) ModifyPlan(ctx context.Context, _ resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	var plan *alertResourceModel
+	diags := resp.Plan.Get(ctx, &plan)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if plan == nil || plan.Conditions.IsNull() || plan.Conditions.IsUnknown() {
+		// No conditions to mutate. (plan is nil on destroy.)
+		return
+	}
+
+	var conditions []alertConditionModel
+	diags = plan.Conditions.ElementsAs(ctx, &conditions, false)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	for ci, condition := range conditions {
+		conditions[ci].IncludeTags = setTagDefaults(ctx, condition.IncludeTags, &resp.Diagnostics)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		conditions[ci].ExcludeTags = setTagDefaults(ctx, condition.ExcludeTags, &resp.Diagnostics)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+	}
+
+	newConditions, diags := types.SetValueFrom(ctx, types.ObjectType{AttrTypes: AlertConditionAttributeTypes()}, conditions)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	plan.Conditions = newConditions
+
+	if plan.ForceUpdate.IsUnknown() {
+		plan.ForceUpdate = types.BoolValue(false)
+	}
+
+	// Write the updated plan back
+	diags = resp.Plan.Set(ctx, &plan)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+}
+
+func setTagDefaults(ctx context.Context, tagSet types.Set, diags *diag.Diagnostics) types.Set {
+	if tagSet.IsNull() || tagSet.IsUnknown() {
+		return tagSet
+	}
+
+	var tags []alertTagsModel
+	d := tagSet.ElementsAs(ctx, &tags, false)
+	diags.Append(d...)
+	if diags.HasError() {
+		return tagSet
+	}
+
+	for ti := range tags {
+		op := tags[ti].Operation
+		if op.IsUnknown() || op.IsNull() || len(op.ValueString()) == 0 {
+			tags[ti].Operation = types.StringValue(string(swoClient.FilterOperationIn))
+		}
+	}
+
+	result, d := types.SetValueFrom(ctx, types.ObjectType{AttrTypes: AlertTagAttributeTypes()}, tags)
+	diags.Append(d...)
+	return result
+}
+
 func (*alertResource) updateState(ctx context.Context,
 	state *alertResourceModel, result *swoClient.ReadAlertDefinitionResult, diags *diag.Diagnostics,
 ) {
