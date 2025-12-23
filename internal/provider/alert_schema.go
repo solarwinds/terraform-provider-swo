@@ -16,7 +16,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	swoClient "github.com/solarwinds/swo-client-go/pkg/client"
@@ -369,7 +368,6 @@ func (r *alertResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 											"Only one value can be set in `values` when using `CONTAINS`.",
 										Optional: true,
 										Computed: true,
-										Default:  stringdefault.StaticString("IN"),
 										Validators: []validator.String{
 											validators.OneOf(
 												string(swoClient.FilterOperationIn),
@@ -400,7 +398,6 @@ func (r *alertResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 											"Only one value can be set in `values` when using `CONTAINS`.",
 										Optional: true,
 										Computed: true,
-										Default:  stringdefault.StaticString("IN"),
 										Validators: []validator.String{
 											validators.OneOf(
 												string(swoClient.FilterOperationIn),

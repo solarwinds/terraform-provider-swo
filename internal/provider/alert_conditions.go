@@ -380,7 +380,7 @@ func tagToFilter(ctx context.Context, tag alertTagsModel, diags *diag.Diagnostic
 	}
 
 	var operation = swoClient.FilterOperationIn
-	if !tag.Operation.IsNull() {
+	if !tag.Operation.IsNull() && !tag.Operation.IsUnknown() {
 		// Operation is guaranteed to be valid due to schema validation.
 		operation = swoClient.FilterOperation(tag.Operation.ValueString())
 	}
