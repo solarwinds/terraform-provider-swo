@@ -139,7 +139,7 @@ Optional:
 Optional:
 
 - `name` (String) Tag key to match.
-- `operation` (String) Comparison to apply; either `IN` or `CONTAINS`. Defaults to `IN` if not specified. Only one value can be set in `values` when using `CONTAINS`. Default is `IN`.
+- `operation` (String) Comparison to apply; either `IN` or `CONTAINS`. Defaults to `IN` if not specified. Only one value can be set in `values` when using `CONTAINS`.
 - `values` (List of String) Values to match.
 
 
@@ -149,7 +149,7 @@ Optional:
 Optional:
 
 - `name` (String) Tag key to match.
-- `operation` (String) Comparison to apply; either `IN` or `CONTAINS`. Defaults to `IN` if not specified. Only one value can be set in `values` when using `CONTAINS`. Default is `IN`.
+- `operation` (String) Comparison to apply; either `IN` or `CONTAINS`. Defaults to `IN` if not specified. Only one value can be set in `values` when using `CONTAINS`.
 - `values` (List of String) Values to match.
 
 
