@@ -92,12 +92,13 @@ resource "swo_alert" "alert_with_attribute_conditions" {
 
 ### Required
 
-- `conditions` (Attributes Set) One or more conditions that must be met to trigger the alert. These conditions are evaluated as a logical AND. (see [below for nested schema](#nestedatt--conditions))
+- `conditions` (Attributes Set) One or more conditions that must be met to trigger the alert. Multiple conditions are merged using `conditions_operation`. (see [below for nested schema](#nestedatt--conditions))
 - `name` (String) Alert name.
 - `severity` (String) Alert severity. Valid values are [`INFO`|`WARNING`|`CRITICAL`].
 
 ### Optional
 
+- `conditions_operation` (String) Defines whether conditions are combined using `AND` or `OR`. Ignored when there is only one condition. Default is `AND`.
 - `description` (String) Alert description.
 - `enabled` (Boolean) True if the alert should be evaluated. Default is `true`.
 - `no_data_reset_seconds` (Number) Number of seconds after which the alert is reset if no metric data is received. Default is `86400`.
