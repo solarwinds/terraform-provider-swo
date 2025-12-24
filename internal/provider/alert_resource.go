@@ -263,6 +263,11 @@ func (*alertResource) updateState(ctx context.Context,
 		}
 	}
 
+	conditionsOperation := string(swoClient.AlertOperatorAnd)
+	if isOrOperator(conditionsInResponse) {
+		conditionsOperation = string(swoClient.AlertOperatorOr)
+	}
+
 	*state = alertResourceModel{
 		Id:                  types.StringValue(result.Id),
 		Name:                types.StringValue(result.Name),
@@ -271,6 +276,7 @@ func (*alertResource) updateState(ctx context.Context,
 		Severity:            types.StringValue(string(result.Severity)),
 		Enabled:             types.BoolValue(result.Enabled),
 		Conditions:          conditionsSet,
+		ConditionsOperation: types.StringValue(conditionsOperation),
 		Notifications:       deprecatedNotifications,
 		TriggerResetActions: types.BoolValue(result.TriggerResetActions),
 		RunbookLink:         types.StringPointerValue(result.RunbookLink),
@@ -309,10 +315,10 @@ func conditionsFromInput(result []swoClient.AlertConditionNodeInput, diags *diag
 // model and a null set is returned. This indicates that the resource should be replaced.
 func toModelConditions(response alerts.Condition, state types.Set, diags *diag.Diagnostics) types.Set {
 	// Given the current model and our construction of conditions, we map individual terms
-	// in a top-level AND to individual entries in the model's condition set. If the top level
-	// is not AND, then a single condition will result in the set.
+	// in a top-level AND/OR to individual entries in the model's condition set. If the top level
+	// is not AND/OR, then a single condition will result in the set.
 	sourceConditions := []alerts.Condition{response}
-	if isAndOperator(response) {
+	if isAndOperator(response) || isOrOperator(response) {
 		sourceConditions = response.GetOperands()
 	}
 
@@ -658,10 +664,18 @@ func unpackMetricFilter(filter alerts.MetricFilter, diags *diag.Diagnostics) (ty
 	return includeTagsSet, excludeTagsSet, true
 }
 
+func isLogicalOperator(condition alerts.Condition) bool {
+	return swoClient.AlertOperatorType(condition.GetType()) == swoClient.AlertLogicalOperatorType
+}
+
 func isAndOperator(condition alerts.Condition) bool {
-	return swoClient.AlertOperatorType(condition.GetType()) == swoClient.AlertLogicalOperatorType &&
-		condition.GetOperator() != nil &&
-		*condition.GetOperator() == string(swoClient.AlertOperatorAnd)
+	return isLogicalOperator(condition) &&
+		condition.GetOperator() != nil && *condition.GetOperator() == string(swoClient.AlertOperatorAnd)
+}
+
+func isOrOperator(condition alerts.Condition) bool {
+	return isLogicalOperator(condition) &&
+		condition.GetOperator() != nil && *condition.GetOperator() == string(swoClient.AlertOperatorOr)
 }
 
 func isBinaryOperator(condition alerts.Condition) bool {
@@ -681,11 +695,11 @@ func isConstantOperator(condition alerts.Condition) bool {
 //
 // An example of a resulting condition tree (displayed as a nested tree):
 //
-//	     AND
+//	    AND/OR
 //	  /   |   \
 //	Con  Con  Con
 //
-// AND - Binary logical operator
+// AND/OR - Binary logical operator
 // Con. - Simple condition (comparison operator, metric, threshold, ...)
 //
 // The function will first create the required number of logical operator nodes with
@@ -706,13 +720,11 @@ func (model *alertResourceModel) toAlertDefinitionInput(ctx context.Context, dia
 			return swoClient.AlertDefinitionInput{}
 		}
 	} else {
-
-		// Currently we only allow one AND logical operator type on the top level
 		// These logical operators can be n-ary, so we just need one logicalOperator
 		rootLogicalOperator := swoClient.AlertConditionNodeInput{}
 		rootLogicalOperator.Id = 0
 		rootLogicalOperator.Type = string(swoClient.AlertLogicalOperatorType)
-		logicalOperator := string(swoClient.AlertOperatorAnd)
+		logicalOperator := model.ConditionsOperation.ValueString()
 		rootLogicalOperator.Operator = &logicalOperator
 
 		// Pre-computed child operator IDs

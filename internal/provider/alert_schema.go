@@ -16,6 +16,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	swoClient "github.com/solarwinds/swo-client-go/pkg/client"
@@ -31,6 +32,7 @@ type alertResourceModel struct {
 	Description         types.String `tfsdk:"description"`
 	Severity            types.String `tfsdk:"severity"`
 	Enabled             types.Bool   `tfsdk:"enabled"`
+	ConditionsOperation types.String `tfsdk:"conditions_operation"`
 	Conditions          types.Set    `tfsdk:"conditions"` //alertConditionModel
 	Notifications       types.List   `tfsdk:"notifications"`
 	TriggerResetActions types.Bool   `tfsdk:"trigger_reset_actions"`
@@ -238,9 +240,22 @@ func (r *alertResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 				Computed:    true,
 				Default:     booldefault.StaticBool(false),
 			},
+			"conditions_operation": schema.StringAttribute{
+				Description: "Defines whether conditions are combined using `AND` or `OR`. " +
+					"Ignored when there is only one condition.",
+				Optional: true,
+				Computed: true,
+				Default:  stringdefault.StaticString(string(swoClient.AlertOperatorAnd)),
+				Validators: []validator.String{
+					validators.OneOf(
+						string(swoClient.AlertOperatorAnd),
+						string(swoClient.AlertOperatorOr),
+					),
+				},
+			},
 			"conditions": schema.SetNestedAttribute{
 				Description: "One or more conditions that must be met to trigger the alert. " +
-					"These conditions are evaluated as a logical AND.",
+					"Multiple conditions are merged using `conditions_operation`.",
 				Required: true,
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
