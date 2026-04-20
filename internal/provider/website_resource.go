@@ -72,6 +72,7 @@ var (
 	_ resource.Resource                = &websiteResource{}
 	_ resource.ResourceWithConfigure   = &websiteResource{}
 	_ resource.ResourceWithImportState = &websiteResource{}
+	_ resource.ResourceWithModifyPlan  = &websiteResource{}
 )
 
 func NewWebsiteResource() resource.Resource {
@@ -89,6 +90,53 @@ func (r *websiteResource) Metadata(ctx context.Context, req resource.MetadataReq
 func (r *websiteResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	client, _ := req.ProviderData.(providerClients)
 	r.client = client.SwoV1Client
+}
+
+func (r *websiteResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	// Nothing to do on destroy.
+	if req.Plan.Raw.IsNull() {
+		return
+	}
+
+	var tfPlan websiteResourceModel
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &tfPlan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if tfPlan.Monitoring.IsUnknown() {
+		return
+	}
+
+	var tfMonitoring websiteMonitoring
+	resp.Diagnostics.Append(tfPlan.Monitoring.As(ctx, &tfMonitoring, basetypes.ObjectAsOptions{})...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// options reflects which monitoring types are configured — compute it from
+	// the plan so Terraform shows the expected value instead of (known after apply).
+	planOptions := monitoringOptions{
+		IsAvailabilityActive: types.BoolValue(!tfMonitoring.Availability.IsNull() && !tfMonitoring.Availability.IsUnknown()),
+		IsRumActive:          types.BoolValue(!tfMonitoring.Rum.IsNull() && !tfMonitoring.Rum.IsUnknown()),
+	}
+
+	optionsObject, d := types.ObjectValueFrom(ctx, MonitoringOptionsAttributeTypes(), planOptions)
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	tfMonitoring.Options = optionsObject
+
+	monitoringObject, d := types.ObjectValueFrom(ctx, WebsiteMonitoringAttributeTypes(), tfMonitoring)
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	tfPlan.Monitoring = monitoringObject
+	resp.Diagnostics.Append(resp.Plan.Set(ctx, tfPlan)...)
 }
 
 func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
