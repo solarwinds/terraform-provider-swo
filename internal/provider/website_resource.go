@@ -31,6 +31,7 @@ var (
 	ErrAvailabilitySettingsNotUpdated = errors.New("availability settings not yet updated")
 	ErrRUMSettingsNotUpdated          = errors.New("RUM settings not yet updated")
 	ErrWebsiteNameNotUpdated          = errors.New("website name not yet updated")
+	ErrWebsiteStateNotStable          = errors.New("waiting for stable website state")
 	ErrWebsiteURLNotUpdated           = errors.New("website URL not yet updated")
 	ErrUnsupportedOperator            = errors.New("unsupported operator")
 	ErrUnsupportedProtocol            = errors.New("unsupported protocol")
@@ -623,7 +624,7 @@ func websiteReadRetry(ctx context.Context, id string, operation func(context.Con
 		// This prevents a single stale API response from being committed to state.
 		if lastResult == nil || lastResult.Name != result.Name || lastResult.URL != result.URL {
 			lastResult = result
-			return nil, fmt.Errorf("waiting for stable website state")
+			return nil, ErrWebsiteStateNotStable
 		}
 
 		return result, nil
