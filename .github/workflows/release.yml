@@ -7,6 +7,7 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch: # temporary: for testing ATS signing without a tag
 
 # Releases need permissions to read and write the repository contents.
 # GitHub considers creating releases and uploading assets as writing contents.
@@ -92,6 +93,7 @@ jobs:
           files-to-sign: "*.exe,*.dll"
           cert-profile: ${{ vars.ATS_CERT_PROFILE }}
       - name: Run GoReleaser
+        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
         uses: goreleaser/goreleaser-action@v6
         with:
           version: "~> v1"
