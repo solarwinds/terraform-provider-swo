@@ -19,8 +19,9 @@ import (
 )
 
 const (
-	websiteExpBackoffMaxInterval = 30 * time.Second
-	websiteExpBackoffMaxElapsed  = 2 * time.Minute
+	websiteExpBackoffInitialInterval = 5 * time.Second
+	websiteExpBackoffMaxInterval     = 30 * time.Second
+	websiteExpBackoffMaxElapsed      = 2 * time.Minute
 )
 
 var (
@@ -595,23 +596,34 @@ func stringToTestFromType(typeStr string) (components.Type, error) {
 }
 
 func websiteReadRetry(ctx context.Context, id string, operation func(context.Context, string) (*components.DemGetWebsiteResponse, error)) (*components.DemGetWebsiteResponse, error) {
-	var website *components.DemGetWebsiteResponse
-
 	expBackoff := backoff.NewExponentialBackOff()
+	expBackoff.InitialInterval = websiteExpBackoffInitialInterval
 	expBackoff.MaxInterval = websiteExpBackoffMaxInterval
+
+	var lastResult *components.DemGetWebsiteResponse
 
 	website, err := backoff.Retry(ctx, func() (*components.DemGetWebsiteResponse, error) {
 		result, err := operation(ctx, id)
 		if err != nil {
+			lastResult = nil
 			return nil, err
 		}
 
 		if result == nil {
+			lastResult = nil
 			return nil, ErrNoWebsiteEntityReturned
 		}
 
 		if result.ID == "" {
+			lastResult = nil
 			return nil, ErrWebsiteEntityNoData
+		}
+
+		// Require two consecutive identical reads before accepting the result.
+		// This prevents a single stale API response from being committed to state.
+		if lastResult == nil || lastResult.Name != result.Name || lastResult.URL != result.URL {
+			lastResult = result
+			return nil, fmt.Errorf("waiting for stable website state")
 		}
 
 		return result, nil
