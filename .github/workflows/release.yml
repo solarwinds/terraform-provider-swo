@@ -57,11 +57,11 @@ jobs:
         with:
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.PASSPHRASE }}
-      - name: Build binaries
-        uses: goreleaser/goreleaser-action@v6
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@336e29918d653399e599bfca99fadc1d7ffbc9f7 # v4.3.0
         with:
-          version: "1.26.2"
-          args: build --clean
+          args: release --clean
+          version: 1.26.2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
@@ -91,18 +91,3 @@ jobs:
         with:
           files-to-sign: "*.exe,*.dll"
           cert-profile: ${{ vars.ATS_CERT_PROFILE }}
-      - name: Run GoReleaser
-        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
-        uses: goreleaser/goreleaser-action@v6
-        with:
-          version: "1.26.2"
-          args: release --skip=build
-        env:
-          # GitHub sets the GITHUB_TOKEN secret automatically.
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
-          SWO_ISSUER_ID: ${{ secrets.SWO_ISSUER_ID }}
-          SWO_KEY_ID: ${{ secrets.SWO_KEY_ID }}
-          SWO_MAC_P8_FILE: ${{ secrets.SWO_MAC_P8_FILE }}
-          SWO_MAC_P12_CERT: ${{ secrets.SWO_MAC_P12_CERT }}
-          SWO_P12_PASSWORD: ${{ secrets.SWO_P12_PASSWORD }}
