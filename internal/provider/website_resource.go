@@ -19,8 +19,9 @@ import (
 )
 
 const (
-	websiteExpBackoffMaxInterval = 30 * time.Second
-	websiteExpBackoffMaxElapsed  = 2 * time.Minute
+	websiteExpBackoffInitialInterval = 5 * time.Second
+	websiteExpBackoffMaxInterval     = 30 * time.Second
+	websiteExpBackoffMaxElapsed      = 2 * time.Minute
 )
 
 var (
@@ -30,6 +31,7 @@ var (
 	ErrAvailabilitySettingsNotUpdated = errors.New("availability settings not yet updated")
 	ErrRUMSettingsNotUpdated          = errors.New("RUM settings not yet updated")
 	ErrWebsiteNameNotUpdated          = errors.New("website name not yet updated")
+	ErrWebsiteStateNotStable          = errors.New("waiting for stable website state")
 	ErrWebsiteURLNotUpdated           = errors.New("website URL not yet updated")
 	ErrUnsupportedOperator            = errors.New("unsupported operator")
 	ErrUnsupportedProtocol            = errors.New("unsupported protocol")
@@ -72,6 +74,7 @@ var (
 	_ resource.Resource                = &websiteResource{}
 	_ resource.ResourceWithConfigure   = &websiteResource{}
 	_ resource.ResourceWithImportState = &websiteResource{}
+	_ resource.ResourceWithModifyPlan  = &websiteResource{}
 )
 
 func NewWebsiteResource() resource.Resource {
@@ -89,6 +92,53 @@ func (r *websiteResource) Metadata(ctx context.Context, req resource.MetadataReq
 func (r *websiteResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	client, _ := req.ProviderData.(providerClients)
 	r.client = client.SwoV1Client
+}
+
+func (r *websiteResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	// Nothing to do on destroy.
+	if req.Plan.Raw.IsNull() {
+		return
+	}
+
+	var tfPlan websiteResourceModel
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &tfPlan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if tfPlan.Monitoring.IsUnknown() {
+		return
+	}
+
+	var tfMonitoring websiteMonitoring
+	resp.Diagnostics.Append(tfPlan.Monitoring.As(ctx, &tfMonitoring, basetypes.ObjectAsOptions{})...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// options reflects which monitoring types are configured — compute it from
+	// the plan so Terraform shows the expected value instead of (known after apply).
+	planOptions := monitoringOptions{
+		IsAvailabilityActive: types.BoolValue(!tfMonitoring.Availability.IsNull() && !tfMonitoring.Availability.IsUnknown()),
+		IsRumActive:          types.BoolValue(!tfMonitoring.Rum.IsNull() && !tfMonitoring.Rum.IsUnknown()),
+	}
+
+	optionsObject, d := types.ObjectValueFrom(ctx, MonitoringOptionsAttributeTypes(), planOptions)
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	tfMonitoring.Options = optionsObject
+
+	monitoringObject, d := types.ObjectValueFrom(ctx, WebsiteMonitoringAttributeTypes(), tfMonitoring)
+	resp.Diagnostics.Append(d...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	tfPlan.Monitoring = monitoringObject
+	resp.Diagnostics.Append(resp.Plan.Set(ctx, tfPlan)...)
 }
 
 func (r *websiteResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -547,23 +597,34 @@ func stringToTestFromType(typeStr string) (components.Type, error) {
 }
 
 func websiteReadRetry(ctx context.Context, id string, operation func(context.Context, string) (*components.DemGetWebsiteResponse, error)) (*components.DemGetWebsiteResponse, error) {
-	var website *components.DemGetWebsiteResponse
-
 	expBackoff := backoff.NewExponentialBackOff()
+	expBackoff.InitialInterval = websiteExpBackoffInitialInterval
 	expBackoff.MaxInterval = websiteExpBackoffMaxInterval
+
+	var lastResult *components.DemGetWebsiteResponse
 
 	website, err := backoff.Retry(ctx, func() (*components.DemGetWebsiteResponse, error) {
 		result, err := operation(ctx, id)
 		if err != nil {
+			lastResult = nil
 			return nil, err
 		}
 
 		if result == nil {
+			lastResult = nil
 			return nil, ErrNoWebsiteEntityReturned
 		}
 
 		if result.ID == "" {
+			lastResult = nil
 			return nil, ErrWebsiteEntityNoData
+		}
+
+		// Require two consecutive identical reads before accepting the result.
+		// This prevents a single stale API response from being committed to state.
+		if lastResult == nil || lastResult.Name != result.Name || lastResult.URL != result.URL {
+			lastResult = result
+			return nil, ErrWebsiteStateNotStable
 		}
 
 		return result, nil
