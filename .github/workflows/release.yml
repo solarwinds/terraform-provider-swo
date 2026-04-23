@@ -96,7 +96,7 @@ jobs:
         uses: goreleaser/goreleaser-action@v6
         with:
           version: "1.26.2"
-          args: release --skip-build
+          args: release --skip=build
         env:
           # GitHub sets the GITHUB_TOKEN secret automatically.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
