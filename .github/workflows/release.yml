@@ -68,7 +68,7 @@ jobs:
       - name: Build binaries
         uses: goreleaser/goreleaser-action@v6
         with:
-          version: "~> v1"
+          version: "1.26.2"
           args: build --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -95,7 +95,7 @@ jobs:
         if: ${{ startsWith(github.ref, 'refs/tags/v') }}
         uses: goreleaser/goreleaser-action@v6
         with:
-          version: "~> v1"
+          version: "1.26.2"
           args: release --skip-build
         env:
           # GitHub sets the GITHUB_TOKEN secret automatically.
