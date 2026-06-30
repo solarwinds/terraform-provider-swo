@@ -1,11 +1,17 @@
 package provider
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+)
+
+var (
+	errResourceNotFound      = errors.New("resource not found")
+	errReceiverUrlMismatch   = errors.New("receiver_url mismatch")
 )
 
 func TestAccCircleCIIntegrationResource(t *testing.T) {
@@ -82,7 +88,7 @@ func checkReceiverUrlMatchesBase(resourceName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[resourceName]
 		if !ok {
-			return fmt.Errorf("resource not found: %s", resourceName)
+			return fmt.Errorf("%w: %s", errResourceNotFound, resourceName)
 		}
 
 		id := rs.Primary.Attributes["id"]
@@ -91,7 +97,7 @@ func checkReceiverUrlMatchesBase(resourceName string) resource.TestCheckFunc {
 		expected := fmt.Sprintf("%s?state=%s", receiverBase, id)
 
 		if receiverUrl != expected {
-			return fmt.Errorf("receiver_url = %q, expected %q (receiver_base + ?state= + id)", receiverUrl, expected)
+			return fmt.Errorf("%w: got %q, expected %q (receiver_base + ?state= + id)", errReceiverUrlMismatch, receiverUrl, expected)
 		}
 		return nil
 	}
