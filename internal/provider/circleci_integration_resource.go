@@ -74,6 +74,9 @@ func (r *circleCIIntegrationResource) Read(ctx context.Context, req resource.Rea
 		return
 	}
 
+	if tfState.ReceiverBase.IsNull() || tfState.ReceiverBase.IsUnknown() || tfState.ReceiverBase.ValueString() == "" {
+		tfState.ReceiverBase = types.StringValue(defaultReceiverBase)
+	}
 	tfState.Name = types.StringValue(result.Name)
 	tfState.SecretToken = types.StringValue(result.SecretToken)
 	tfState.ReceiverUrl = types.StringValue(fmt.Sprintf("%s?state=%s", tfState.ReceiverBase.ValueString(), result.Id))
