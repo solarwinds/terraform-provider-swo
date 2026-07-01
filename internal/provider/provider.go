@@ -29,6 +29,7 @@ var (
 var resources = []func() resource.Resource{
 	NewAlertResource,
 	NewApiTokenResource,
+	NewCircleCIIntegrationResource,
 	NewCompositeMetricResource,
 	NewDashboardResource,
 	NewLogFilterResource,
