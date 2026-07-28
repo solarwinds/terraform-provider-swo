@@ -92,11 +92,21 @@ func (r *circleCIIntegrationResource) Update(ctx context.Context, req resource.U
 		return
 	}
 
+	if hasApiTokenWithoutName(tfPlan) {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("api_token_name"),
+			"Missing api_token_name",
+			"api_token_name is required when api_token is set.",
+		)
+		return
+	}
+
 	result, err := r.client.CircleCIIntegrationService().Update(
 		ctx,
 		tfState.Id.ValueString(),
 		tfPlan.Name.ValueStringPointer(),
 		tfPlan.ApiToken.ValueStringPointer(),
+		tfPlan.ApiTokenName.ValueStringPointer(),
 	)
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error",
@@ -126,4 +136,12 @@ func (r *circleCIIntegrationResource) Delete(ctx context.Context, req resource.D
 
 func (r *circleCIIntegrationResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
+// hasApiTokenWithoutName reports whether an api_token was supplied without an api_token_name,
+// which the backend rejects (a stored token's presence is signalled by its name).
+func hasApiTokenWithoutName(model circleCIIntegrationResourceModel) bool {
+	hasToken := !model.ApiToken.IsNull() && model.ApiToken.ValueString() != ""
+	hasName := !model.ApiTokenName.IsNull() && model.ApiTokenName.ValueString() != ""
+	return hasToken && !hasName
 }

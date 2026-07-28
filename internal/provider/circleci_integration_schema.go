@@ -18,6 +18,7 @@ type circleCIIntegrationResourceModel struct {
 	Id           types.String `tfsdk:"id"`
 	Name         types.String `tfsdk:"name"`
 	ApiToken     types.String `tfsdk:"api_token"`
+	ApiTokenName types.String `tfsdk:"api_token_name"`
 	ReceiverBase types.String `tfsdk:"receiver_base"`
 	ReceiverUrl  types.String `tfsdk:"receiver_url"`
 	SecretToken  types.String `tfsdk:"secret_token"`
@@ -36,6 +37,10 @@ func (r *circleCIIntegrationResource) Schema(_ context.Context, _ resource.Schem
 				Description: "The CircleCI API token. Used to fetch project metadata and logs.",
 				Optional:    true,
 				Sensitive:   true,
+			},
+			"api_token_name": schema.StringAttribute{
+				Description: "A label for the stored CircleCI API token. Required when api_token is set.",
+				Optional:    true,
 			},
 			"receiver_base": schema.StringAttribute{
 				Description: "The receiver URL base. Defaults to the SWO production endpoint.",
