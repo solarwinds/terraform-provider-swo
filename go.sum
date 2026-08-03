@@ -189,8 +189,8 @@ github.com/sirupsen/logrus v1.9.3 h1:dueUQJ1C2q9oE3F7wvmSGAaVtTmUizReu6fjN8uqzbQ
 github.com/sirupsen/logrus v1.9.3/go.mod h1:naHLuLoDiP4jHNo9R0sCBMtWGeIprob74mVsIT4qYEQ=
 github.com/skeema/knownhosts v1.3.1 h1:X2osQ+RAjK76shCbvhHHHVl3ZlgDm8apHEHFqRjnBY8=
 github.com/skeema/knownhosts v1.3.1/go.mod h1:r7KTdC8l4uxWRyK2TpQZ/1o5HaSzh06ePQNxPwTcfiY=
-github.com/solarwinds/swo-client-go v0.0.24 h1:0yJhE/ftmky8UBI1t2WcO4Ib9PrQ7jvdSbL+nXHhSjA=
-github.com/solarwinds/swo-client-go v0.0.24/go.mod h1:eiOec/yfEuHfsMBW6tX4gxBY2acFnOyRPryXhImkHac=
+github.com/solarwinds/swo-client-go v0.0.25 h1:fhIDsTB+nHKJDmXcTOFBH9UuI3U0wnJjv8/8M0V772Y=
+github.com/solarwinds/swo-client-go v0.0.25/go.mod h1:eiOec/yfEuHfsMBW6tX4gxBY2acFnOyRPryXhImkHac=
 github.com/solarwinds/swo-sdk-go/swov1 v0.12.1 h1:gcpu1W+/odq692YvvCpMQTWvBFHJp5/3fnml59JLpy8=
 github.com/solarwinds/swo-sdk-go/swov1 v0.12.1/go.mod h1:ZgHJ5sJsKmck0rng34NZugA3cXPZ2jxcp2YYErYfsE4=
 github.com/spf13/cast v1.3.1/go.mod h1:Qx5cxh0v+4UWYiBimWS+eyWzqEqokIECu5etghLkUJE=
