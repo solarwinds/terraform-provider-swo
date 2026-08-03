@@ -42,10 +42,20 @@ func (r *circleCIIntegrationResource) Create(ctx context.Context, req resource.C
 		return
 	}
 
+	if hasApiTokenWithoutName(tfPlan) {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("api_token_name"),
+			"Missing api_token_name",
+			"api_token_name is required when api_token is set.",
+		)
+		return
+	}
+
 	result, err := r.client.CircleCIIntegrationService().Create(
 		ctx,
 		tfPlan.Name.ValueString(),
 		tfPlan.ApiToken.ValueStringPointer(),
+		tfPlan.ApiTokenName.ValueStringPointer(),
 	)
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error",
