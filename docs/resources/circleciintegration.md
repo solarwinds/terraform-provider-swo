@@ -44,7 +44,7 @@ resource "circleci_webhook" "service_a" {
 
 - `api_token` (String, Sensitive) The CircleCI API token. Used to fetch project metadata and logs.
 - `api_token_name` (String) A label for the stored CircleCI API token. Required when api_token is set.
-- `receiver_base` (String) The receiver URL base. Defaults to the SWO production endpoint. Default is `https://webhook.swo.solarwinds.com/webhook`.
+- `receiver_base` (String) The receiver URL base. Defaults to the SWO production endpoint. Default is `https://webhook.swo.cloud.solarwinds.com/webhook`.
 
 ### Read-Only
 

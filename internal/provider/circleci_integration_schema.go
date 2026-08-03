@@ -11,7 +11,7 @@ import (
 	"github.com/solarwinds/terraform-provider-swo/internal/planmodifier/stringmodifier"
 )
 
-const defaultReceiverBase = "https://webhook.swo.solarwinds.com/webhook"
+const defaultReceiverBase = "https://webhook.swo.cloud.solarwinds.com/webhook"
 
 // circleCIIntegrationResourceModel is the main resource model.
 type circleCIIntegrationResourceModel struct {

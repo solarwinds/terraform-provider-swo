@@ -28,7 +28,7 @@ func TestAccCircleCIIntegrationResource(t *testing.T) {
 					resource.TestCheckResourceAttr("swo_circleciintegration.test", "name", "test-circleci-one"),
 					resource.TestCheckResourceAttrSet("swo_circleciintegration.test", "secret_token"),
 					resource.TestCheckResourceAttrSet("swo_circleciintegration.test", "receiver_url"),
-					resource.TestCheckResourceAttr("swo_circleciintegration.test", "receiver_base", "https://webhook.swo.solarwinds.com/webhook"),
+					resource.TestCheckResourceAttr("swo_circleciintegration.test", "receiver_base", defaultReceiverBase),
 					checkReceiverUrlMatchesBase("swo_circleciintegration.test"),
 				),
 			},
