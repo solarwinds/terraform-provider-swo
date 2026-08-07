@@ -8,7 +8,7 @@ description: |-
 
 # swo_dashboard (Resource)
 
-A terraform resource for managing dashboards.
+A terraform resource for managing dashboards test.
 
 ## Example Usage
 
