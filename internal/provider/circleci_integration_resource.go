@@ -46,6 +46,7 @@ func (r *circleCIIntegrationResource) Create(ctx context.Context, req resource.C
 		ctx,
 		tfPlan.Name.ValueString(),
 		tfPlan.ApiToken.ValueStringPointer(),
+		nil,
 	)
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error",
@@ -97,6 +98,7 @@ func (r *circleCIIntegrationResource) Update(ctx context.Context, req resource.U
 		tfState.Id.ValueString(),
 		tfPlan.Name.ValueStringPointer(),
 		tfPlan.ApiToken.ValueStringPointer(),
+		nil,
 	)
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error",

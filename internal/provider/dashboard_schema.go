@@ -16,12 +16,14 @@ import (
 
 // The main Dashboard Resource model that is derived from the schema.
 type dashboardResourceModel struct {
-	Id         types.String `tfsdk:"id"`
-	Name       types.String `tfsdk:"name"`
-	IsPrivate  types.Bool   `tfsdk:"is_private"`
-	CategoryId types.String `tfsdk:"category_id"`
-	Widgets    types.Set    `tfsdk:"widgets"`
-	Version    types.Int64  `tfsdk:"version"`
+	Id                types.String `tfsdk:"id"`
+	Name              types.String `tfsdk:"name"`
+	IsPrivate         types.Bool   `tfsdk:"is_private"`
+	CategoryId        types.String `tfsdk:"category_id"`
+	Widgets           types.Set    `tfsdk:"widgets"`
+	Version           types.Int64  `tfsdk:"version"`
+	ValidationVersion types.Int64  `tfsdk:"validation_version"`
+	EnableValidation  types.Bool   `tfsdk:"enable_validation"`
 }
 
 type dashboardWidgetModel struct {
@@ -116,6 +118,14 @@ func (r *dashboardResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 					"Ex, a pre-version-2 dashboard widget of height = 2, will be migrated to a height = 6.",
 				Optional: true,
 				Default:  nil,
+			},
+			"validation_version": schema.Int64Attribute{
+				Description: "Validation rules version. Defaults to the current version on the server when omitted.",
+				Optional:    true,
+			},
+			"enable_validation": schema.BoolAttribute{
+				Description: "When true, enables widget validation. Validation is skipped by default.",
+				Optional:    true,
 			},
 		},
 	}
