@@ -1,10 +1,10 @@
 resource "swo_dashboard" "metrics_dashboard" {
-  name                = "My metrics dashboard"
-  version             = 2
-  is_private          = true
-  category_id         = APM
-  validation_version  = 1
-  enable_validation   = true
+  name               = "My metrics dashboard"
+  version            = 2
+  is_private         = true
+  category_id        = APM
+  validation_version = 1
+  enable_validation  = true
   widgets = [
     {
       type       = "Kpi"
