@@ -24,7 +24,7 @@ import (
 	"github.com/solarwinds/terraform-provider-swo/internal/validators"
 )
 
-// The main Alert Resource model that is derived from the schema.
+// The main Alert Resource model that is derived from the schema test.
 type alertResourceModel struct {
 	Id                  types.String `tfsdk:"id"`
 	Name                types.String `tfsdk:"name"`

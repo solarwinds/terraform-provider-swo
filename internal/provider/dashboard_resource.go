@@ -98,11 +98,13 @@ func widgetsFromPlan(ctx context.Context, plan dashboardResourceModel, diags *di
 }
 
 // Sets the computed values of the dashboard models with the values returned from the Create request.
-func setDashboardValuesFromCreate(ctx context.Context, dashboard *swoClient.CreateDashboardResult, plan *dashboardResourceModel, diags *diag.Diagnostics) {
+// requestedVersion is the version actually configured by the user (nil if left unset), which may differ
+// from what was sent to the API since the backend now requires a version to be provided on every request.
+func setDashboardValuesFromCreate(ctx context.Context, dashboard *swoClient.CreateDashboardResult, requestedVersion *int, plan *dashboardResourceModel, diags *diag.Diagnostics) {
 	plan.Id = types.StringValue(dashboard.Id)
 
-	// the client may modify 'version' value
-	if dashboard.Version == nil {
+	// Keep state null when the user didn't configure a version, regardless of the default sent to the API.
+	if requestedVersion == nil || dashboard.Version == nil {
 		plan.Version = types.Int64PointerValue(nil)
 	} else {
 		dVersion := int64(*dashboard.Version)
@@ -266,6 +268,13 @@ func (r *dashboardResource) Create(ctx context.Context, req resource.CreateReque
 		return
 	}
 
+	// The backend requires a version be provided on create; default it when the user left it unconfigured.
+	apiVersion := convertedTfVersion
+	if apiVersion == nil {
+		defaultVersion := 2
+		apiVersion = &defaultVersion
+	}
+
 	// Create the dashboard...
 	dashboard, err := r.client.
 		DashboardsService().
@@ -275,7 +284,7 @@ func (r *dashboardResource) Create(ctx context.Context, req resource.CreateReque
 			IsPrivate:  tfPlan.IsPrivate.ValueBoolPointer(),
 			Widgets:    widgets,
 			Layout:     layouts,
-			Version:    convertedTfVersion,
+			Version:    apiVersion,
 		})
 
 	if err != nil {
@@ -284,7 +293,7 @@ func (r *dashboardResource) Create(ctx context.Context, req resource.CreateReque
 		return
 	}
 
-	setDashboardValuesFromCreate(ctx, dashboard, &tfPlan, &resp.Diagnostics)
+	setDashboardValuesFromCreate(ctx, dashboard, convertedTfVersion, &tfPlan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -341,6 +350,13 @@ func (r *dashboardResource) Update(ctx context.Context, req resource.UpdateReque
 		return
 	}
 
+	// The backend requires a version be provided on update; default it when the user left it unconfigured.
+	apiVersion := convertedTfVersion
+	if apiVersion == nil {
+		defaultVersion := 2
+		apiVersion = &defaultVersion
+	}
+
 	// Update the dashboard...
 	dashboard, err := r.client.DashboardsService().Update(ctx,
 		swoClient.UpdateDashboardInput{
@@ -349,7 +365,7 @@ func (r *dashboardResource) Update(ctx context.Context, req resource.UpdateReque
 			CategoryId: plan.CategoryId.ValueStringPointer(),
 			Widgets:    widgets,
 			Layout:     layouts,
-			Version:    convertedTfVersion,
+			Version:    apiVersion,
 		})
 
 	if err != nil {
@@ -367,7 +383,7 @@ func (r *dashboardResource) Update(ctx context.Context, req resource.UpdateReque
 		return
 	}
 
-	setDashboardValuesFromCreate(ctx, d, &plan, &resp.Diagnostics)
+	setDashboardValuesFromCreate(ctx, d, convertedTfVersion, &plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
