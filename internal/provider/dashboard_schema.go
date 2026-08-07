@@ -48,7 +48,7 @@ func WidgetAttributeTypes() map[string]attr.Type {
 
 func (r *dashboardResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "A terraform resource for managing dashboards.",
+		Description: "A terraform resource for managing dashboards test.",
 		Attributes: map[string]schema.Attribute{
 			"id": resourceIdAttribute(),
 			"name": schema.StringAttribute{

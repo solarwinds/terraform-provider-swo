@@ -3,12 +3,12 @@
 page_title: "swo_dashboard Resource - terraform-provider-swo"
 subcategory: ""
 description: |-
-  A terraform resource for managing dashboards.
+  A terraform resource for managing dashboards test.
 ---
 
 # swo_dashboard (Resource)
 
-A terraform resource for managing dashboards.
+A terraform resource for managing dashboards test.
 
 ## Example Usage
 
