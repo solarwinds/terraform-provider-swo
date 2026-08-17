@@ -198,60 +198,58 @@ func TestAccDashboardValidationErrorResource(t *testing.T) {
 	})
 }
 
-func testAccDashboardValidationResourceConfig(name string) string {
-	return providerConfig() + fmt.Sprintf(`
-	resource "swo_dashboard" "test" {
-		name = %[1]q
-		is_private = false
-		enable_validation = true
-		validation_version = 1
-		widgets = [
-			{
-				type = "Kpi"
-				x = 0
-				y = 0
-				width = 4
-				height = 2
-				properties = <<EOF
-				{
-					"mode": "Standard",
-					"description": "Kpi Widget",
-					"unit": "ms",
-					"title": "Kpi Widget",
-					"linkUrl": "https://www.solarwinds.com",
-					"subtitle": "Widget with a Kpi display.",
-					"linkLabel": "Linky",
-					"dataSource": {
-						"type": "kpi",
-						"properties": {
-							"series": [
-								{
-									"type": "metric",
-									"limit": {
-										"value": 50,
-										"isAscending": false
-									},
-									"metric": "synthetics.https.response.time",
-									"groupBy": [],
-									"formatOptions": {
-										"unit": "ms",
-										"precision": 3,
-										"minUnitSize": -2
-									},
-									"bucketGrouping": [],
-									"aggregationFunction": "AVG"
-								}
-							],
-							"isHigherBetter": false,
-							"includePercentageChange": true
-						}
-					}
-				}
-				EOF
-			}
-		]
-	}`, name)
-}
+// func testAccDashboardValidationResourceConfig(name string) string {
+// 	return providerConfig() + fmt.Sprintf(`
+// 	resource "swo_dashboard" "test" {
+// 		name = %[1]q
+// 		is_private = false
+// 		enable_validation = true
+// 		validation_version = 1
+// 		widgets = [
+// 			{
+// 				type = "Kpi"
+// 				x = 0
+// 				y = 0
+// 				width = 4
+// 				height = 2
+// 				properties = <<EOF
+// 				{
+// 					"unit": "ms",
+// 					"title": "Kpi Widget",
+// 					"linkUrl": "https://www.solarwinds.com",
+// 					"subtitle": "Widget with a Kpi display.",
+// 					"linkLabel": "Linky",
+// 					"dataSource": {
+// 						"type": "kpi",
+// 						"properties": {
+// 							"series": [
+// 								{
+// 									"type": "metric",
+// 									"limit": {
+// 										"value": 50,
+// 										"isAscending": false
+// 									},
+// 									"metric": "synthetics.https.response.time",
+// 									"groupBy": [],
+// 									"formatOptions": {
+// 										"unit": "ms",
+// 										"precision": 3,
+// 										"minUnitSize": -2
+// 									},
+// 									"bucketGrouping": [],
+// 									"aggregationFunction": "AVG"
+// 								}
+// 							],
+// 							"isHigherBetter": false,
+// 							"includePercentageChange": true
+// 						}
+// 					}
+// 				}
+// 				EOF
+// 			}
+// 		]
+// 	}`, name)
+// }
 
 // testAccDashboardValidationInvalidResourceConfig defines a Kpi widget with empty properties.
 // With enable_validation = true the server is expected to reject it with a validation error.
