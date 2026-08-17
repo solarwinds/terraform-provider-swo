@@ -214,6 +214,8 @@ func testAccDashboardValidationResourceConfig(name string) string {
 				height = 2
 				properties = <<EOF
 				{
+					"mode": "Standard",
+					"description": "Kpi Widget",
 					"unit": "ms",
 					"title": "Kpi Widget",
 					"linkUrl": "https://www.solarwinds.com",
