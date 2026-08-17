@@ -146,39 +146,39 @@ func TestAccDashboardVersion2Resource(t *testing.T) {
 	})
 }
 
-// func TestAccDashboardValidationResource(t *testing.T) {
-// 	resource.Test(t, resource.TestCase{
-// 		PreCheck:                 func() { testAccPreCheck(t) },
-// 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
-// 		IsUnitTest:               true,
-// 		Steps: []resource.TestStep{
-// 			// Create and Read testing with widget validation enabled.
-// 			{
-// 				Config:             testAccDashboardValidationResourceConfig("test-acc validation [CREATE_TEST]"),
-// 				ExpectNonEmptyPlan: true,
-// 				Check: resource.ComposeAggregateTestCheckFunc(
-// 					resource.TestCheckResourceAttrSet("swo_dashboard.test", "id"),
-// 					resource.TestCheckResourceAttr("swo_dashboard.test", "name", "test-acc validation [CREATE_TEST]"),
-// 					resource.TestCheckResourceAttr("swo_dashboard.test", "enable_validation", "true"),
-// 					resource.TestCheckResourceAttr("swo_dashboard.test", "validation_version", "1"),
-// 					resource.TestCheckResourceAttr("swo_dashboard.test", "widgets.#", "1"),
-// 					resource.TestCheckResourceAttr("swo_dashboard.test", "widgets.0.type", "Kpi"),
-// 				),
-// 			},
-// 			// Update and Read testing (validation stays enabled).
-// 			{
-// 				Config:             testAccDashboardValidationResourceConfig("test-acc validation [UPDATE_TEST]"),
-// 				ExpectNonEmptyPlan: true,
-// 				Check: resource.ComposeAggregateTestCheckFunc(
-// 					resource.TestCheckResourceAttr("swo_dashboard.test", "name", "test-acc validation [UPDATE_TEST]"),
-// 					resource.TestCheckResourceAttr("swo_dashboard.test", "enable_validation", "true"),
-// 					resource.TestCheckResourceAttr("swo_dashboard.test", "validation_version", "1"),
-// 				),
-// 			},
-// 			// Delete testing automatically occurs in TestCase
-// 		},
-// 	})
-// }
+func TestAccDashboardValidationResource(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		IsUnitTest:               true,
+		Steps: []resource.TestStep{
+			// Create and Read testing with widget validation enabled.
+			{
+				Config:             testAccDashboardValidationResourceConfig("test-acc validation [CREATE_TEST]"),
+				ExpectNonEmptyPlan: true,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet("swo_dashboard.test", "id"),
+					resource.TestCheckResourceAttr("swo_dashboard.test", "name", "test-acc validation [CREATE_TEST]"),
+					resource.TestCheckResourceAttr("swo_dashboard.test", "enable_validation", "true"),
+					resource.TestCheckResourceAttr("swo_dashboard.test", "validation_version", "1"),
+					resource.TestCheckResourceAttr("swo_dashboard.test", "widgets.#", "1"),
+					resource.TestCheckResourceAttr("swo_dashboard.test", "widgets.0.type", "Kpi"),
+				),
+			},
+			// Update and Read testing (validation stays enabled).
+			{
+				Config:             testAccDashboardValidationResourceConfig("test-acc validation [UPDATE_TEST]"),
+				ExpectNonEmptyPlan: true,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("swo_dashboard.test", "name", "test-acc validation [UPDATE_TEST]"),
+					resource.TestCheckResourceAttr("swo_dashboard.test", "enable_validation", "true"),
+					resource.TestCheckResourceAttr("swo_dashboard.test", "validation_version", "1"),
+				),
+			},
+			// Delete testing automatically occurs in TestCase
+		},
+	})
+}
 
 func TestAccDashboardValidationErrorResource(t *testing.T) {
 	resource.Test(t, resource.TestCase{
@@ -198,58 +198,64 @@ func TestAccDashboardValidationErrorResource(t *testing.T) {
 	})
 }
 
-// func testAccDashboardValidationResourceConfig(name string) string {
-// 	return providerConfig() + fmt.Sprintf(`
-// 	resource "swo_dashboard" "test" {
-// 		name = %[1]q
-// 		is_private = false
-// 		enable_validation = true
-// 		validation_version = 1
-// 		widgets = [
-// 			{
-// 				type = "Kpi"
-// 				x = 0
-// 				y = 0
-// 				width = 4
-// 				height = 2
-// 				properties = <<EOF
-// 				{
-// 					"unit": "ms",
-// 					"title": "Kpi Widget",
-// 					"linkUrl": "https://www.solarwinds.com",
+func testAccDashboardValidationResourceConfig(name string) string {
+	return providerConfig() + fmt.Sprintf(`
+	resource "swo_dashboard" "test" {
+		name = %[1]q
+		is_private = false
+		enable_validation = true
+		validation_version = 1
+		mode = "Standard"
+		description = "Kpi Widget"
+		widgets = [
+			{
+				type = "Kpi"
+				x = 0
+				y = 0
+				width = 4
+				height = 2
+				properties = <<EOF
+				{
+					"unit": "ms",
+				    "title": "Kpi Widget",
+					"linkUrl": "https://www.solarwinds.com",
 // 					"subtitle": "Widget with a Kpi display.",
 // 					"linkLabel": "Linky",
-// 					"dataSource": {
-// 						"type": "kpi",
-// 						"properties": {
-// 							"series": [
-// 								{
-// 									"type": "metric",
-// 									"limit": {
-// 										"value": 50,
-// 										"isAscending": false
-// 									},
-// 									"metric": "synthetics.https.response.time",
-// 									"groupBy": [],
-// 									"formatOptions": {
-// 										"unit": "ms",
-// 										"precision": 3,
-// 										"minUnitSize": -2
-// 									},
-// 									"bucketGrouping": [],
-// 									"aggregationFunction": "AVG"
-// 								}
-// 							],
-// 							"isHigherBetter": false,
-// 							"includePercentageChange": true
-// 						}
-// 					}
-// 				}
-// 				EOF
-// 			}
-// 		]
-// 	}`, name)
-// }
+					"dataSource": {
+						"type": "kpi",
+						"properties": {
+							"series": [
+								{
+									"type": "metric",
+									"metric": "apm.playground.response.count",
+									"entityId": "",
+									"entityType": "All",
+									"aggregationFunction": "AVG",
+									"includeMetricsWithoutData": false,
+									"groupBy": [],
+									"groupByEntityAttribute": [],
+									"limit": {
+										"value": 50,
+										"isAscending": false
+									},
+									"formatOptions": {
+										"unit": "",
+										"precision": 3
+									}
+								}
+							],
+							"includePercentageChange": true,
+							"isHigherBetter": false,
+							"skip": false,
+							"displayValueMode": "Overall"
+						}
+					}
+				}
+				EOF
+			}
+		]
+	}`, name)
+}
 
 // testAccDashboardValidationInvalidResourceConfig defines a Kpi widget with empty properties.
 // With enable_validation = true the server is expected to reject it with a validation error.
