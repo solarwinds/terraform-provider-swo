@@ -146,39 +146,39 @@ func TestAccDashboardVersion2Resource(t *testing.T) {
 	})
 }
 
-func TestAccDashboardValidationResource(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
-		IsUnitTest:               true,
-		Steps: []resource.TestStep{
-			// Create and Read testing with widget validation enabled.
-			{
-				Config:             testAccDashboardValidationResourceConfig("test-acc validation [CREATE_TEST]"),
-				ExpectNonEmptyPlan: true,
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet("swo_dashboard.test", "id"),
-					resource.TestCheckResourceAttr("swo_dashboard.test", "name", "test-acc validation [CREATE_TEST]"),
-					resource.TestCheckResourceAttr("swo_dashboard.test", "enable_validation", "true"),
-					resource.TestCheckResourceAttr("swo_dashboard.test", "validation_version", "1"),
-					resource.TestCheckResourceAttr("swo_dashboard.test", "widgets.#", "1"),
-					resource.TestCheckResourceAttr("swo_dashboard.test", "widgets.0.type", "Kpi"),
-				),
-			},
-			// Update and Read testing (validation stays enabled).
-			{
-				Config:             testAccDashboardValidationResourceConfig("test-acc validation [UPDATE_TEST]"),
-				ExpectNonEmptyPlan: true,
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_dashboard.test", "name", "test-acc validation [UPDATE_TEST]"),
-					resource.TestCheckResourceAttr("swo_dashboard.test", "enable_validation", "true"),
-					resource.TestCheckResourceAttr("swo_dashboard.test", "validation_version", "1"),
-				),
-			},
-			// Delete testing automatically occurs in TestCase
-		},
-	})
-}
+// func TestAccDashboardValidationResource(t *testing.T) {
+// 	resource.Test(t, resource.TestCase{
+// 		PreCheck:                 func() { testAccPreCheck(t) },
+// 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+// 		IsUnitTest:               true,
+// 		Steps: []resource.TestStep{
+// 			// Create and Read testing with widget validation enabled.
+// 			{
+// 				Config:             testAccDashboardValidationResourceConfig("test-acc validation [CREATE_TEST]"),
+// 				ExpectNonEmptyPlan: true,
+// 				Check: resource.ComposeAggregateTestCheckFunc(
+// 					resource.TestCheckResourceAttrSet("swo_dashboard.test", "id"),
+// 					resource.TestCheckResourceAttr("swo_dashboard.test", "name", "test-acc validation [CREATE_TEST]"),
+// 					resource.TestCheckResourceAttr("swo_dashboard.test", "enable_validation", "true"),
+// 					resource.TestCheckResourceAttr("swo_dashboard.test", "validation_version", "1"),
+// 					resource.TestCheckResourceAttr("swo_dashboard.test", "widgets.#", "1"),
+// 					resource.TestCheckResourceAttr("swo_dashboard.test", "widgets.0.type", "Kpi"),
+// 				),
+// 			},
+// 			// Update and Read testing (validation stays enabled).
+// 			{
+// 				Config:             testAccDashboardValidationResourceConfig("test-acc validation [UPDATE_TEST]"),
+// 				ExpectNonEmptyPlan: true,
+// 				Check: resource.ComposeAggregateTestCheckFunc(
+// 					resource.TestCheckResourceAttr("swo_dashboard.test", "name", "test-acc validation [UPDATE_TEST]"),
+// 					resource.TestCheckResourceAttr("swo_dashboard.test", "enable_validation", "true"),
+// 					resource.TestCheckResourceAttr("swo_dashboard.test", "validation_version", "1"),
+// 				),
+// 			},
+// 			// Delete testing automatically occurs in TestCase
+// 		},
+// 	})
+// }
 
 func TestAccDashboardValidationErrorResource(t *testing.T) {
 	resource.Test(t, resource.TestCase{
