@@ -205,8 +205,6 @@ func testAccDashboardValidationResourceConfig(name string) string {
 		is_private = false
 		enable_validation = true
 		validation_version = 1
-		mode = "Standard"
-		description = "Kpi Widget"
 		widgets = [
 			{
 				type = "Kpi"
@@ -217,6 +215,8 @@ func testAccDashboardValidationResourceConfig(name string) string {
 				properties = <<EOF
 				{
 					"unit": "ms",
+					"mode": "Standard",
+					"description": "Kpi Widget",
 				    "title": "Kpi Widget",
 					"linkUrl": "https://www.solarwinds.com",
 // 					"subtitle": "Widget with a Kpi display.",
