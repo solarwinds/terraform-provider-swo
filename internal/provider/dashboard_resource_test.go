@@ -25,6 +25,8 @@ func TestAccDashboardResource(t *testing.T) {
 					resource.TestCheckNoResourceAttr("swo_dashboard.test", "version"),
 					resource.TestCheckResourceAttr("swo_dashboard.test", "enable_validation", "true"),
 					resource.TestCheckResourceAttr("swo_dashboard.test", "validation_version", "1"),
+					resource.TestCheckResourceAttr("swo_dashboard.test", "mode", "Standard"),
+					resource.TestCheckResourceAttr("swo_dashboard.test", "description", "test dashboard"),
 
 					resource.TestCheckResourceAttr("swo_dashboard.test", "widgets.#", "2"),
 
@@ -77,6 +79,8 @@ func TestAccDashboardVersionNilResource(t *testing.T) {
 					resource.TestCheckNoResourceAttr("swo_dashboard.test", "version"),
 					resource.TestCheckResourceAttr("swo_dashboard.test", "enable_validation", "true"),
 					resource.TestCheckResourceAttr("swo_dashboard.test", "validation_version", "1"),
+					resource.TestCheckResourceAttr("swo_dashboard.test", "mode", "Standard"),
+					resource.TestCheckResourceAttr("swo_dashboard.test", "description", "test dashboard"),
 
 					resource.TestCheckResourceAttr("swo_dashboard.test", "widgets.#", "1"),
 
@@ -123,6 +127,8 @@ func TestAccDashboardVersion2Resource(t *testing.T) {
 					resource.TestCheckResourceAttr("swo_dashboard.test", "version", "2"),
 					resource.TestCheckResourceAttr("swo_dashboard.test", "enable_validation", "true"),
 					resource.TestCheckResourceAttr("swo_dashboard.test", "validation_version", "1"),
+					resource.TestCheckResourceAttr("swo_dashboard.test", "mode", "Standard"),
+					resource.TestCheckResourceAttr("swo_dashboard.test", "description", "test dashboard"),
 
 					resource.TestCheckResourceAttr("swo_dashboard.test", "widgets.#", "1"),
 
@@ -294,6 +300,8 @@ func testAccDashboardResourceConfig(name string) string {
 		is_private = false
 		enable_validation = true
 		validation_version = 1
+		mode = "Standard"
+		description = "test dashboard"
 		widgets = [
 			{
 				type = "Kpi"
@@ -418,6 +426,8 @@ func testAccDashboardVersionNilResourceConfig(name string) string {
 		version = null
 		enable_validation = true
 		validation_version = 1
+		mode = "Standard"
+		description = "test dashboard"
 		widgets = [
 			{
 				type = "Kpi"
@@ -472,6 +482,8 @@ func testAccDashboardVersion2ResourceConfig(name string) string {
 		version = 2
 		enable_validation = true
 		validation_version = 1
+		mode = "Standard"
+		description = "test dashboard"
 		widgets = [
 			{
 				type = "Kpi"
