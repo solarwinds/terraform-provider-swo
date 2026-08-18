@@ -215,12 +215,10 @@ func testAccDashboardValidationResourceConfig(name string) string {
 				properties = <<EOF
 				{
 					"unit": "ms",
-					"mode": "Standard",
-					"description": "Kpi Widget",
 				    "title": "Kpi Widget",
 					"linkUrl": "https://www.solarwinds.com",
-// 					"subtitle": "Widget with a Kpi display.",
-// 					"linkLabel": "Linky",
+ 				    "subtitle": "Widget with a Kpi display.",
+ 					"linkLabel": "Linky",
 					"dataSource": {
 						"type": "kpi",
 						"properties": {
@@ -293,8 +291,6 @@ func testAccDashboardResourceConfig(name string) string {
 				height = 2
 				properties = <<EOF
 				{
-					"mode": "Standard",
-					"description": "Kpi Widget",
 					"unit": "ms",
 					"title": "Kpi Widget",
 					"linkUrl": "https://www.solarwinds.com",
@@ -417,8 +413,6 @@ func testAccDashboardVersionNilResourceConfig(name string) string {
 				height = 2
 				properties = <<EOF
 				{
-					"mode": "Standard",
-					"description": "Kpi Widget",
 					"unit": "ms",
 					"title": "Kpi Widget",
 					"linkUrl": "https://www.solarwinds.com",
@@ -471,8 +465,6 @@ func testAccDashboardVersion2ResourceConfig(name string) string {
 				height = 6
 				properties = <<EOF
 				{
-					"mode": "Standard",
-					"description": "Kpi Widget",
 					"unit": "ms",
 					"title": "Kpi Widget",
 					"linkUrl": "https://www.solarwinds.com",
