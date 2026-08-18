@@ -283,13 +283,21 @@ func (r *dashboardResource) Create(ctx context.Context, req resource.CreateReque
 		apiVersion = &defaultVersion
 	}
 
+	var apiMode *swoClient.DashboardMode
+	if !tfPlan.Mode.IsNull() {
+		mode := swoClient.DashboardMode(tfPlan.Mode.ValueString())
+		apiMode = &mode
+	}
+
 	// Create the dashboard...
 	dashboard, err := r.client.
 		DashboardsService().
 		Create(ctx, swoClient.CreateDashboardInput{
 			Name:              tfPlan.Name.ValueString(),
+			Description:       tfPlan.Description.ValueStringPointer(),
 			CategoryId:        tfPlan.CategoryId.ValueStringPointer(),
 			IsPrivate:         tfPlan.IsPrivate.ValueBoolPointer(),
+			Mode:              apiMode,
 			Widgets:           widgets,
 			Layout:            layouts,
 			Version:           apiVersion,
@@ -380,6 +388,7 @@ func (r *dashboardResource) Update(ctx context.Context, req resource.UpdateReque
 		swoClient.UpdateDashboardInput{
 			Id:                id,
 			Name:              plan.Name.ValueString(),
+			Description:       plan.Description.ValueStringPointer(),
 			CategoryId:        plan.CategoryId.ValueStringPointer(),
 			Widgets:           widgets,
 			Layout:            layouts,

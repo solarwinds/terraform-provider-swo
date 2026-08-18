@@ -161,6 +161,8 @@ func TestAccDashboardValidationResource(t *testing.T) {
 					resource.TestCheckResourceAttr("swo_dashboard.test", "name", "test-acc validation [CREATE_TEST]"),
 					resource.TestCheckResourceAttr("swo_dashboard.test", "enable_validation", "true"),
 					resource.TestCheckResourceAttr("swo_dashboard.test", "validation_version", "1"),
+					resource.TestCheckResourceAttr("swo_dashboard.test", "mode", "Standard"),
+					resource.TestCheckResourceAttr("swo_dashboard.test", "description", "test dashboard"),
 					resource.TestCheckResourceAttr("swo_dashboard.test", "widgets.#", "1"),
 					resource.TestCheckResourceAttr("swo_dashboard.test", "widgets.0.type", "Kpi"),
 				),
@@ -205,6 +207,8 @@ func testAccDashboardValidationResourceConfig(name string) string {
 		is_private = false
 		enable_validation = true
 		validation_version = 1
+		mode = "Standard"
+		description = "test dashboard"
 		widgets = [
 			{
 				type = "Kpi"

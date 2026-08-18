@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/solarwinds/terraform-provider-swo/internal/validators"
@@ -18,7 +19,9 @@ import (
 type dashboardResourceModel struct {
 	Id                types.String `tfsdk:"id"`
 	Name              types.String `tfsdk:"name"`
+	Description       types.String `tfsdk:"description"`
 	IsPrivate         types.Bool   `tfsdk:"is_private"`
+	Mode              types.String `tfsdk:"mode"`
 	CategoryId        types.String `tfsdk:"category_id"`
 	Widgets           types.Set    `tfsdk:"widgets"`
 	Version           types.Int64  `tfsdk:"version"`
@@ -57,11 +60,26 @@ func (r *dashboardResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 				Description: "The name of the dashboard.",
 				Required:    true,
 			},
+			"description": schema.StringAttribute{
+				Description: "The description of the dashboard.",
+				Optional:    true,
+			},
 			"is_private": schema.BoolAttribute{
 				Description: "True if the dashboard is restricted to the owner",
 				Optional:    true,
 				PlanModifiers: []planmodifier.Bool{
 					boolplanmodifier.RequiresReplace(),
+				},
+			},
+			"mode": schema.StringAttribute{
+				Description: "The mode of the dashboard. Valid value is [`Standard`]. " +
+					"Can only be set on creation.",
+				Optional: true,
+				Validators: []validator.String{
+					validators.OneOf("Standard"),
+				},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
 				},
 			},
 			"category_id": schema.StringAttribute{
