@@ -327,6 +327,8 @@ func testAccDashboardResourceConfig(name string) string {
 										"isAscending": false
 									},
 									"metric": "synthetics.https.response.time",
+									"entityId": "",
+									"entityType": "All",
 									"groupBy": [],
 									"formatOptions": {
 										"unit": "ms",
@@ -376,6 +378,8 @@ func testAccDashboardResourceConfig(name string) string {
 								{
 									"type": "metric",
 									"metric": "synthetics.https.response.time",
+									"entityId": "",
+									"entityType": "All",
 									"aggregationFunction": "AVG",
 									"bucketGrouping": [],
 									"groupBy": [
@@ -394,6 +398,8 @@ func testAccDashboardResourceConfig(name string) string {
 								{
 									"type": "metric",
 									"metric": "synthetics.error_rate",
+									"entityId": "",
+									"entityType": "All",
 									"aggregationFunction": "AVG",
 									"bucketGrouping": [],
 									"groupBy": [
@@ -453,6 +459,8 @@ func testAccDashboardVersionNilResourceConfig(name string) string {
 										"isAscending": false
 									},
 									"metric": "synthetics.https.response.time",
+									"entityId": "",
+									"entityType": "All",
 									"groupBy": [],
 									"formatOptions": {
 										"unit": "ms",
@@ -509,6 +517,8 @@ func testAccDashboardVersion2ResourceConfig(name string) string {
 										"isAscending": false
 									},
 									"metric": "synthetics.https.response.time",
+									"entityId": "",
+									"entityType": "All",
 									"groupBy": [],
 									"formatOptions": {
 										"unit": "ms",
