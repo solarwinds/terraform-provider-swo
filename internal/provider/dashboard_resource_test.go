@@ -194,6 +194,48 @@ func TestAccDashboardValidationResource(t *testing.T) {
 	})
 }
 
+func TestAccDashboardMetricsResource(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		IsUnitTest:               true,
+		Steps: []resource.TestStep{
+			// Create and Read testing with validation enabled and multiple widget types.
+			{
+				Config:             testAccDashboardMetricsResourceConfig("test-acc metrics dashboard [CREATE_TEST]"),
+				ExpectNonEmptyPlan: true,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet("swo_dashboard.test", "id"),
+					resource.TestCheckResourceAttr("swo_dashboard.test", "name", "test-acc metrics dashboard [CREATE_TEST]"),
+					resource.TestCheckResourceAttr("swo_dashboard.test", "is_private", "true"),
+					resource.TestCheckResourceAttr("swo_dashboard.test", "version", "2"),
+					resource.TestCheckResourceAttr("swo_dashboard.test", "category_id", "APM"),
+					resource.TestCheckResourceAttr("swo_dashboard.test", "enable_validation", "true"),
+					resource.TestCheckResourceAttr("swo_dashboard.test", "validation_version", "1"),
+					resource.TestCheckResourceAttr("swo_dashboard.test", "mode", "Standard"),
+					resource.TestCheckResourceAttr("swo_dashboard.test", "description", "test dashboard"),
+					resource.TestCheckResourceAttr("swo_dashboard.test", "widgets.#", "3"),
+				),
+			},
+			// ImportState testing
+			{
+				ResourceName:      "swo_dashboard.test",
+				ImportState:       true,
+				ImportStateVerify: false, // False because the server sends widget properties back in a different format.
+			},
+			// Update and Read testing
+			{
+				Config:             testAccDashboardMetricsResourceConfig("test-acc metrics dashboard [UPDATE_TEST]"),
+				ExpectNonEmptyPlan: true,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("swo_dashboard.test", "name", "test-acc metrics dashboard [UPDATE_TEST]"),
+				),
+			},
+			// Delete testing automatically occurs in TestCase
+		},
+	})
+}
+
 func TestAccDashboardValidationErrorResource(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -262,6 +304,176 @@ func testAccDashboardValidationResourceConfig(name string) string {
 							"isHigherBetter": false,
 							"skip": false,
 							"displayValueMode": "Overall"
+						}
+					}
+				}
+				EOF
+			}
+		]
+	}`, name)
+}
+
+func testAccDashboardMetricsResourceConfig(name string) string {
+	return providerConfig() + fmt.Sprintf(`
+	resource "swo_dashboard" "test" {
+		name = %[1]q
+		is_private = true
+		version = 2
+		category_id = "APM"
+		enable_validation = true
+		validation_version = 1
+		mode = "Standard"
+		description = "test dashboard"
+		widgets = [
+			{
+				type = "Kpi"
+				x = 0
+				y = 0
+				width = 3
+				height = 2
+				properties = <<EOF
+				{
+					"unit": "ms",
+					"title": "Widget Title",
+					"linkUrl": "https://www.solarwinds.com",
+					"subtitle": "Widget Subtitle",
+					"linkLabel": "Linky",
+					"dataSource": {
+						"type": "kpi",
+						"properties": {
+							"series": [
+								{
+									"type": "metric",
+									"limit": {
+										"value": 50,
+										"isAscending": false
+									},
+									"metric": "synthetics.https.response.time",
+									"groupBy": [],
+									"formatOptions": {
+										"unit": "ms",
+										"precision": 3,
+										"minUnitSize": -2
+									},
+									"bucketGrouping": [],
+									"aggregationFunction": "AVG"
+								}
+							],
+							"isHigherBetter": false,
+							"includePercentageChange": true
+						}
+					}
+				}
+				EOF
+			},
+			{
+				type = "TimeSeries"
+				x = 3
+				y = 0
+				width = 9
+				height = 2
+				properties = <<EOF
+				{
+					"title": "Widget",
+					"subtitle": "",
+					"chart": {
+						"type": "LineChart",
+						"max": "auto",
+						"yAxisLabel": "",
+						"showLegend": true,
+						"yAxisFormatOverrides": {
+							"conversionFactor": 1,
+							"precision": 3
+						},
+						"formatOptions": {
+							"unit": "ms",
+							"minUnitSize": -2,
+							"precision": 3
+						}
+					},
+					"dataSource": {
+						"type": "timeSeries",
+						"properties": {
+							"series": [
+								{
+									"type": "metric",
+									"metric": "synthetics.https.response.time",
+									"aggregationFunction": "AVG",
+									"bucketGrouping": [],
+									"groupBy": [
+										"probe.region"
+									],
+									"limit": {
+										"value": 50,
+										"isAscending": false
+									},
+									"formatOptions": {
+										"unit": "ms",
+										"minUnitSize": -2,
+										"precision": 3
+									}
+								},
+								{
+									"type": "metric",
+									"metric": "synthetics.error_rate",
+									"aggregationFunction": "AVG",
+									"bucketGrouping": [],
+									"groupBy": [
+										"probe.region"
+									],
+									"limit": {
+										"value": 50,
+										"isAscending": false
+									},
+									"formatOptions": {
+										"unit": "%%",
+										"precision": 3
+									}
+								}
+							]
+						}
+					}
+				}
+				EOF
+			},
+			{
+				type = "Proportional"
+				x = 0
+				y = 2
+				width = 12
+				height = 2
+				properties = <<EOF
+				{
+					"title": "Widget",
+					"subtitle": "",
+					"type": "HorizontalBar",
+					"showLegend": false,
+					"formatOptions": {
+						"unit": "ms"
+					},
+					"dataSource": {
+						"type": "proportional",
+						"properties": {
+							"series": [
+								{
+									"type": "metric",
+									"metric": "synthetics.http.response.time",
+									"aggregationFunction": "AVG",
+									"bucketGrouping": [],
+									"groupBy": [
+										"synthetics.target"
+									],
+									"limit": {
+										"value": 10,
+										"isAscending": true
+									},
+									"formatOptions": {
+										"unit": "ms",
+										"minUnitSize": -2,
+										"precision": 3
+									}
+								}
+							]
 						}
 					}
 				}
