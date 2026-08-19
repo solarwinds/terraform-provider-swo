@@ -453,7 +453,7 @@ func testAccDashboardMetricsResourceConfig(name string) string {
 					"title": "Widget",
 					"subtitle": "",
 					"type": "HorizontalBar",
-					"sortDirection": "ASC",
+					"sortDirection": "ascending",
 					"showLegend": false,
 					"formatOptions": {
 						"unit": "ms"
