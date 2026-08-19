@@ -22,7 +22,7 @@ func TestAccDashboardResource(t *testing.T) {
 					resource.TestCheckResourceAttrSet("swo_dashboard.test", "id"),
 					resource.TestCheckResourceAttr("swo_dashboard.test", "name", "test-acc swo-terraform-provider [CREATE_TEST]"),
 					resource.TestCheckResourceAttr("swo_dashboard.test", "is_private", "false"),
-					resource.TestCheckNoResourceAttr("swo_dashboard.test", "version"),
+					resource.TestCheckResourceAttr("swo_dashboard.test", "version", "2"),
 					resource.TestCheckResourceAttr("swo_dashboard.test", "enable_validation", "true"),
 					resource.TestCheckResourceAttr("swo_dashboard.test", "validation_version", "1"),
 					resource.TestCheckResourceAttr("swo_dashboard.test", "mode", "Standard"),
@@ -76,7 +76,7 @@ func TestAccDashboardVersionNilResource(t *testing.T) {
 					resource.TestCheckResourceAttrSet("swo_dashboard.test", "id"),
 					resource.TestCheckResourceAttr("swo_dashboard.test", "name", "test-acc version=null [CREATE_TEST]"),
 					resource.TestCheckResourceAttr("swo_dashboard.test", "is_private", "false"),
-					resource.TestCheckNoResourceAttr("swo_dashboard.test", "version"),
+					resource.TestCheckResourceAttr("swo_dashboard.test", "version", "2"),
 					resource.TestCheckResourceAttr("swo_dashboard.test", "enable_validation", "true"),
 					resource.TestCheckResourceAttr("swo_dashboard.test", "validation_version", "1"),
 					resource.TestCheckResourceAttr("swo_dashboard.test", "mode", "Standard"),
@@ -171,6 +171,7 @@ func TestAccDashboardValidationResource(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet("swo_dashboard.test", "id"),
 					resource.TestCheckResourceAttr("swo_dashboard.test", "name", "test-acc validation [CREATE_TEST]"),
+					resource.TestCheckResourceAttr("swo_dashboard.test", "version", "2"),
 					resource.TestCheckResourceAttr("swo_dashboard.test", "enable_validation", "true"),
 					resource.TestCheckResourceAttr("swo_dashboard.test", "validation_version", "1"),
 					resource.TestCheckResourceAttr("swo_dashboard.test", "mode", "Standard"),
@@ -217,6 +218,7 @@ func testAccDashboardValidationResourceConfig(name string) string {
 	resource "swo_dashboard" "test" {
 		name = %[1]q
 		is_private = false
+		version = 2
 		enable_validation = true
 		validation_version = 1
 		mode = "Standard"
@@ -278,6 +280,7 @@ func testAccDashboardValidationInvalidResourceConfig(name string) string {
 	resource "swo_dashboard" "test" {
 		name = %[1]q
 		is_private = false
+		version = 2
 		enable_validation = true
 		validation_version = 1
 		widgets = [
@@ -298,6 +301,7 @@ func testAccDashboardResourceConfig(name string) string {
 	resource "swo_dashboard" "test" {
 		name = %[1]q
 		is_private = false
+		version = 2
 		enable_validation = true
 		validation_version = 1
 		mode = "Standard"
@@ -429,7 +433,7 @@ func testAccDashboardVersionNilResourceConfig(name string) string {
 	resource "swo_dashboard" "test" {
 		name = %[1]q
 		is_private = false
-		version = null
+		version = 2
 		enable_validation = true
 		validation_version = 1
 		mode = "Standard"
