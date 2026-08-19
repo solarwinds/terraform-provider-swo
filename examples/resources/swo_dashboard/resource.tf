@@ -2,7 +2,8 @@ resource "swo_dashboard" "metrics_dashboard" {
   name               = "My metrics dashboard"
   version            = 2
   is_private         = true
-  category_id        = APM
+  mode               = "Standard"
+  description        = "My metrics dashboard"
   validation_version = 1
   enable_validation  = true
   widgets = [
@@ -30,6 +31,8 @@ resource "swo_dashboard" "metrics_dashboard" {
                   "isAscending": false
                 },
                 "metric": "synthetics.https.response.time",
+                "entityId": "",
+                "entityType": "All",
                 "groupBy": [],
                 "formatOptions": {
                   "unit": "ms",
@@ -79,6 +82,8 @@ resource "swo_dashboard" "metrics_dashboard" {
               {
                 "type": "metric",
                 "metric": "synthetics.https.response.time",
+                "entityId": "",
+                "entityType": "All",
                 "aggregationFunction": "AVG",
                 "bucketGrouping": [],
                 "groupBy": [
@@ -97,6 +102,8 @@ resource "swo_dashboard" "metrics_dashboard" {
               {
                 "type": "metric",
                 "metric": "synthetics.error_rate",
+                "entityId": "",
+                "entityType": "All",
                 "aggregationFunction": "AVG",
                 "bucketGrouping": [],
                 "groupBy": [
@@ -128,6 +135,7 @@ resource "swo_dashboard" "metrics_dashboard" {
           "title": "Widget",
           "subtitle": "",
           "type": "HorizontalBar",
+          "sortDirection": "ascending",
           "showLegend": false,
           "formatOptions": {
               "unit": "ms"
@@ -139,6 +147,8 @@ resource "swo_dashboard" "metrics_dashboard" {
                       {
                           "type": "metric",
                           "metric": "synthetics.http.response.time",
+                          "entityId": "",
+                          "entityType": "All",
                           "aggregationFunction": "AVG",
                           "bucketGrouping": [],
                           "groupBy": [
