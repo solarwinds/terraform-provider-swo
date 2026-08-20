@@ -68,44 +68,11 @@ func TestAccDashboardVersionNilResource(t *testing.T) {
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		IsUnitTest:               true,
 		Steps: []resource.TestStep{
-			// Create and Read testing
+			// Create should fail because the API requires a version to be provided.
 			{
-				Config:             testAccDashboardVersionNilResourceConfig("test-acc version=null [CREATE_TEST]"),
-				ExpectNonEmptyPlan: true,
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet("swo_dashboard.test", "id"),
-					resource.TestCheckResourceAttr("swo_dashboard.test", "name", "test-acc version=null [CREATE_TEST]"),
-					resource.TestCheckResourceAttr("swo_dashboard.test", "is_private", "false"),
-					resource.TestCheckResourceAttr("swo_dashboard.test", "version", "2"),
-					resource.TestCheckResourceAttr("swo_dashboard.test", "enable_validation", "true"),
-					resource.TestCheckResourceAttr("swo_dashboard.test", "validation_version", "1"),
-					resource.TestCheckResourceAttr("swo_dashboard.test", "mode", "Standard"),
-					resource.TestCheckResourceAttr("swo_dashboard.test", "description", "test dashboard"),
-
-					resource.TestCheckResourceAttr("swo_dashboard.test", "widgets.#", "1"),
-
-					resource.TestCheckResourceAttr("swo_dashboard.test", "widgets.0.type", "Kpi"),
-					resource.TestCheckResourceAttr("swo_dashboard.test", "widgets.0.x", "0"),
-					resource.TestCheckResourceAttr("swo_dashboard.test", "widgets.0.y", "0"),
-					resource.TestCheckResourceAttr("swo_dashboard.test", "widgets.0.width", "4"),
-					resource.TestCheckResourceAttr("swo_dashboard.test", "widgets.0.height", "2"),
-				),
+				Config:      testAccDashboardVersionNilResourceConfig("test-acc version=null [CREATE_TEST]"),
+				ExpectError: regexp.MustCompile("Version must be provided"),
 			},
-			// ImportState testing
-			{
-				ResourceName:      "swo_dashboard.test",
-				ImportState:       true,
-				ImportStateVerify: false, // False because the server sends widget properties back in a different format.
-			},
-			// Update and Read testing
-			{
-				Config:             testAccDashboardVersionNilResourceConfig("test-acc version=null [UPDATE_TEST]"),
-				ExpectNonEmptyPlan: true,
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("swo_dashboard.test", "name", "test-acc version=null [UPDATE_TEST]"),
-				),
-			},
-			// Delete testing automatically occurs in TestCase
 		},
 	})
 }
