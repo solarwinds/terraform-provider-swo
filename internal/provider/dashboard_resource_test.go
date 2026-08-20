@@ -400,7 +400,7 @@ func testAccDashboardVersionNilResourceConfig(name string) string {
 	resource "swo_dashboard" "test" {
 		name = %[1]q
 		is_private = false
-		version = 2
+		version = null
 		enable_validation = true
 		validation_version = 1
 		mode = "Standard"
