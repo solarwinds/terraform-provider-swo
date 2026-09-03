@@ -14,10 +14,13 @@ A terraform resource for managing dashboards.
 
 ```terraform
 resource "swo_dashboard" "metrics_dashboard" {
-  name        = "My metrics dashboard"
-  version     = 2
-  is_private  = true
-  category_id = APM
+  name               = "My metrics dashboard"
+  version            = 2
+  is_private         = true
+  mode               = "Standard"
+  description        = "My metrics dashboard"
+  validation_version = 1
+  enable_validation  = true
   widgets = [
     {
       type       = "Kpi"
@@ -43,6 +46,8 @@ resource "swo_dashboard" "metrics_dashboard" {
                   "isAscending": false
                 },
                 "metric": "synthetics.https.response.time",
+                "entityId": "",
+                "entityType": "All",
                 "groupBy": [],
                 "formatOptions": {
                   "unit": "ms",
@@ -92,6 +97,8 @@ resource "swo_dashboard" "metrics_dashboard" {
               {
                 "type": "metric",
                 "metric": "synthetics.https.response.time",
+                "entityId": "",
+                "entityType": "All",
                 "aggregationFunction": "AVG",
                 "bucketGrouping": [],
                 "groupBy": [
@@ -110,6 +117,8 @@ resource "swo_dashboard" "metrics_dashboard" {
               {
                 "type": "metric",
                 "metric": "synthetics.error_rate",
+                "entityId": "",
+                "entityType": "All",
                 "aggregationFunction": "AVG",
                 "bucketGrouping": [],
                 "groupBy": [
@@ -141,6 +150,7 @@ resource "swo_dashboard" "metrics_dashboard" {
           "title": "Widget",
           "subtitle": "",
           "type": "HorizontalBar",
+          "sortDirection": "ascending",
           "showLegend": false,
           "formatOptions": {
               "unit": "ms"
@@ -152,6 +162,8 @@ resource "swo_dashboard" "metrics_dashboard" {
                       {
                           "type": "metric",
                           "metric": "synthetics.http.response.time",
+                          "entityId": "",
+                          "entityType": "All",
                           "aggregationFunction": "AVG",
                           "bucketGrouping": [],
                           "groupBy": [
@@ -187,7 +199,11 @@ resource "swo_dashboard" "metrics_dashboard" {
 ### Optional
 
 - `category_id` (String) The category that this dashboard is assigned to.
+- `description` (String) The description of the dashboard.
+- `enable_validation` (Boolean) When true, enables widget validation. Validation is skipped by default.
 - `is_private` (Boolean) True if the dashboard is restricted to the owner
+- `mode` (String) The mode of the dashboard. Valid value is [`Standard`]. Can only be set on creation.
+- `validation_version` (Number) Validation rules version. Defaults to the current version on the server when omitted.
 - `version` (Number) Default version is null. Version 2 triples the granularity of widget heights. For a pre-version-2 dashboard, the dashboard client will migrate a widget's height to the new granularity by tripling the previous height value. Ex, a pre-version-2 dashboard widget of height = 2, will be migrated to a height = 6.
 - `widgets` (Attributes Set) The widgets that are placed on the dashboard. (see [below for nested schema](#nestedatt--widgets))
 

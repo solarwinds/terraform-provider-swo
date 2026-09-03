@@ -261,21 +261,39 @@ func (r *dashboardResource) Create(ctx context.Context, req resource.CreateReque
 		temp := int(*tfVersion)
 		convertedTfVersion = &temp
 	}
+
+	tfValidationVersion := tfPlan.ValidationVersion.ValueInt64Pointer()
+	var convertedTfValidationVersion *int = nil
+	if tfValidationVersion != nil {
+		temp := int(*tfValidationVersion)
+		convertedTfValidationVersion = &temp
+	}
+
 	widgets, layouts := widgetsFromPlan(ctx, tfPlan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
+	}
+
+	var apiMode *swoClient.DashboardMode
+	if !tfPlan.Mode.IsNull() {
+		mode := swoClient.DashboardMode(tfPlan.Mode.ValueString())
+		apiMode = &mode
 	}
 
 	// Create the dashboard...
 	dashboard, err := r.client.
 		DashboardsService().
 		Create(ctx, swoClient.CreateDashboardInput{
-			Name:       tfPlan.Name.ValueString(),
-			CategoryId: tfPlan.CategoryId.ValueStringPointer(),
-			IsPrivate:  tfPlan.IsPrivate.ValueBoolPointer(),
-			Widgets:    widgets,
-			Layout:     layouts,
-			Version:    convertedTfVersion,
+			Name:              tfPlan.Name.ValueString(),
+			Description:       tfPlan.Description.ValueStringPointer(),
+			CategoryId:        tfPlan.CategoryId.ValueStringPointer(),
+			IsPrivate:         tfPlan.IsPrivate.ValueBoolPointer(),
+			Mode:              apiMode,
+			Widgets:           widgets,
+			Layout:            layouts,
+			Version:           convertedTfVersion,
+			ValidationVersion: convertedTfValidationVersion,
+			EnableValidation:  tfPlan.EnableValidation.ValueBoolPointer(),
 		})
 
 	if err != nil {
@@ -336,6 +354,14 @@ func (r *dashboardResource) Update(ctx context.Context, req resource.UpdateReque
 		temp := int(*tfVersion)
 		convertedTfVersion = &temp
 	}
+
+	tfValidationVersion := plan.ValidationVersion.ValueInt64Pointer()
+	var convertedTfValidationVersion *int = nil
+	if tfValidationVersion != nil {
+		temp := int(*tfValidationVersion)
+		convertedTfValidationVersion = &temp
+	}
+
 	widgets, layouts := widgetsFromPlan(ctx, plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
@@ -344,12 +370,15 @@ func (r *dashboardResource) Update(ctx context.Context, req resource.UpdateReque
 	// Update the dashboard...
 	dashboard, err := r.client.DashboardsService().Update(ctx,
 		swoClient.UpdateDashboardInput{
-			Id:         id,
-			Name:       plan.Name.ValueString(),
-			CategoryId: plan.CategoryId.ValueStringPointer(),
-			Widgets:    widgets,
-			Layout:     layouts,
-			Version:    convertedTfVersion,
+			Id:                id,
+			Name:              plan.Name.ValueString(),
+			Description:       plan.Description.ValueStringPointer(),
+			CategoryId:        plan.CategoryId.ValueStringPointer(),
+			Widgets:           widgets,
+			Layout:            layouts,
+			Version:           convertedTfVersion,
+			ValidationVersion: convertedTfValidationVersion,
+			EnableValidation:  plan.EnableValidation.ValueBoolPointer(),
 		})
 
 	if err != nil {

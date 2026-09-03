@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/solarwinds/terraform-provider-swo/internal/validators"
@@ -16,12 +17,16 @@ import (
 
 // The main Dashboard Resource model that is derived from the schema.
 type dashboardResourceModel struct {
-	Id         types.String `tfsdk:"id"`
-	Name       types.String `tfsdk:"name"`
-	IsPrivate  types.Bool   `tfsdk:"is_private"`
-	CategoryId types.String `tfsdk:"category_id"`
-	Widgets    types.Set    `tfsdk:"widgets"`
-	Version    types.Int64  `tfsdk:"version"`
+	Id                types.String `tfsdk:"id"`
+	Name              types.String `tfsdk:"name"`
+	Description       types.String `tfsdk:"description"`
+	IsPrivate         types.Bool   `tfsdk:"is_private"`
+	Mode              types.String `tfsdk:"mode"`
+	CategoryId        types.String `tfsdk:"category_id"`
+	Widgets           types.Set    `tfsdk:"widgets"`
+	Version           types.Int64  `tfsdk:"version"`
+	ValidationVersion types.Int64  `tfsdk:"validation_version"`
+	EnableValidation  types.Bool   `tfsdk:"enable_validation"`
 }
 
 type dashboardWidgetModel struct {
@@ -55,11 +60,26 @@ func (r *dashboardResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 				Description: "The name of the dashboard.",
 				Required:    true,
 			},
+			"description": schema.StringAttribute{
+				Description: "The description of the dashboard.",
+				Optional:    true,
+			},
 			"is_private": schema.BoolAttribute{
 				Description: "True if the dashboard is restricted to the owner",
 				Optional:    true,
 				PlanModifiers: []planmodifier.Bool{
 					boolplanmodifier.RequiresReplace(),
+				},
+			},
+			"mode": schema.StringAttribute{
+				Description: "The mode of the dashboard. Valid value is [`Standard`]. " +
+					"Can only be set on creation.",
+				Optional: true,
+				Validators: []validator.String{
+					validators.OneOf("Standard"),
+				},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
 				},
 			},
 			"category_id": schema.StringAttribute{
@@ -116,6 +136,14 @@ func (r *dashboardResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 					"Ex, a pre-version-2 dashboard widget of height = 2, will be migrated to a height = 6.",
 				Optional: true,
 				Default:  nil,
+			},
+			"validation_version": schema.Int64Attribute{
+				Description: "Validation rules version. Defaults to the current version on the server when omitted.",
+				Optional:    true,
+			},
+			"enable_validation": schema.BoolAttribute{
+				Description: "When true, enables widget validation. Validation is skipped by default.",
+				Optional:    true,
 			},
 		},
 	}
