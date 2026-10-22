@@ -54,6 +54,16 @@ go mod tidy
 
 Then commit the changes to `go.mod` and `go.sum`.
 
+### Pull Requests
+
+Pull requests are checked automatically and must follow these conventions:
+
+- The title follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/), e.g. `fix(alert): handle empty conditions` or `feat!: remove deprecated attribute`.
+- The branch name is `<type>/<description>`, e.g. `fix/alert-empty-conditions`.
+- The description must not link to internal resources. This repository is public.
+
+Allowed types: `feat`, `fix`, `chore`, `ci`, `docs`, `refactor`, `test`, `build`, `perf`, `style`, `revert`.
+
 ## Terraform Debugging
 
 Follow this: https://opencredo.com/blogs/running-a-terraform-provider-with-a-debugger/
