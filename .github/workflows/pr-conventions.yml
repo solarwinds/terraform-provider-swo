@@ -1,0 +1,43 @@
+name: pr-conventions
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  pr-conventions:
+    name: Check PR title, branch name, and description
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check conventions
+        # PR fields are passed through env so their contents are never interpolated into the script.
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_BRANCH: ${{ github.head_ref }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+        run: |
+          types='feat|fix|chore|ci|docs|refactor|test|build|perf|style|revert'
+          failed=0
+
+          if ! grep -qiE "^($types)(\([^)]+\))?!?: .+|^Revert \".+\"$" <<< "$PR_TITLE"; then
+            echo "::error::PR title must follow Conventional Commits, e.g. 'fix(alert): handle empty conditions'. Allowed types: ${types//|/, }"
+            failed=1
+          fi
+
+          if [[ "$PR_AUTHOR" != "dependabot[bot]" ]] && ! grep -qE "^($types)/[A-Za-z0-9][A-Za-z0-9._-]*$|^revert-[0-9]+-" <<< "$PR_BRANCH"; then
+            echo "::error::Branch name must be <type>/<description>, e.g. 'fix/alert-empty-conditions'. Allowed types: ${types//|/, }"
+            failed=1
+          fi
+
+          if grep -qiE '(^|[^A-Za-z0-9-])solarwinds-cloud/|swicloud\.atlassian\.net' <<< "$PR_BODY"; then
+            echo "::error::PR description links to an internal resource. This repository is public; remove internal links."
+            failed=1
+          fi
+
+          exit $failed
