@@ -25,17 +25,17 @@ jobs:
           types='feat|fix|chore|ci|docs|refactor|test|build|perf|style|revert'
           failed=0
 
-          if ! grep -qiE "^($types)(\([^)]+\))?!?: .+" <<< "$PR_TITLE"; then
+          if ! grep -qiE "^($types)(\([^)]+\))?!?: .+|^Revert \".+\"$" <<< "$PR_TITLE"; then
             echo "::error::PR title must follow Conventional Commits, e.g. 'fix(alert): handle empty conditions'. Allowed types: ${types//|/, }"
             failed=1
           fi
 
-          if [[ "$PR_AUTHOR" != "dependabot[bot]" ]] && ! grep -qE "^($types)/[A-Za-z0-9][A-Za-z0-9._-]*$" <<< "$PR_BRANCH"; then
+          if [[ "$PR_AUTHOR" != "dependabot[bot]" ]] && ! grep -qE "^($types)/[A-Za-z0-9][A-Za-z0-9._-]*$|^revert-[0-9]+-" <<< "$PR_BRANCH"; then
             echo "::error::Branch name must be <type>/<description>, e.g. 'fix/alert-empty-conditions'. Allowed types: ${types//|/, }"
             failed=1
           fi
 
-          if grep -qiE 'github\.com/solarwinds-cloud|swicloud\.atlassian\.net' <<< "$PR_BODY"; then
+          if grep -qiE '(^|[^A-Za-z0-9-])solarwinds-cloud/|swicloud\.atlassian\.net' <<< "$PR_BODY"; then
             echo "::error::PR description links to an internal resource. This repository is public; remove internal links."
             failed=1
           fi
