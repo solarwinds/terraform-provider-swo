@@ -23,13 +23,13 @@ jobs:
       contents: read
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
         with:
           go-version-file: 'go.mod'
           cache: true
       - name: Install Terraform (for formatting)
-        uses: hashicorp/setup-terraform@v3
+        uses: hashicorp/setup-terraform@v4
         with:
           # We can safely use latest; it's for formatting only
           terraform_version: latest
@@ -43,11 +43,11 @@ jobs:
     needs: [docs-verify]
     environment: prod
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           # Allow goreleaser to access older tag information.
           fetch-depth: 0
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version-file: 'go.mod'
           cache: true
@@ -72,7 +72,7 @@ jobs:
           SWO_P12_PASSWORD: ${{ secrets.SWO_P12_PASSWORD }}
       - name: Checkout solarwinds-actions/gha-signing
         if: ${{ startsWith(github.ref, 'refs/tags/v') }}
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: solarwinds-actions/gha-signing
           token: ${{ secrets.FGPAT_ENOPS_7950_SOLARWINDS_ACTIONS }}

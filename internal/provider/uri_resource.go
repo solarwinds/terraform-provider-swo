@@ -324,23 +324,23 @@ func (r *uriResource) Update(ctx context.Context, req resource.UpdateRequest, re
 		return
 	}
 
-	bUriToMatch, err := json.Marshal(map[string]interface{}{
+	bUriToMatch, err := json.Marshal(map[string]any{
 		"id":   updateInput.Id,
 		"name": updateInput.Name,
 		"host": updateInput.IpOrDomain,
-		"options": map[string]interface{}{
+		"options": map[string]any{
 			"isPingEnabled": updateInput.PingOptions.Enabled,
 			"isTcpEnabled":  updateInput.TcpOptions.Enabled,
 		},
-		"tcpOptions": map[string]interface{}{
+		"tcpOptions": map[string]any{
 			"port":           updateInput.TcpOptions.Port,
 			"stringToExpect": updateInput.TcpOptions.StringToExpect,
 			"stringToSend":   updateInput.TcpOptions.StringToSend,
 		},
-		"testDefinitions": map[string]interface{}{
+		"testDefinitions": map[string]any{
 			"testFromLocation":      updateInput.TestDefinitions.TestFrom.Type,
 			"testIntervalInSeconds": updateInput.TestDefinitions.TestIntervalInSeconds,
-			"platformOptions": map[string]interface{}{
+			"platformOptions": map[string]any{
 				"testFromAll": planPlatformOptions.TestFromAll.ValueBoolPointer(),
 				"platforms":   platforms,
 			},

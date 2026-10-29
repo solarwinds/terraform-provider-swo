@@ -7,8 +7,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"golang.org/x/exp/constraints"
 )
+
+// integer matches any signed or unsigned integer type.
+type integer interface {
+	~int | ~int8 | ~int16 | ~int32 | ~int64 |
+		~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~uintptr
+}
 
 // Map returns a slice where each element results from applying the given function f
 // to the corresponding element in the input slice.
@@ -58,7 +63,7 @@ func DerefOrDefault[T any](ptr *T, defaultValue T) T {
 // type, by dereferencing and copying the value when needed (i.e., when the given
 // pointer is not nil). Note that loss of precision might occur, depending on the type
 // you're converting to.
-func CastIntPtr[T, U constraints.Integer](ptr *T) *U {
+func CastIntPtr[T, U integer](ptr *T) *U {
 	if ptr == nil {
 		return nil
 	}

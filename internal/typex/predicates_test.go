@@ -373,7 +373,7 @@ func TestLess(t *testing.T) {
 func TestIsNil(t *testing.T) {
 	tests := []struct {
 		name     string
-		value    interface{}
+		value    any
 		expected bool
 	}{
 		{

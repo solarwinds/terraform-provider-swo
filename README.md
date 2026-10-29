@@ -22,7 +22,14 @@ Please report bugs and request enhancements in the [Issues area](https://github.
 ### Requirements
 
 - [Terraform](https://www.terraform.io/downloads.html) >= 1.0.7
-- [Go](https://golang.org/doc/install) >= 1.22
+- [Go](https://golang.org/doc/install) >= 1.26
+
+### Supported Go versions
+
+This terraform provider is compatible with the **latest two Go major releases that are still maintained by the Go team** (see the [Go release policy](https://go.dev/doc/devel/release#policy)).
+
+When a new Go release comes out and the oldest supported release reaches end of life, the project raises its minimum Go version to the new oldest supported release in `go.mod`.
+Older Go versions are not guaranteed to work.
 
 ### Building
 

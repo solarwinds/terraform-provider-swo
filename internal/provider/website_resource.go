@@ -631,9 +631,9 @@ func mapAvailabilitySettings(ctx context.Context, tfAvailability availabilityMon
 		}
 		if tfSslMonitoring.Enabled.ValueBool() {
 			availabilitySettings.Ssl = &components.Ssl{
-				Enabled:                        swov1.Bool(true),
-				DaysPriorToExpiration:          swov1.Int(int(tfSslMonitoring.DaysPriorToExpiration.ValueInt64())),
-				IgnoreIntermediateCertificates: swov1.Bool(tfSslMonitoring.IgnoreIntermediateCertificates.ValueBool()),
+				Enabled:                        new(true),
+				DaysPriorToExpiration:          new(int(tfSslMonitoring.DaysPriorToExpiration.ValueInt64())),
+				IgnoreIntermediateCertificates: new(tfSslMonitoring.IgnoreIntermediateCertificates.ValueBool()),
 			}
 		}
 	}
@@ -686,7 +686,7 @@ func mapAvailabilitySettings(ctx context.Context, tfAvailability availabilityMon
 
 	availabilitySettings.PlatformOptions = &components.DemWebsitePlatformOptions{
 		ProbePlatforms: probePlatforms,
-		TestFromAll:    swov1.Bool(tfPlatformOpts.TestFromAll.ValueBool()),
+		TestFromAll:    new(tfPlatformOpts.TestFromAll.ValueBool()),
 	}
 
 	var tfCustomHeaders []customHeader
@@ -716,7 +716,7 @@ func mapAvailabilitySettings(ctx context.Context, tfAvailability availabilityMon
 
 func mapRumSettings(tfRum rumMonitoring) *components.Rum {
 	return &components.Rum{
-		ApdexTimeInSeconds: swov1.Int(int(tfRum.ApdexTimeInSeconds.ValueInt64())),
+		ApdexTimeInSeconds: new(int(tfRum.ApdexTimeInSeconds.ValueInt64())),
 		Spa:                tfRum.Spa.ValueBool(),
 	}
 }

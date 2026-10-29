@@ -60,7 +60,7 @@ func TestZero(t *testing.T) {
 	})
 
 	t.Run("interface", func(t *testing.T) {
-		result := Zero[interface{}]()
+		result := Zero[any]()
 		if result != nil {
 			t.Errorf("Zero[interface{}]() = %v, want nil", result)
 		}
