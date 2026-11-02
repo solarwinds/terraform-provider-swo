@@ -257,8 +257,8 @@ func TestDerefOrDefault(t *testing.T) {
 func TestCastIntPtr(t *testing.T) {
 	tests := []struct {
 		name     string
-		input    interface{}
-		expected interface{}
+		input    any
+		expected any
 	}{
 		{
 			name:     "int32 to int64",

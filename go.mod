@@ -1,8 +1,8 @@
 module github.com/solarwinds/terraform-provider-swo
 
-go 1.24.0
+go 1.26
 
-toolchain go1.24.1
+toolchain go1.26.10
 
 require (
 	github.com/cenkalti/backoff/v5 v5.0.3
@@ -16,13 +16,6 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/solarwinds/swo-client-go v0.0.26
 	github.com/solarwinds/swo-sdk-go/swov1 v0.12.1
-	golang.org/x/exp v0.0.0-20250620022241-b7579e27df2b
-)
-
-require (
-	github.com/hashicorp/go-retryablehttp v0.7.7 // indirect
-	github.com/spyzhov/ajson v0.9.6 // indirect
-	golang.org/x/sync v0.17.0 // indirect
 )
 
 require (
@@ -49,6 +42,7 @@ require (
 	github.com/hashicorp/go-hclog v1.6.3 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-plugin v1.6.3 // indirect
+	github.com/hashicorp/go-retryablehttp v0.7.7 // indirect
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/hashicorp/hc-install v0.9.2 // indirect
@@ -75,6 +69,7 @@ require (
 	github.com/shopspring/decimal v1.3.1 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
+	github.com/spyzhov/ajson v0.9.6 // indirect
 	github.com/vektah/gqlparser/v2 v2.5.19 // indirect
 	github.com/vmihailenco/msgpack v4.0.4+incompatible // indirect
 	github.com/vmihailenco/msgpack/v5 v5.4.1 // indirect
@@ -84,8 +79,10 @@ require (
 	github.com/zclconf/go-cty v1.17.0 // indirect
 	go.abhg.dev/goldmark/frontmatter v0.2.0 // indirect
 	golang.org/x/crypto v0.42.0 // indirect
+	golang.org/x/exp v0.0.0-20250620022241-b7579e27df2b // indirect
 	golang.org/x/mod v0.28.0 // indirect
 	golang.org/x/net v0.44.0 // indirect
+	golang.org/x/sync v0.17.0 // indirect
 	golang.org/x/sys v0.36.0 // indirect
 	golang.org/x/text v0.30.0 // indirect
 	golang.org/x/tools v0.37.0 // indirect

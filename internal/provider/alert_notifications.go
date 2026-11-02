@@ -1,8 +1,10 @@
 package provider
 
 import (
+	"cmp"
 	"context"
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 
@@ -45,11 +47,7 @@ func actionDescriptionsFromInput(input []swoClient.AlertActionInput) alertAction
 		sort.Strings(a.ConfigurationIds)
 		return &a
 	})
-	sort.Slice(actions, func(i, j int) bool {
-		return actions[i].GetType() < actions[j].GetType() ||
-			actions[i].GetType() == actions[j].GetType() &&
-				typex.PtrCompare(actions[i].GetResendIntervalSeconds(), actions[j].GetResendIntervalSeconds(), typex.Less)
-	})
+	slices.SortFunc(actions, compareAlertActionDescriptions)
 	return actions
 }
 
@@ -111,12 +109,27 @@ func actionDescriptionsFromResult(result []swoClient.ReadAlertActionResult) aler
 		sort.Strings(a.ConfigurationIds)
 		return &a
 	})
-	sort.Slice(actions, func(i, j int) bool {
-		return actions[i].GetType() < actions[j].GetType() ||
-			actions[i].GetType() == actions[j].GetType() &&
-				typex.PtrCompare(actions[i].GetResendIntervalSeconds(), actions[j].GetResendIntervalSeconds(), typex.Less)
-	})
+	slices.SortFunc(actions, compareAlertActionDescriptions)
 	return actions
+}
+
+// compareAlertActionDescriptions orders action descriptions by type, then by resend
+// interval. A nil resend interval sorts before any set interval.
+func compareAlertActionDescriptions(a, b alertActionDescription) int {
+	if c := cmp.Compare(a.GetType(), b.GetType()); c != 0 {
+		return c
+	}
+	aInterval, bInterval := a.GetResendIntervalSeconds(), b.GetResendIntervalSeconds()
+	switch {
+	case aInterval == nil && bInterval == nil:
+		return 0
+	case aInterval == nil:
+		return -1
+	case bInterval == nil:
+		return 1
+	default:
+		return cmp.Compare(*aInterval, *bInterval)
+	}
 }
 
 func (actions alertActionDescriptions) toModelActions() types.Set {

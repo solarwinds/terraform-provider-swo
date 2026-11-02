@@ -738,14 +738,14 @@ func (model *alertResourceModel) toAlertDefinitionInput(ctx context.Context, dia
 		// - constantValue (time frame)
 		// and condition limit is 5 (for nested conditions). Total 30 = parent condition(10 = 2:relationship operator & scope-field + remaining for logical operators) + nested conditions max(5)(5*5 = 25)
 		alertConditionCountBuffer := 65
-		for i := 0; i < numConditions; i++ {
+		for i := range numConditions {
 			rootOperandIds[i] = (alertConditionCountBuffer * i) + 1
 		}
 		rootLogicalOperator.OperandIds = rootOperandIds
 		conditions = []swoClient.AlertConditionNodeInput{rootLogicalOperator}
 
 		// Create an alert condition for each
-		for i := 0; i < numConditions; i++ {
+		for i := range numConditions {
 			childRootNodeId := rootOperandIds[i]
 			childConditions := planConditions[i].toAlertConditionInputs(ctx, diags, childRootNodeId)
 			if diags.HasError() {
