@@ -1,12 +1,104 @@
+# https://golangci-lint.run/docs/linters/
 version: "2"
-
-# See https://golangci-lint.run/usage/linters/ for a list of linters.
+run:
+  go: "1.26"
+  relative-path-mode: gomod
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
 linters:
-  default: none
   enable:
-    - err113
-    - gosec
+    - asciicheck
+    - bodyclose
+    - depguard
+    - dogsled
+    - dupl
     - errcheck
+    - exhaustive
+    - copyloopvar
+    - gochecknoinits
+    - goconst
+    - gocritic
+    - goheader
+    - gomodguard_v2
+    - goprintffuncname
+    - gosec
+    - govet
+    - ineffassign
+    - misspell
+    - nakedret
+    - noctx
+    - revive
+    - staticcheck
+    - thelper
+    - unconvert
+    - unparam
+    - unused
+    - whitespace
+    - perfsprint
+    - exptostd
+    - intrange
+    - testifylint
+    - usestdlibvars
+    - fatcontext
+    - modernize
+    - err113
     - nilnil
     - nilerr
-    - staticcheck
+  disable:
+    - funlen
+    - gocyclo
+    - godot
+    - lll
+    - nestif
+    - nlreturn
+    - nolintlint
+    - prealloc
+    - rowserrcheck
+    - sqlclosecheck
+    - testpackage
+    - wsl
+    - gochecknoglobals
+  settings:
+    exhaustive:
+      default-signifies-exhaustive: true
+    goconst:
+      min-len: 4
+      min-occurrences: 5
+      ignore-string-values:
+        - ^[a-zA-Z][a-zA-Z0-9_]*$
+    govet:
+      enable:
+        - shadow
+    misspell:
+      locale: US
+      ignore-rules:
+        - cancelled
+    revive:
+      rules:
+        - name: var-naming
+          arguments:
+            - ["API", "ID", "IDS", "JSON", "TCP", "URI", "URL"]
+  exclusions:
+    presets:
+      - comments
+    rules:
+      - linters:
+          - dupl
+          - goconst
+        path: _test\.go
+      - linters:
+          - dupl
+        path: internal/provider/notificationSettings\.go
+formatters:
+  enable:
+    - gci
+    - gofmt
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - localmodule
+      custom-order: true
+      no-lex-order: true
