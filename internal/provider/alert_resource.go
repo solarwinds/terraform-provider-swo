@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	swoClient "github.com/solarwinds/swo-client-go/pkg/client"
+
 	"github.com/solarwinds/terraform-provider-swo/internal/alerts"
 	"github.com/solarwinds/terraform-provider-swo/internal/typex"
 )
@@ -343,6 +344,7 @@ func toModelConditions(response alerts.Condition, state types.Set, diags *diag.D
 		firstOperand := cond.GetOperands()[0]
 		modelCondition := types.ObjectNull(AlertConditionAttributeTypes())
 
+		//exhaustive:ignore -- only attribute and aggregation operands can originate from Terraform
 		switch swoClient.AlertOperatorType(firstOperand.GetType()) {
 		case swoClient.AlertAttributeType:
 			modelCondition = attributeConditionToModel(cond, diags)
@@ -705,7 +707,6 @@ func isConstantOperator(condition alerts.Condition) bool {
 // The function will first create the required number of logical operator nodes with
 // pre-computed operator IDs. Then it'll transform all condition items to alert conditions.
 func (model *alertResourceModel) toAlertDefinitionInput(ctx context.Context, diags *diag.Diagnostics) swoClient.AlertDefinitionInput {
-
 	var conditions []swoClient.AlertConditionNodeInput
 
 	var planConditions []alertConditionModel

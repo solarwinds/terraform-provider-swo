@@ -17,7 +17,7 @@ type compositeMetricResourceModel struct {
 	Unit        types.String `tfsdk:"unit"`
 }
 
-func (r *compositeMetricResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *compositeMetricResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: "A terraform resource for managing composite metrics.",
 		Attributes: map[string]schema.Attribute{
