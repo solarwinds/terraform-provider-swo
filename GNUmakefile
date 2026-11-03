@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-GOLANGCI_LINT := go tool -modfile=tools/go.tool.mod golangci-lint
+GOLANGCI_LINT := go tool -modfile=tools/go.mod golangci-lint
 LINT_CONFIG := --config tools/.golangci.yml
 
 .PHONY: help build install test testacc lint lint-fast lint-fix fmt fmt-go fmt-examples generate mod

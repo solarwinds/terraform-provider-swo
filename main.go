@@ -19,7 +19,7 @@ import (
 
 // Run the docs generation tool, check its repository for more information on how it works and how docs
 // can be customized.
-//go:generate go tool -modfile=tools/go.tool.mod tfplugindocs generate --provider-name swo --rendered-provider-name terraform-provider-swo
+//go:generate go tool -modfile=tools/go.mod tfplugindocs generate --provider-name swo --rendered-provider-name terraform-provider-swo
 
 var (
 	// these will be set by the goreleaser configuration

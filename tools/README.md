@@ -1,6 +1,6 @@
 # Development tools
 
-Go tools are pinned in `go.tool.mod`, separate from the provider's dependencies. Run these commands from the repository root; Go downloads the tools automatically.
+Go tools are pinned in `tools/go.mod`, separate from the provider's dependencies. Run these commands from the repository root; Go downloads the tools automatically.
 
 ```sh
 make help       # List development commands
@@ -17,15 +17,15 @@ make mod        # Tidy and verify provider dependencies
 Add or update a tool using its command package and a specific version:
 
 ```sh
-go -C tools get -modfile=go.tool.mod -tool github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.14.0
+go -C tools get -tool github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.14.0
 ```
 
 To remove a tool:
 
 ```sh
-go -C tools get -modfile=go.tool.mod -tool <command-package>@none
+go -C tools get -tool <command-package>@none
 ```
 
-Commit the resulting changes to `tools/go.tool.mod` and `tools/go.tool.sum`. Keep development tools out of the root `go.mod`.
+Commit the resulting changes to `tools/go.mod` and `tools/go.sum`. Keep development tools out of the root `go.mod`.
 
 GoReleaser is pinned in the release workflow; it is not in the Go tools module because its dependencies conflict with the linter.
