@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
+
 	"github.com/solarwinds/terraform-provider-swo/internal/provider"
 )
 
@@ -18,12 +19,12 @@ import (
 
 // Run the docs generation tool, check its repository for more information on how it works and how docs
 // can be customized.
-//go:generate go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
+//go:generate go tool -modfile=tools/go.tool.mod tfplugindocs generate --provider-name swo --rendered-provider-name terraform-provider-swo
 
 var (
 	// these will be set by the goreleaser configuration
 	// to appropriate values for the compiled binary
-	version string = "dev"
+	version = "dev"
 
 	// goreleaser can also pass the specific commit if you want
 	// commit  string = ""
