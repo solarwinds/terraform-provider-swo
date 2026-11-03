@@ -34,11 +34,11 @@ Older Go versions are not guaranteed to work.
 
 ### Building
 
-To compile the provider, run `go install`. This will build the provider and put the provider binary in the `$GOPATH/bin` directory.
+Run `make help` to list development commands. Use `make build` to compile the provider or `make install` to install it in `$GOPATH/bin`.
 
-To generate or update documentation, run `go generate`.
+To format examples and generate or update documentation, run `make generate` (requires Terraform).
 
-Run `make lint` to check the code. Development tools are pinned separately from the provider dependencies; see [`tools/README.md`](tools/README.md).
+Run `make lint` to check the code, `make fmt` to format Go code and Terraform examples, and `make test` to run unit tests without acceptance tests. Development tools are pinned separately from the provider dependencies; see [`tools/README.md`](tools/README.md).
 
 Before running Acceptance tests, create a .env file in the root directory and set SWO_BASE_URL and SWO_API_TOKEN.
 

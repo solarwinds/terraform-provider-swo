@@ -32,8 +32,8 @@ jobs:
         uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: latest
-      - name: Run go generate
-        run: go generate ./...
+      - name: Generate documentation
+        run: make generate
       - name: Fail if generated artifacts differ
         run: git diff --quiet --exit-code
 

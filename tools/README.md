@@ -3,8 +3,13 @@
 Go tools are pinned in `go.tool.mod`, separate from the provider's dependencies. Run these commands from the repository root; Go downloads the tools automatically.
 
 ```sh
+make help       # List development commands
 make lint       # Check Go code
-go generate ./...  # Format examples and generate documentation (requires Terraform)
+make lint-fast  # Run fast linters only
+make lint-fix   # Apply available lint fixes
+make fmt        # Format Go code and Terraform examples (requires Terraform)
+make generate   # Format examples and generate documentation (requires Terraform)
+make mod        # Tidy and verify provider dependencies
 ```
 
 ## Manage tools
