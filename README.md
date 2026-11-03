@@ -23,6 +23,7 @@ Please report bugs and request enhancements in the [Issues area](https://github.
 
 - [Terraform](https://www.terraform.io/downloads.html) >= 1.0.7
 - [Go](https://golang.org/doc/install) >= 1.26
+- Go 1.27.3 for development tools (downloaded automatically when `GOTOOLCHAIN` permits)
 
 ### Supported Go versions
 
@@ -36,6 +37,8 @@ Older Go versions are not guaranteed to work.
 To compile the provider, run `go install`. This will build the provider and put the provider binary in the `$GOPATH/bin` directory.
 
 To generate or update documentation, run `go generate`.
+
+Run `make lint` to check the code. Development tools are pinned separately from the provider dependencies; see [`tools/README.md`](tools/README.md).
 
 Before running Acceptance tests, create a .env file in the root directory and set SWO_BASE_URL and SWO_API_TOKEN.
 

@@ -26,12 +26,11 @@ jobs:
       - uses: actions/checkout@v5
       - uses: actions/setup-go@v6
         with:
-          go-version-file: 'go.mod'
+          go-version-file: 'tools/go.tool.mod'
           cache: true
       - name: Install Terraform (for formatting)
         uses: hashicorp/setup-terraform@v4
         with:
-          # We can safely use latest; it's for formatting only
           terraform_version: latest
       - name: Run go generate
         run: go generate ./...
