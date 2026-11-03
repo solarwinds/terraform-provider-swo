@@ -7,7 +7,6 @@ import (
 	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-
 	swoClient "github.com/solarwinds/swo-client-go/pkg/client"
 )
 
@@ -39,7 +38,6 @@ var (
 //	   attribute.name     42
 //	(attribute, id=1)     (constant, id=2)
 func (model alertConditionModel) toAlertConditionInputs(ctx context.Context, diags *diag.Diagnostics, rootNodeId int) []swoClient.AlertConditionNodeInput {
-
 	if !model.MetricName.IsNull() && !model.AttributeName.IsNull() {
 		diags.AddError("Bad input in terraform resource",
 			"Alerting condition must be either metric or attribute. Cannot populate both metric_name and attribute_name.")
@@ -55,7 +53,7 @@ func (model alertConditionModel) toAlertConditionInputs(ctx context.Context, dia
 	// metric condition node
 	// for both metric AND group alerts
 	if !model.MetricName.IsNull() {
-		//binary/threshold operator
+		// binary/threshold operator
 		thresholdOperatorCondition, thresholdDataCondition, err := model.toThresholdConditionInputs()
 		if err != nil {
 			diags.AddError("Bad input in terraform resource",
@@ -65,7 +63,7 @@ func (model alertConditionModel) toAlertConditionInputs(ctx context.Context, dia
 		thresholdOperatorCondition.Id = rootNodeId
 		thresholdOperatorCondition.OperandIds = []int{rootNodeId + 1, rootNodeId + 4}
 
-		//aggregation operator
+		// aggregation operator
 		aggregationCondition, err := model.toAggregationConditionInput()
 		if err != nil {
 			diags.AddError("Bad input in terraform resource",
@@ -75,18 +73,18 @@ func (model alertConditionModel) toAlertConditionInputs(ctx context.Context, dia
 		aggregationCondition.Id = rootNodeId + 1
 		aggregationCondition.OperandIds = []int{rootNodeId + 2, rootNodeId + 3}
 
-		//metric field node
+		// metric field node
 		metricFieldCondition := model.toMetricFieldConditionInput(ctx, diags)
 		if diags.HasError() {
 			return []swoClient.AlertConditionNodeInput{}
 		}
 		metricFieldCondition.Id = rootNodeId + 2
 
-		//constant value/duration condition
+		// constant value/duration condition
 		durationCondition := model.toDurationConditionInput()
 		durationCondition.Id = rootNodeId + 3
 
-		//constant value/threshold condition
+		// constant value/threshold condition
 		thresholdDataCondition.Id = rootNodeId + 4
 
 		conditions := []swoClient.AlertConditionNodeInput{
@@ -103,7 +101,6 @@ func (model alertConditionModel) toAlertConditionInputs(ctx context.Context, dia
 	// attribute condition node
 	// for metric alerts ONLY
 	if !model.AttributeName.IsNull() {
-
 		binaryCondition := swoClient.AlertConditionNodeInput{
 			Id:         rootNodeId,
 			Type:       string(swoClient.AlertBinaryOperatorType),
@@ -168,9 +165,8 @@ func (model alertConditionModel) toThresholdConditionInputs() (swoClient.AlertCo
 	thresholdOperatorConditions := swoClient.AlertConditionNodeInput{}
 	thresholdDataConditions := swoClient.AlertConditionNodeInput{}
 
-	//Not Reporting threshold values
+	// Not Reporting threshold values
 	if model.NotReporting.ValueBool() {
-
 		operator := string(swoClient.AlertOperatorEq)
 		thresholdOperatorConditions.Type = string(swoClient.AlertBinaryOperatorType)
 		thresholdOperatorConditions.Operator = &operator
@@ -180,7 +176,6 @@ func (model alertConditionModel) toThresholdConditionInputs() (swoClient.AlertCo
 		thresholdDataConditions.Type = string(swoClient.AlertConstantValueType)
 		thresholdDataConditions.DataType = &dataType
 		thresholdDataConditions.Value = &dataValue
-
 	} else {
 		match := alertThresholdRegex.FindStringSubmatch(threshold)
 		if match == nil {
@@ -235,7 +230,6 @@ func isValidThresholdOperator(operator string) bool {
 }
 
 func (model alertConditionModel) toDurationConditionInput() swoClient.AlertConditionNodeInput {
-
 	duration := model.Duration.ValueString()
 	dataType := GetStringDataType(duration)
 	durationCondition := swoClient.AlertConditionNodeInput{
@@ -248,7 +242,6 @@ func (model alertConditionModel) toDurationConditionInput() swoClient.AlertCondi
 }
 
 func (model alertConditionModel) toAggregationConditionInput() (swoClient.AlertConditionNodeInput, error) {
-
 	operator := model.AggregationType.ValueString()
 	operatorType, err := swoClient.GetAlertConditionType(operator)
 	if err != nil {
@@ -264,7 +257,6 @@ func (model alertConditionModel) toAggregationConditionInput() (swoClient.AlertC
 }
 
 func (model alertConditionModel) toMetricFieldConditionInput(ctx context.Context, diags *diag.Diagnostics) swoClient.AlertConditionNodeInput {
-
 	var groupByMetricTag []string
 	d := model.GroupByMetricTag.ElementsAs(ctx, &groupByMetricTag, false)
 	diags.Append(d...)
@@ -349,13 +341,12 @@ func (model alertConditionModel) buildEntityFilter(ctx context.Context, diags *d
 			Query: &querySearch,
 		}
 		return &entityFilter
-	} else {
-		return nil
 	}
+
+	return nil
 }
 
 func GetStringDataType(s string) string {
-
 	if _, err := strconv.Atoi(s); err == nil {
 		return "number"
 	}

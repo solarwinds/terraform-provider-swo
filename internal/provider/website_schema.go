@@ -3,22 +3,21 @@ package provider
 import (
 	"context"
 
-	"github.com/solarwinds/swo-sdk-go/swov1/models/components"
-	"github.com/solarwinds/terraform-provider-swo/internal/planmodifier/stringmodifier"
-
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
-	swoClient "github.com/solarwinds/swo-client-go/pkg/client"
-	"github.com/solarwinds/terraform-provider-swo/internal/validators"
-
-	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	swoClient "github.com/solarwinds/swo-client-go/pkg/client"
+	"github.com/solarwinds/swo-sdk-go/swov1/models/components"
+
+	"github.com/solarwinds/terraform-provider-swo/internal/planmodifier/stringmodifier"
+	"github.com/solarwinds/terraform-provider-swo/internal/validators"
 )
 
 // The main Website Resource model that is derived from the schema.
@@ -27,7 +26,7 @@ type websiteResourceModel struct {
 	Name       types.String `tfsdk:"name"`
 	Url        types.String `tfsdk:"url"`
 	Tags       types.Set    `tfsdk:"tags"`
-	Monitoring types.Object `tfsdk:"monitoring"` //websiteMonitoring
+	Monitoring types.Object `tfsdk:"monitoring"` // websiteMonitoring
 }
 
 type websiteTag struct {
@@ -43,10 +42,10 @@ func WebsiteTagAttributeTypes() map[string]attr.Type {
 }
 
 type websiteMonitoring struct {
-	Options       types.Object `tfsdk:"options"`        //monitoringOptions
-	Availability  types.Object `tfsdk:"availability"`   //availabilityMonitoring
-	Rum           types.Object `tfsdk:"rum"`            //rumMonitoring
-	CustomHeaders types.Set    `tfsdk:"custom_headers"` //deprecated
+	Options       types.Object `tfsdk:"options"`        // monitoringOptions
+	Availability  types.Object `tfsdk:"availability"`   // availabilityMonitoring
+	Rum           types.Object `tfsdk:"rum"`            // rumMonitoring
+	CustomHeaders types.Set    `tfsdk:"custom_headers"` // deprecated
 }
 
 func WebsiteMonitoringAttributeTypes() map[string]attr.Type {

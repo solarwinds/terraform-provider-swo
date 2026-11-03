@@ -6,13 +6,12 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/hashicorp/terraform-plugin-framework/attr"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
-
 	"github.com/cenkalti/backoff/v5"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	swoClient "github.com/solarwinds/swo-client-go/pkg/client"
 	swoClientTypes "github.com/solarwinds/swo-client-go/types"
 )
@@ -33,11 +32,11 @@ type uriResource struct {
 	client *swoClient.Client
 }
 
-func (r *uriResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (r *uriResource) Metadata(_ context.Context, _ resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = "uri"
 }
 
-func (r *uriResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (r *uriResource) Configure(_ context.Context, req resource.ConfigureRequest, _ *resource.ConfigureResponse) {
 	client, _ := req.ProviderData.(providerClients)
 	r.client = client.SwoClient
 }
@@ -221,8 +220,8 @@ func (r *uriResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 	}
 
 	if testDefs.PlatformOptions != nil {
-		listValue, d := types.SetValueFrom(ctx, types.StringType, testDefs.PlatformOptions.Platforms)
-		resp.Diagnostics.Append(d...)
+		listValue, listDiags := types.SetValueFrom(ctx, types.StringType, testDefs.PlatformOptions.Platforms)
+		resp.Diagnostics.Append(listDiags...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
@@ -231,8 +230,8 @@ func (r *uriResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 			Platforms:   listValue,
 		}
 
-		tfPlatformOptions, d := types.ObjectValueFrom(ctx, platformElementTypes, platformElements)
-		resp.Diagnostics.Append(d...)
+		tfPlatformOptions, optionsDiags := types.ObjectValueFrom(ctx, platformElementTypes, platformElements)
+		resp.Diagnostics.Append(optionsDiags...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
@@ -374,13 +373,13 @@ func (r *uriResource) Update(ctx context.Context, req resource.UpdateRequest, re
 	// Updates are eventually consistent. Retry until the URI we read and the URI we are updating match.
 	_, err = BackoffRetry(ctx, func() (*swoClient.ReadUriResult, error) {
 		// Read the Uri...
-		uri, err := r.client.UriService().Read(ctx, tfState.Id.ValueString())
+		uri, readErr := r.client.UriService().Read(ctx, tfState.Id.ValueString())
 
-		if err != nil {
-			return nil, backoff.Permanent(err)
+		if readErr != nil {
+			return nil, backoff.Permanent(readErr)
 		}
 
-		//Set unsupported values
+		// Set unsupported values
 		readUriResultToMatch.Typename = uri.Typename
 		readUriResultToMatch.Options.IsHttpEnabled = uri.Options.IsHttpEnabled
 		readUriResultToMatch.HttpOptions = uri.HttpOptions

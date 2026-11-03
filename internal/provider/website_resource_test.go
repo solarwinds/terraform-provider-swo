@@ -232,7 +232,6 @@ var (
 )
 
 func createTestStep(configFunc func(string, string, string, bool) string, name, url string, withTags bool, monitoring string, additionalChecks ...resource.TestCheckFunc) resource.TestStep {
-
 	resourceChecks := []resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet("swo_website.test", "id"),
 		resource.TestCheckResourceAttr("swo_website.test", "name", name),
@@ -242,7 +241,7 @@ func createTestStep(configFunc func(string, string, string, bool) string, name, 
 	if withTags {
 		resourceChecks = append(resourceChecks,
 			resource.TestCheckResourceAttr("swo_website.test", "tags.#", "2"),
-			//tag object order can be changed. Check for total number and nothing else.
+			// tag object order can be changed. Check for total number and nothing else.
 		)
 	} else {
 		resourceChecks = append(resourceChecks,
@@ -259,7 +258,6 @@ func createTestStep(configFunc func(string, string, string, bool) string, name, 
 }
 
 func testAccWebsiteResourceConfig(name string, url string, monitoring string, includeTags bool) string {
-
 	resourceConfig := fmt.Sprintf(`
     %s
 	resource "swo_website" "test" {

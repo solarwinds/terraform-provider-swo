@@ -147,24 +147,18 @@ func ObjectAttributesCoalesce(current, replacement types.Object) types.Object {
 
 	for key, rv := range replacement.Attributes() {
 		out := rv
-		switch rv.(type) {
+		switch replacementValue := rv.(type) {
 		case types.String:
 			if c, ok := currentMap[key].(types.String); ok {
-				out = StringCoalesce(c, rv.(types.String))
-			} else {
-				out = rv
+				out = StringCoalesce(c, replacementValue)
 			}
 		case types.List:
 			if c, ok := currentMap[key].(types.List); ok {
-				out = CollectionCoalesce(c, rv.(types.List))
-			} else {
-				out = rv
+				out = CollectionCoalesce(c, replacementValue)
 			}
 		case types.Set:
 			if c, ok := currentMap[key].(types.Set); ok {
-				out = CollectionCoalesce(c, rv.(types.Set))
-			} else {
-				out = rv
+				out = CollectionCoalesce(c, replacementValue)
 			}
 		}
 		result[key] = out

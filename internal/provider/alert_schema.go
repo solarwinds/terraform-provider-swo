@@ -20,6 +20,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	swoClient "github.com/solarwinds/swo-client-go/pkg/client"
+
 	"github.com/solarwinds/terraform-provider-swo/internal/typex"
 	"github.com/solarwinds/terraform-provider-swo/internal/validators"
 )
@@ -28,12 +29,12 @@ import (
 type alertResourceModel struct {
 	Id                  types.String `tfsdk:"id"`
 	Name                types.String `tfsdk:"name"`
-	NotificationActions types.Set    `tfsdk:"notification_actions"` //alertActionInputModel
+	NotificationActions types.Set    `tfsdk:"notification_actions"` // alertActionInputModel
 	Description         types.String `tfsdk:"description"`
 	Severity            types.String `tfsdk:"severity"`
 	Enabled             types.Bool   `tfsdk:"enabled"`
 	ConditionsOperation types.String `tfsdk:"conditions_operation"`
-	Conditions          types.Set    `tfsdk:"conditions"` //alertConditionModel
+	Conditions          types.Set    `tfsdk:"conditions"` // alertConditionModel
 	Notifications       types.List   `tfsdk:"notifications"`
 	TriggerResetActions types.Bool   `tfsdk:"trigger_reset_actions"`
 	RunbookLink         types.String `tfsdk:"runbook_link"`
@@ -125,17 +126,20 @@ var (
 		"zapier",
 		"swsd",
 	}
-	canonicalNotificationActionTypes = map[string]string{}
+	canonicalNotificationActionTypes = buildCanonicalNotificationActionTypes()
 
 	alertThresholdRegex  = regexp.MustCompile(`^(?P<operator>=|!=|>|<|>=|<=)(?P<threshold>\d*(?:\.\d+)?)$`)
 	configurationIdRegex = regexp.MustCompile(fmt.Sprintf(`^\d+:(?:%s)$`,
 		strings.Join(typex.Map(notificationActionTypes, strings.ToLower), "|")))
 )
 
-func init() {
+func buildCanonicalNotificationActionTypes() map[string]string {
+	canonical := make(map[string]string, len(notificationActionTypes))
 	for _, actionType := range notificationActionTypes {
-		canonicalNotificationActionTypes[strings.ToLower(actionType)] = actionType
+		canonical[strings.ToLower(actionType)] = actionType
 	}
+
+	return canonical
 }
 
 func canonicalNotificationActionType(actionType string) (string, diag.Diagnostics) {

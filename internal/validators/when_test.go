@@ -39,7 +39,7 @@ func (m mockValidator) ValidateString(_ context.Context, req validator.StringReq
 func TestWhenValidator_Description(t *testing.T) {
 	innerValidator := mockValidator{description: "must be valid"}
 	condMsg := "attribute X is set"
-	cond := func(ctx context.Context, req validator.StringRequest, diags *diag.Diagnostics) bool {
+	cond := func(_ context.Context, _ validator.StringRequest, _ *diag.Diagnostics) bool {
 		return true
 	}
 
@@ -55,7 +55,7 @@ func TestWhenValidator_Description(t *testing.T) {
 func TestWhenValidator_MarkdownDescription(t *testing.T) {
 	innerValidator := mockValidator{description: "must be valid"}
 	condMsg := "attribute X is set"
-	cond := func(ctx context.Context, req validator.StringRequest, diags *diag.Diagnostics) bool {
+	cond := func(_ context.Context, _ validator.StringRequest, _ *diag.Diagnostics) bool {
 		return true
 	}
 
@@ -132,7 +132,7 @@ func TestWhenValidator_ValidateString(t *testing.T) {
 				errorMsg:    innerErrorMsg,
 			}
 
-			cond := func(ctx context.Context, req validator.StringRequest, diags *diag.Diagnostics) bool {
+			cond := func(_ context.Context, _ validator.StringRequest, diags *diag.Diagnostics) bool {
 				if test.conditionFails {
 					diags.AddError("Condition Error", condErrorMsg)
 				}
