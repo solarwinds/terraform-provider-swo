@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -25,11 +26,11 @@ type notificationResource struct {
 	client *swoClient.Client
 }
 
-func (r *notificationResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (r *notificationResource) Metadata(_ context.Context, _ resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = "notification"
 }
 
-func (r *notificationResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (r *notificationResource) Configure(_ context.Context, req resource.ConfigureRequest, _ *resource.ConfigureResponse) {
 	client, _ := req.ProviderData.(providerClients)
 	r.client = client.SwoClient
 }
@@ -94,7 +95,7 @@ func (r *notificationResource) Read(ctx context.Context, req resource.ReadReques
 	tfState.Title = types.StringValue(notification.Title)
 	tfState.Type = types.StringValue(notification.Type)
 	tfState.Description = types.StringPointerValue(notification.Description)
-	tfState.SetSettings(notification.Settings, ctx, &resp.Diagnostics)
+	tfState.SetSettings(ctx, notification.Settings, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}

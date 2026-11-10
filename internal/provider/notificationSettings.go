@@ -294,7 +294,7 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 			settingsStruct, err := toSettingsStruct[clientAmazonSNS](settings)
 			if err != nil {
 				diags.AddError("Marshal Error",
-					fmt.Sprintf("Error marshalling 'amazonsns' settings: %s", err))
+					fmt.Sprintf("Error marshaling 'amazonsns' settings: %s", err))
 				return
 			}
 
@@ -353,7 +353,7 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 			settingsStruct, err := toSettingsStruct[clientEmail](settings)
 			if err != nil {
 				diags.AddError("Marshal Error",
-					fmt.Sprintf("Error marshalling 'email' settings: %s", err))
+					fmt.Sprintf("Error marshaling 'email' settings: %s", err))
 				return
 			}
 
@@ -406,7 +406,7 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 			settingsStruct, err := toSettingsStruct[clientMsTeams](settings)
 			if err != nil {
 				diags.AddError("Marshal Error",
-					fmt.Sprintf("Error marshalling 'msTeams' settings: %s", err))
+					fmt.Sprintf("Error marshaling 'msTeams' settings: %s", err))
 				return
 			}
 			tfObject, d := types.ObjectValueFrom(ctx, MsTeamsAttributeTypes(), settingsStruct)
@@ -418,7 +418,7 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 		},
 	},
 	"opsgenie": {
-		Get: func(m *notificationSettings, ctx context.Context, diags *diag.Diagnostics) any {
+		Get: func(m *notificationSettings, ctx context.Context, _ *diag.Diagnostics) any {
 			var opsGenie notificationSettingsOpsGenie
 			d := m.OpsGenie.As(ctx, &opsGenie, basetypes.ObjectAsOptions{})
 			if d.HasError() {
@@ -437,7 +437,7 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 			settingsStruct, err := toSettingsStruct[clientOpsGenie](settings)
 			if err != nil {
 				diags.AddError("Marshal Error",
-					fmt.Sprintf("Error marshalling 'opsgenie' settings: %s", err))
+					fmt.Sprintf("Error marshaling 'opsgenie' settings: %s", err))
 				return
 			}
 
@@ -469,7 +469,7 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 		},
 	},
 	"pagerduty": {
-		Get: func(m *notificationSettings, ctx context.Context, diags *diag.Diagnostics) any {
+		Get: func(m *notificationSettings, ctx context.Context, _ *diag.Diagnostics) any {
 			var pagerDuty notificationSettingsPagerDuty
 			d := m.PagerDuty.As(ctx, &pagerDuty, basetypes.ObjectAsOptions{})
 			if d.HasError() {
@@ -485,7 +485,7 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 			settingsStruct, err := toSettingsStruct[clientPagerDuty](settings)
 			if err != nil {
 				diags.AddError("Marshal Error",
-					fmt.Sprintf("Error marshalling 'pagerduty' settings: %s", err))
+					fmt.Sprintf("Error marshaling 'pagerduty' settings: %s", err))
 				return
 			}
 
@@ -532,7 +532,7 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 			settingsStruct, err := toSettingsStruct[clientPushover](settings)
 			if err != nil {
 				diags.AddError("Marshal Error",
-					fmt.Sprintf("Error marshalling 'pushover' settings: %s", err))
+					fmt.Sprintf("Error marshaling 'pushover' settings: %s", err))
 				return
 			}
 
@@ -578,7 +578,7 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 			settingsStruct, err := toSettingsStruct[clientServiceNow](settings)
 			if err != nil {
 				diags.AddError("Marshal Error",
-					fmt.Sprintf("Error marshalling 'servicenow' settings: %s", err))
+					fmt.Sprintf("Error marshaling 'servicenow' settings: %s", err))
 				return
 			}
 
@@ -623,7 +623,7 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 			settingsStruct, err := toSettingsStruct[clientSlack](settings)
 			if err != nil {
 				diags.AddError("Marshal Error",
-					fmt.Sprintf("Error marshalling 'slack' settings: %s", err))
+					fmt.Sprintf("Error marshaling 'slack' settings: %s", err))
 				return
 			}
 			tfObject, d := types.ObjectValueFrom(ctx, SlackAttributeTypes(), settingsStruct)
@@ -651,7 +651,7 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 			settingsStruct, err := toSettingsStruct[clientSolarWindsServiceDesk](settings)
 			if err != nil {
 				diags.AddError("Marshal Error",
-					fmt.Sprintf("Error marshalling 'swsd' settings: %s", err))
+					fmt.Sprintf("Error marshaling 'swsd' settings: %s", err))
 				return
 			}
 
@@ -702,7 +702,7 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 			settingsStruct, err := toSettingsStruct[clientWebhook](settings)
 			if err != nil {
 				diags.AddError("Marshal Error",
-					fmt.Sprintf("Error marshalling 'webhook' settings: %s", err))
+					fmt.Sprintf("Error marshaling 'webhook' settings: %s", err))
 				return
 			}
 			settingsStruct.AuthPassword = "PASSWORD"
@@ -755,7 +755,7 @@ var settingsAccessors = map[string]notificationSettingsAccessor{
 			settingsStruct, err := toSettingsStruct[clientZapier](settings)
 			if err != nil {
 				diags.AddError("Marshal Error",
-					fmt.Sprintf("Error marshalling 'zapier' settings: %s", err))
+					fmt.Sprintf("Error marshaling 'zapier' settings: %s", err))
 				return
 			}
 			tfObject, d := types.ObjectValueFrom(ctx, ZapierAttributeTypes(), settingsStruct)
@@ -783,8 +783,7 @@ func toSettingsStruct[T any](settings any) (*T, error) {
 	return &concreteSettings, nil
 }
 
-func (m *notificationResourceModel) SetSettings(clientSettings *any, ctx context.Context, diags *diag.Diagnostics) {
-
+func (m *notificationResourceModel) SetSettings(ctx context.Context, clientSettings *any, diags *diag.Diagnostics) {
 	if accessor, found := settingsAccessors[m.Type.ValueString()]; found {
 		if m.Settings.IsNull() {
 			var model = notificationSettings{
@@ -839,7 +838,6 @@ func (m *notificationResourceModel) SetSettings(clientSettings *any, ctx context
 }
 
 func (m *notificationResourceModel) GetSettings(ctx context.Context, diags *diag.Diagnostics) any {
-
 	if accessor, found := settingsAccessors[m.Type.ValueString()]; found {
 		if m.Settings.IsNull() {
 			m.Settings = types.ObjectNull(NotificationSettingsAttributeTypes())
@@ -857,9 +855,10 @@ func (m *notificationResourceModel) GetSettings(ctx context.Context, diags *diag
 			return nil
 		}
 		return clientSettings
-	} else {
-		diags.AddError("Unsupported Notification Type Error",
-			fmt.Sprintf("%s: %s", errUnsupportedNotificationType, m.Type.ValueString()))
-		return nil
 	}
+
+	diags.AddError("Unsupported Notification Type Error",
+		fmt.Sprintf("%s: %s", errUnsupportedNotificationType, m.Type.ValueString()))
+
+	return nil
 }

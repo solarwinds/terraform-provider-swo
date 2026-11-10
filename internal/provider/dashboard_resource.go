@@ -7,10 +7,9 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/hashicorp/terraform-plugin-framework/diag"
-
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -44,18 +43,17 @@ type dashboardResource struct {
 	client *swoClient.Client
 }
 
-func (r *dashboardResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (r *dashboardResource) Metadata(_ context.Context, _ resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = "dashboard"
 }
 
-func (r *dashboardResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (r *dashboardResource) Configure(_ context.Context, req resource.ConfigureRequest, _ *resource.ConfigureResponse) {
 	client, _ := req.ProviderData.(providerClients)
 	r.client = client.SwoClient
 }
 
 // Creates new WidgetInputs and LayoutInputs from plan widget data.
 func widgetsFromPlan(ctx context.Context, plan dashboardResourceModel, diags *diag.Diagnostics) ([]swoClient.WidgetInput, []swoClient.LayoutInput) {
-
 	var planWidgets []dashboardWidgetModel
 	d := plan.Widgets.ElementsAs(ctx, &planWidgets, false)
 	diags.Append(d...)
@@ -214,8 +212,8 @@ func setDashboardValuesFromRead(ctx context.Context, dashboard *swoClient.ReadDa
 					return
 				}
 
-				// The json string can be marshalled differently than what is specified in the terraform
-				// file so we need to compare the marshalled values instead of the raw json string.
+				// The json string can be marshaled differently than what is specified in the terraform
+				// file so we need to compare the marshaled values instead of the raw json string.
 				if !cmp.Equal(&stateProps, w.Properties) {
 					fmt.Println(cmp.Diff(&stateProps, w.Properties))
 					stateW.Properties = types.StringValue(string(props))
@@ -256,14 +254,14 @@ func (r *dashboardResource) Create(ctx context.Context, req resource.CreateReque
 	}
 
 	tfVersion := tfPlan.Version.ValueInt64Pointer()
-	var convertedTfVersion *int = nil
+	var convertedTfVersion *int
 	if tfVersion != nil {
 		temp := int(*tfVersion)
 		convertedTfVersion = &temp
 	}
 
 	tfValidationVersion := tfPlan.ValidationVersion.ValueInt64Pointer()
-	var convertedTfValidationVersion *int = nil
+	var convertedTfValidationVersion *int
 	if tfValidationVersion != nil {
 		temp := int(*tfValidationVersion)
 		convertedTfValidationVersion = &temp
@@ -349,14 +347,14 @@ func (r *dashboardResource) Update(ctx context.Context, req resource.UpdateReque
 	id := state.Id.ValueString()
 
 	tfVersion := plan.Version.ValueInt64Pointer()
-	var convertedTfVersion *int = nil
+	var convertedTfVersion *int
 	if tfVersion != nil {
 		temp := int(*tfVersion)
 		convertedTfVersion = &temp
 	}
 
 	tfValidationVersion := plan.ValidationVersion.ValueInt64Pointer()
-	var convertedTfValidationVersion *int = nil
+	var convertedTfValidationVersion *int
 	if tfValidationVersion != nil {
 		temp := int(*tfValidationVersion)
 		convertedTfValidationVersion = &temp

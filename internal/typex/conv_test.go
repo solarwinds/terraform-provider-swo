@@ -21,19 +21,19 @@ func TestMap(t *testing.T) {
 		{
 			name:     "convert ints to strings",
 			input:    []int{1, 2, 3},
-			fn:       func(i int) string { return strconv.Itoa(i) },
+			fn:       strconv.Itoa,
 			expected: []string{"1", "2", "3"},
 		},
 		{
 			name:     "empty slice",
 			input:    []int{},
-			fn:       func(i int) string { return strconv.Itoa(i) },
+			fn:       strconv.Itoa,
 			expected: []string{},
 		},
 		{
 			name:     "nil slice",
 			input:    nil,
-			fn:       func(i int) string { return strconv.Itoa(i) },
+			fn:       strconv.Itoa,
 			expected: []string{},
 		},
 		{
@@ -52,13 +52,10 @@ func TestMap(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestMapWithError(t *testing.T) {
-	parseIntFunc := func(s string) (int, error) {
-		return strconv.Atoi(s)
-	}
+	parseIntFunc := strconv.Atoi
 
 	tests := []struct {
 		name        string

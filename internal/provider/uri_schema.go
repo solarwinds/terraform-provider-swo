@@ -3,14 +3,14 @@ package provider
 import (
 	"context"
 
-	"github.com/hashicorp/terraform-plugin-framework/attr"
-
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	swoClient "github.com/solarwinds/swo-client-go/pkg/client"
+
 	"github.com/solarwinds/terraform-provider-swo/internal/validators"
 )
 
@@ -19,9 +19,9 @@ type uriResourceModel struct {
 	Id              types.String `tfsdk:"id"`
 	Name            types.String `tfsdk:"name"`
 	Host            types.String `tfsdk:"host"`
-	Options         types.Object `tfsdk:"options"`          //uriResourceOptions
-	TcpOptions      types.Object `tfsdk:"tcp_options"`      //uriResourceTcpOptions
-	TestDefinitions types.Object `tfsdk:"test_definitions"` //uriResourceTestDefinitions
+	Options         types.Object `tfsdk:"options"`          // uriResourceOptions
+	TcpOptions      types.Object `tfsdk:"tcp_options"`      // uriResourceTcpOptions
+	TestDefinitions types.Object `tfsdk:"test_definitions"` // uriResourceTestDefinitions
 }
 
 type uriResourceOptions struct {
@@ -54,7 +54,7 @@ type uriResourceTestDefinitions struct {
 	TestFromLocation      types.String `tfsdk:"test_from_location"`
 	LocationOptions       types.Set    `tfsdk:"location_options"` // uriResourceProbeLocation
 	TestIntervalInSeconds types.Int64  `tfsdk:"test_interval_in_seconds"`
-	PlatformOptions       types.Object `tfsdk:"platform_options"` //uriResourcePlatformOptions
+	PlatformOptions       types.Object `tfsdk:"platform_options"` // uriResourcePlatformOptions
 }
 
 func UriTestDefAttributeTypes() map[string]attr.Type {
