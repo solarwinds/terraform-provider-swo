@@ -18,15 +18,13 @@ jobs:
       - uses: actions/checkout@v5
       - uses: actions/setup-go@v6
         with:
-          go-version-file: 'go.mod'
+          go-version-file: 'tools/go.mod'
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v9
-        with:
-          version: latest
+        run: make lint
 
   docs-verify:
     name: Check that docs are up to date
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
 
     permissions:
       contents: read
@@ -35,15 +33,14 @@ jobs:
       - uses: actions/checkout@v5
       - uses: actions/setup-go@v6
         with:
-          go-version-file: 'go.mod'
+          go-version-file: 'tools/go.mod'
           cache: true
       - name: Install Terraform (for formatting)
         uses: hashicorp/setup-terraform@v4
         with:
-          # We can safely use latest; it's for formatting only
           terraform_version: latest
-      - name: Run go generate
-        run: go generate ./...
+      - name: Generate documentation
+        run: make generate
       - name: Fail if generated artifacts differ
         run: git diff --quiet --exit-code
 
@@ -51,8 +48,6 @@ jobs:
     name: Build and test
     runs-on: ubuntu-latest
     env:
-      TF_ACC: "1"
-      TF_LOG: "info"
       SWO_BASE_URL: ${{ secrets.SWO_BASE_URL }}
       SWO_API_TOKEN: ${{ secrets.SWO_API_TOKEN }}
     steps:
@@ -65,8 +60,8 @@ jobs:
         with:
           terraform_version: latest
       - name: Install dependencies
-        run: go get .
+        run: go mod download
       - name: Build
-        run: go build -v ./...
-      - name: Test
-        run: go test ./... -v -timeout 240m
+        run: make build
+      - name: Acceptance tests
+        run: make testacc TESTARGS="-timeout 240m"

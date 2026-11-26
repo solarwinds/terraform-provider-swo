@@ -2,6 +2,7 @@ package alerts
 
 import (
 	swoClient "github.com/solarwinds/swo-client-go/pkg/client"
+
 	"github.com/solarwinds/terraform-provider-swo/internal/typex"
 )
 

@@ -28,7 +28,7 @@ type compositeMetricResource struct {
 	client *swov1.Swo
 }
 
-func (r *compositeMetricResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (r *compositeMetricResource) Metadata(_ context.Context, _ resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = "compositemetric"
 }
 
@@ -36,7 +36,7 @@ func NewCompositeMetricResource() resource.Resource {
 	return &compositeMetricResource{}
 }
 
-func (r *compositeMetricResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (r *compositeMetricResource) Configure(_ context.Context, req resource.ConfigureRequest, _ *resource.ConfigureResponse) {
 	client, _ := req.ProviderData.(providerClients)
 	r.client = client.SwoV1Client
 }

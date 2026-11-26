@@ -10,8 +10,8 @@ import (
 )
 
 var (
-	errResourceNotFound      = errors.New("resource not found")
-	errReceiverUrlMismatch   = errors.New("receiver_url mismatch")
+	errResourceNotFound    = errors.New("resource not found")
+	errReceiverUrlMismatch = errors.New("receiver_url mismatch")
 )
 
 func TestAccCircleCIIntegrationResource(t *testing.T) {

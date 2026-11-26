@@ -4,10 +4,6 @@ import (
 	"context"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
-	"github.com/solarwinds/terraform-provider-swo/internal/planmodifier/stringmodifier"
-
-	"github.com/solarwinds/terraform-provider-swo/internal/validators"
-
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -16,6 +12,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	swoClient "github.com/solarwinds/swo-client-go/pkg/client"
+
+	"github.com/solarwinds/terraform-provider-swo/internal/planmodifier/stringmodifier"
+	"github.com/solarwinds/terraform-provider-swo/internal/validators"
 )
 
 // apiTokenResourceModel is the main resource model.

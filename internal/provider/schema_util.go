@@ -7,6 +7,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+
 	"github.com/solarwinds/terraform-provider-swo/internal/planmodifier/stringmodifier"
 )
 
@@ -79,7 +80,7 @@ func enrichDescription[T schema.Attribute](value T) T {
 	// Build description with validators
 	validators := rv.Elem().FieldByName("Validators")
 	if validators.IsValid() && !validators.IsNil() && validators.Len() > 0 {
-		for i := 0; i < validators.Len(); i++ {
+		for i := range validators.Len() {
 			validator := validators.Index(i)
 			name := validator.Elem().Type().Name()
 
@@ -88,7 +89,7 @@ func enrichDescription[T schema.Attribute](value T) T {
 				v := reflect.ValueOf(values.Interface())
 				validValuesMsg := ""
 				sep := ""
-				for i := 0; i < v.Len(); i++ {
+				for i := range v.Len() {
 					if len(validValuesMsg) > 0 {
 						sep = "|"
 					}

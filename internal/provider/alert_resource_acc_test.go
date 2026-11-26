@@ -17,7 +17,7 @@ func TestAccEntityAlertResource(t *testing.T) {
 			{
 				Config: testAccEntityAlertResourceConfig("test-acc Mock Entity Alert Name"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					//resource.TestCheckResourceAttr("swo_alert.test", "id", "0bc4710d-e3b0-4590-9c9b-e5e46d81d912"),
+					// resource.TestCheckResourceAttr("swo_alert.test", "id", "0bc4710d-e3b0-4590-9c9b-e5e46d81d912"),
 					resource.TestCheckResourceAttr("swo_alert.test", "name", "test-acc Mock Entity Alert Name"),
 					resource.TestCheckResourceAttr("swo_alert.test", "description", "Mock alert description."),
 					resource.TestCheckResourceAttr("swo_alert.test", "severity", "CRITICAL"),
@@ -79,7 +79,7 @@ func TestAccMetricGroupAlertResource(t *testing.T) {
 			{
 				Config: testAccMetricGroupAlertResourceConfig("test-acc Mock Metric Group Alert"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					//resource.TestCheckResourceAttr("swo_alert.test", "id", "0bc4710d-e3b0-4590-9c9b-e5e46d81d912"),
+					// resource.TestCheckResourceAttr("swo_alert.test", "id", "0bc4710d-e3b0-4590-9c9b-e5e46d81d912"),
 					resource.TestCheckResourceAttr("swo_alert.test", "name", "test-acc Mock Metric Group Alert"),
 					resource.TestCheckResourceAttr("swo_alert.test", "description", "Mock alert description."),
 					resource.TestCheckResourceAttr("swo_alert.test", "severity", "CRITICAL"),
@@ -139,7 +139,7 @@ func TestAccAlertResourceNotReporting(t *testing.T) {
 			{
 				Config: testAccAlertResourceNotReportingConfig("test-acc Mock Alert Not Reporting Name"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					//resource.TestCheckResourceAttr("swo_alert.test", "id", "0bc4710d-e3b0-4590-9c9b-e5e46d81d912"),
+					// resource.TestCheckResourceAttr("swo_alert.test", "id", "0bc4710d-e3b0-4590-9c9b-e5e46d81d912"),
 					resource.TestCheckResourceAttr("swo_alert.test", "name", "test-acc Mock Alert Not Reporting Name"),
 					resource.TestCheckResourceAttr("swo_alert.test", "description", "Mock alert description."),
 					resource.TestCheckResourceAttr("swo_alert.test", "severity", "CRITICAL"),

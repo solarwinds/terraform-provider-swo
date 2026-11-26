@@ -12,7 +12,7 @@ permissions:
 jobs:
   pr-conventions:
     name: Check PR title, branch name, and description
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
       - name: Check conventions
         # PR fields are passed through env so their contents are never interpolated into the script.

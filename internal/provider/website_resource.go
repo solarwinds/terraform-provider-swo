@@ -82,11 +82,11 @@ type websiteResource struct {
 	client *swov1.Swo
 }
 
-func (r *websiteResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (r *websiteResource) Metadata(_ context.Context, _ resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = "website"
 }
 
-func (r *websiteResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (r *websiteResource) Configure(_ context.Context, req resource.ConfigureRequest, _ *resource.ConfigureResponse) {
 	client, _ := req.ProviderData.(providerClients)
 	r.client = client.SwoV1Client
 }
@@ -381,12 +381,12 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 
 	// Read operation with eventual consistency website validation
 	readOperation := func(ctx context.Context, id string) (*components.DemGetWebsiteResponse, error) {
-		websiteResp, err := r.client.Dem.GetWebsite(ctx, operations.GetWebsiteRequest{
+		websiteResp, getErr := r.client.Dem.GetWebsite(ctx, operations.GetWebsiteRequest{
 			EntityID: id,
 		})
 
-		if err != nil {
-			return nil, err
+		if getErr != nil {
+			return nil, getErr
 		}
 
 		if websiteResp.DemGetWebsiteResponse == nil {
@@ -430,7 +430,7 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 	tfPlan.Url = types.StringValue(website.URL)
 	var tagElements []attr.Value
 	for _, x := range website.Tags {
-		objectValue, d := types.ObjectValueFrom(
+		objectValue, tagDiags := types.ObjectValueFrom(
 			ctx,
 			WebsiteTagAttributeTypes(),
 			websiteTag{
@@ -439,7 +439,7 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 			},
 		)
 
-		resp.Diagnostics.Append(d...)
+		resp.Diagnostics.Append(tagDiags...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
@@ -479,8 +479,8 @@ func (r *websiteResource) Update(ctx context.Context, req resource.UpdateRequest
 			tfRum.Snippet = types.StringValue(*website.Rum.Snippet)
 		}
 
-		rumValue, d := types.ObjectValueFrom(ctx, RumMonitoringAttributeTypes(), tfRum)
-		resp.Diagnostics.Append(d...)
+		rumValue, rumDiags := types.ObjectValueFrom(ctx, RumMonitoringAttributeTypes(), tfRum)
+		resp.Diagnostics.Append(rumDiags...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
@@ -746,15 +746,15 @@ func (r *websiteResource) buildMonitoringFromServerResponse(ctx context.Context,
 
 	// Build availability monitoring if active
 	if website.AvailabilityCheckSettings != nil && serverMonitoringOptions.IsAvailabilityActive.ValueBool() {
-		availabilityValue, d := r.buildAvailabilityMonitoring(ctx, website.AvailabilityCheckSettings)
-		diags.Append(d...)
+		availabilityValue, availabilityDiags := r.buildAvailabilityMonitoring(ctx, website.AvailabilityCheckSettings)
+		diags.Append(availabilityDiags...)
 		if diags.HasError() {
 			return types.ObjectNull(WebsiteMonitoringAttributeTypes()), diags
 		}
 		tfStateMonitoring.Availability = availabilityValue
 
-		customHeaders, d := r.buildCustomHeaders(ctx, website.AvailabilityCheckSettings.CustomHeaders)
-		diags.Append(d...)
+		customHeaders, headersDiags := r.buildCustomHeaders(ctx, website.AvailabilityCheckSettings.CustomHeaders)
+		diags.Append(headersDiags...)
 		if diags.HasError() {
 			return types.ObjectNull(WebsiteMonitoringAttributeTypes()), diags
 		}
@@ -776,8 +776,8 @@ func (r *websiteResource) buildMonitoringFromServerResponse(ctx context.Context,
 				tfStateMonitoring.CustomHeaders = customHeaders
 			}
 
-			availabilityValue, d := types.ObjectValueFrom(ctx, AvailabilityMonitoringAttributeTypes(), availability)
-			diags.Append(d...)
+			availabilityValue, valueDiags := types.ObjectValueFrom(ctx, AvailabilityMonitoringAttributeTypes(), availability)
+			diags.Append(valueDiags...)
 			if diags.HasError() {
 				return types.ObjectNull(WebsiteMonitoringAttributeTypes()), diags
 			}
@@ -787,8 +787,8 @@ func (r *websiteResource) buildMonitoringFromServerResponse(ctx context.Context,
 
 	// Build RUM monitoring if active
 	if website.Rum != nil && serverMonitoringOptions.IsRumActive.ValueBool() {
-		rumValue, d := r.buildRumMonitoring(ctx, website.Rum)
-		diags.Append(d...)
+		rumValue, rumDiags := r.buildRumMonitoring(ctx, website.Rum)
+		diags.Append(rumDiags...)
 		if diags.HasError() {
 			return types.ObjectNull(WebsiteMonitoringAttributeTypes()), diags
 		}

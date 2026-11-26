@@ -17,13 +17,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	swoClient "github.com/solarwinds/swo-client-go/pkg/client"
 	"github.com/solarwinds/swo-sdk-go/swov1"
+
 	"github.com/solarwinds/terraform-provider-swo/internal/envvar"
 )
 
 var (
 	dataSources            []func() datasource.DataSource
 	ErrNonMatchingEntities = errors.New("updated entity properties don't match")
-	ErrMarshal             = errors.New("error during marshalling")
+	ErrMarshal             = errors.New("error during marshaling")
 )
 
 var resources = []func() resource.Resource{
@@ -73,12 +74,12 @@ type providerClients struct {
 	SwoV1Client *swov1.Swo
 }
 
-func (p *swoProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
+func (p *swoProvider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
 	resp.TypeName = "swo"
 	resp.Version = p.version
 }
 
-func (p *swoProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
+func (p *swoProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"api_token": schema.StringAttribute{
@@ -144,13 +145,13 @@ func (p *swoProvider) Configure(ctx context.Context, req provider.ConfigureReque
 		swov1.WithClient(&http.Client{Timeout: clientTimeout}),
 	)
 
-	providerClients := providerClients{
+	clients := providerClients{
 		SwoClient:   client,
 		SwoV1Client: swoV1Client,
 	}
 
-	resp.DataSourceData = providerClients
-	resp.ResourceData = providerClients
+	resp.DataSourceData = clients
+	resp.ResourceData = clients
 }
 
 func (p *swoProvider) ConfigureClientVars(config swoProviderModel, resp *provider.ConfigureResponse) (*swoProviderModel, bool) {
@@ -187,7 +188,7 @@ func (p *swoProvider) ConfigureClientVars(config swoProviderModel, resp *provide
 	return &config, false
 }
 
-func (p *swoProvider) Resources(ctx context.Context) []func() resource.Resource {
+func (p *swoProvider) Resources(_ context.Context) []func() resource.Resource {
 	var wrappedResources []func() resource.Resource
 	for _, f := range resources {
 		r := f()
@@ -197,7 +198,7 @@ func (p *swoProvider) Resources(ctx context.Context) []func() resource.Resource 
 	return wrappedResources
 }
 
-func (p *swoProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
+func (p *swoProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return dataSources
 }
 
@@ -218,20 +219,19 @@ func BackoffRetry[T any](ctx context.Context, operation backoff.Operation[T]) (T
 }
 
 func ReadRetry[T any](ctx context.Context, id string, operation ReadOperation[T]) (T, error) {
-	var entity T
 	// Uri, and Website Creates and Updates are eventually consistent. Retry until the entity id is returned.
 	entity, err := BackoffRetry(ctx, func() (T, error) {
-		entity, err := operation(ctx, id)
-		if err != nil {
+		result, opErr := operation(ctx, id)
+		if opErr != nil {
 			// The entity is still being created, retry
-			if errors.Is(err, swoClient.ErrEntityIdNil) {
-				return entity, swoClient.ErrEntityIdNil
+			if errors.Is(opErr, swoClient.ErrEntityIdNil) {
+				return result, swoClient.ErrEntityIdNil
 			}
 
-			return entity, backoff.Permanent(err)
+			return result, backoff.Permanent(opErr)
 		}
 
-		return entity, nil
+		return result, nil
 	})
 
 	if err != nil {
