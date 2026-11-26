@@ -33,6 +33,10 @@ func (m standarizeJson) MarkdownDescription(_ context.Context) string {
 
 // PlanModifyString implements the plan modification logic.
 func (m standarizeJson) PlanModifyString(_ context.Context, req planmodifier.StringRequest, resp *planmodifier.StringResponse) {
+	if req.PlanValue.IsUnknown() || req.PlanValue.IsNull() {
+		return
+	}
+
 	// First we unmarshal the plan value json to a standard object.
 	var v any
 	err := json.Unmarshal([]byte(req.PlanValue.ValueString()), &v)
