@@ -177,6 +177,17 @@ func setDashboardValuesFromRead(ctx context.Context, dashboard *swoClient.ReadDa
 		return
 	}
 
+	if len(dashboard.Widgets) == 0 {
+		// Match the null widget set produced when importing an empty dashboard.
+		stateWidgets = nil
+	} else {
+		stateWidgets = slices.DeleteFunc(stateWidgets, func(w dashboardWidgetModel) bool {
+			return !slices.ContainsFunc(dashboard.Widgets, func(remote swoClient.ReadDashboardWidget) bool {
+				return w.Id.Equal(types.StringValue(remote.Id))
+			})
+		})
+	}
+
 	for _, w := range dashboard.Widgets {
 		lIdx := slices.IndexFunc(dashboard.Layout, func(l swoClient.ReadDashboardLayout) bool { return l.Id == w.Id })
 		if lIdx <= -1 {
